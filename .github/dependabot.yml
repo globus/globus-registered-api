@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Prevent updates of requirements files used only for testing.
+  - package-ecosystem: "pip"
+    directory: "/requirements/"
+    ignore:
+      - dependency-name: "*"
+    schedule:
+      interval: "monthly"
