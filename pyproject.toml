@@ -20,14 +20,15 @@ classifiers = [
 
 dependencies = [
     "click >=8,<9",
+    "globus-sdk >=4",
 ]
 
 [project.urls]
 Source = "https://github.com/globusonline/globus-registered-api"
 
 [project.scripts]
-globus-registered-api = "globus_registered_api.cli:group"
-gra = "globus_registered_api.cli:group"
+globus-registered-api = "globus_registered_api.cli:cli"
+gra = "globus_registered_api.cli:cli"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -69,6 +70,7 @@ source = [
 [tool.coverage.report]
 skip_covered = true
 fail_under = 50
+show_missing = true
 
 
 # flake8

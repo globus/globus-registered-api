@@ -3,3 +3,4 @@
 /.coverage*
 poetry.lock
 __pycache__/
+.tox/
