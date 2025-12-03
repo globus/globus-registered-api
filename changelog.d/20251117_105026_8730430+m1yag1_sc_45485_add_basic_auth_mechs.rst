@@ -1,0 +1,16 @@
+Added
+-----
+
+*   Add support for ``ClientApp`` and ``UserApp`` authentication. Use
+    ``ClientApp`` when ``GLOBUS_REGISTERED_API_CLIENT_ID``
+    and ``GLOBUS_REGISTERED_API_CLIENT_SECRET`` environment variables
+    are set, otherwise use ``UserApp`` with a registered native client.
+*   Add ``whoami`` command to display authenticated user information with
+    ``--format`` option for text or JSON output.
+*   Add ``logout`` command to revoke tokens for ``UserApp`` and ``ClientApp``
+    sessions.
+
+Removed
+-------
+
+*   Remove ``bogus`` command.
