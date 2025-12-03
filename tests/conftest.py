@@ -1,7 +1,11 @@
+# This file is a part of globus-registered-api.
+# https://github.com/globusonline/globus-registered-api
+# Copyright 2025 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
+
 import typing as t
 
 import pytest
-
 from click.testing import CliRunner
 
 
@@ -14,4 +18,3 @@ def mock_client_env(monkeypatch):
 @pytest.fixture
 def cli_runner() -> t.Generator[CliRunner, None, None]:
     return CliRunner()
-
