@@ -10,3 +10,6 @@ trim_trailing_whitespace = true
 
 [{*.yml,*.yaml,*.cff}]
 indent_size = 2
+
+[/LICENSE.txt]
+indent_size = unset

@@ -1,4 +1,10 @@
-from unittest.mock import MagicMock, patch
+# This file is a part of globus-registered-api.
+# https://github.com/globusonline/globus-registered-api
+# Copyright 2025 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
+
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import globus_registered_api.cli
 

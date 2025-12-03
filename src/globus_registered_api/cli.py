@@ -1,13 +1,15 @@
 # This file is a part of globus-registered-api.
 # https://github.com/globusonline/globus-registered-api
 # Copyright 2025 Globus <support@globus.org>
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: Apache-2.0
+
 import json
 import os
 
-from globus_sdk import AuthClient, ClientApp, UserApp
-
 import click
+from globus_sdk import AuthClient
+from globus_sdk import ClientApp
+from globus_sdk import UserApp
 
 RAPI_NATIVE_CLIENT_ID = "9dc7dfff-cfe8-4339-927b-28d29e1b2f42"
 
@@ -34,7 +36,9 @@ def _create_globus_app() -> UserApp | ClientApp:
         )
 
     if client_id and client_secret:
-        return ClientApp(app_name=app_name, client_id=client_id, client_secret=client_secret)
+        return ClientApp(
+            app_name=app_name, client_id=client_id, client_secret=client_secret
+        )
     else:
         return UserApp(app_name=app_name, client_id=RAPI_NATIVE_CLIENT_ID)
 

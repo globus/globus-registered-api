@@ -1,28 +1,30 @@
 # This file is a part of globus-registered-api.
 # https://github.com/globusonline/globus-registered-api
 # Copyright 2025 Globus <support@globus.org>
-# SPDX-License-Identifier: MIT
-from unittest.mock import MagicMock, patch
-import uuid
+# SPDX-License-Identifier: Apache-2.0
 
-import pytest
+import uuid
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import globus_registered_api.cli
 
 
 class MockResponse:
-      def __init__(self, data):
-          self.data = data
+    def __init__(self, data) -> None:
+        self.data = data
 
-      def __getitem__(self, key):
-          return self.data[key]
+    def __getitem__(self, key):
+        return self.data[key]
 
 
 @patch("globus_registered_api.cli._create_auth_client", autospec=True)
 def test_whoami_with_user_app(mock_auth_client, cli_runner):
     # Arrange
     mock_auth = MagicMock()
-    mock_auth.userinfo.return_value = MockResponse({"preferred_username": "testuser", "email": "testuser@example.com"})
+    mock_auth.userinfo.return_value = MockResponse(
+        {"preferred_username": "testuser", "email": "testuser@example.com"}
+    )
     mock_auth_client.return_value = mock_auth
 
     # Act
@@ -33,7 +35,9 @@ def test_whoami_with_user_app(mock_auth_client, cli_runner):
     assert "testuser" in result.output
 
     # Act (json format)
-    result_json = cli_runner.invoke(globus_registered_api.cli.cli, ["whoami", "--format", "json"])
+    result_json = cli_runner.invoke(
+        globus_registered_api.cli.cli, ["whoami", "--format", "json"]
+    )
 
     # Assert
     assert result_json.exit_code == 0
@@ -45,7 +49,9 @@ def test_whoami_with_client_app(mock_client_env, cli_runner):
     # Arrange
     mock_auth = MagicMock()
     client_id = str(uuid.uuid4())
-    mock_auth.userinfo.return_value = MockResponse({"preferred_username": f"{client_id}@clients.auth.globus.org", "email": None})
+    mock_auth.userinfo.return_value = MockResponse(
+        {"preferred_username": f"{client_id}@clients.auth.globus.org", "email": None}
+    )
     mock_client_env.return_value = mock_auth
 
     # Act
@@ -56,8 +62,13 @@ def test_whoami_with_client_app(mock_client_env, cli_runner):
     assert client_id in result.output
 
     # Act (json format)
-    result_json = cli_runner.invoke(globus_registered_api.cli.cli, ["whoami", "--format", "json"])
+    result_json = cli_runner.invoke(
+        globus_registered_api.cli.cli, ["whoami", "--format", "json"]
+    )
 
     # Assert
     assert result_json.exit_code == 0
-    assert f'"preferred_username": "{client_id}@clients.auth.globus.org"' in result_json.output
+    assert (
+        f'"preferred_username": "{client_id}@clients.auth.globus.org"'
+        in result_json.output
+    )
