@@ -1,0 +1,8 @@
+Added
+-----
+
+*   Add ``ExtendedFlowsClient`` class that extends ``FlowsClient`` with
+    ``list_registered_apis`` method to list registered APIs for which the
+    caller has a role.
+*   Add ``list`` command to list registered APIs with ``--filter-roles``,
+    ``--per-page``, and ``--format`` options.
