@@ -6,7 +6,20 @@
 import typing as t
 
 import pytest
+import responses
 from click.testing import CliRunner
+
+
+@pytest.fixture(autouse=True)
+def mocked_responses():
+    """
+    All tests enable `responses` patching of the `requests` package, replacing
+    all HTTP calls.
+    """
+    responses.start()
+    yield
+    responses.stop()
+    responses.reset()
 
 
 @pytest.fixture
