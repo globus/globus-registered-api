@@ -5,7 +5,10 @@ help:
 
 # Install a development virtual environment (at `./.venv`).
 install:
-    python -m venv .venv
+    #!/usr/bin/env bash
+    if [ ! -d .venv ]; then
+        python -m venv .venv
+    fi
     source .venv/bin/activate
     poetry install -P ./requirements/test
 
@@ -19,10 +22,10 @@ docs:
 
 # Delete known build artifacts.
 clean:
-	rm -rf .mypy_cache/
-	rm -rf .pytest_cache/
-	rm -rf .tox/
-	rm -rf .venv/
-	rm -rf build/
+	rm -rf .mypy_cache
+	rm -rf .pytest_cache
+	rm -rf .tox
+	rm -rf .venv
+	rm -rf build
 	rm -f .coverage.*
 	find . \( -type d -name __pycache__ -or -name \*.py[oc] \) -delete
