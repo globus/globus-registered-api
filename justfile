@@ -5,12 +5,10 @@ help:
 
 # Install a development virtual environment (at `./.venv`).
 install:
-    #!/usr/bin/env bash
-    if [ ! -d .venv ]; then
-        python -m venv .venv
-    fi
-    source .venv/bin/activate
-    poetry install -P ./requirements/test
+    python -m venv .venv
+    .venv/bin/pip install --upgrade pip setuptools wheel
+    .venv/bin/pip install -e.
+    .venv/bin/pip install -r requirements/test/requirements.txt
 
 # Run the full test suite locally.
 test:
