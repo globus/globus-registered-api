@@ -5,6 +5,7 @@ help:
 
 # Install a development virtual environment (at `./.venv`).
 install:
+    #!/usr/bin/env bash
     if [ ! -d .venv ]; then
         python -m venv .venv
     fi
