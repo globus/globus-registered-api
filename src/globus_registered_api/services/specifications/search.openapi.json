@@ -1,0 +1,3940 @@
+{
+  "paths": {
+    "/v1/index/{index_id}/search": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "advanced",
+            "schema": {
+              "type": "boolean"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "bypass_visible_to",
+            "description": "Set to true to allow this operation to return data with visibility which does not include the current user. Only allowed for index admins and owners.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "filter_principal_sets",
+            "schema": {
+              "type": "array",
+              "maxItems": 5,
+              "items": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 64,
+                "pattern": "^[a-z][a-z_-]*[a-z]$",
+                "example": "admin",
+                "description": "The name of a 'principal_set' for use in principal set filtering."
+              }
+            },
+            "required": false,
+            "explode": true,
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "fields",
+            "schema": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "visible_to",
+                  "principal_sets",
+                  "content"
+                ]
+              }
+            },
+            "required": false,
+            "explode": true,
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9999
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GSearchResult"
+                }
+              }
+            },
+            "description": "\nA Search Result document.\n\nThe offset, count, total, and has_next_page fields are computed based on the\nnumber of results which were matched and which results were returned by the\nsearch.\nAs long as `has_next_page` is True, you can add the count of results to the offset\nof a prior query to fetch another page of results.\n"
+          }
+        },
+        "summary": "Search Query",
+        "description": "Takes a GET request and parses the query from (url-encoded) query parameters.\nReturns query results.\n\nThe results can be paginated with limit+offset up to the boundary of 10,000 results.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:search"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GSearchResult"
+                }
+              }
+            },
+            "description": "\nA Search Result document.\n\nThe offset, count, total, and has_next_page fields are computed based on the\nnumber of results which were matched and which results were returned by the\nsearch.\nAs long as `has_next_page` is True, you can add the count of results to the offset\nof a prior query to fetch another page of results.\n"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GSearchRequestBody"
+              }
+            }
+          }
+        },
+        "summary": "Complex Search Query",
+        "description": "Takes a POST request and parses the query from the request body.\nThe search may include advanced filtering criteria, facets (aggregations), field\nweights (boosts), and sorting criteria.\n\nThe results can be paginated with limit+offset up to the boundary of 10,000 results.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:search"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/index/{index_id}/scroll": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GScrollResponse"
+                }
+              }
+            },
+            "description": "\nA Scroll Result document.\n\nThis is nearly identical to a Search Result, but includes the `marker` parameter.\n`marker` is an opaque token which can be used on subsequent requests for pagination.\n\nNOTE: In rare cases, `has_next_page` may be True until an empty page of results is\nreached.\n"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GScrollRequest"
+              }
+            }
+          }
+        },
+        "summary": "Scroll Query",
+        "description": "Scrolling is similar to a complex post query, but is intended for collecting all\nresults matching a search.\n\nScroll queries use marker+has_next_page for pagination and have no pagination limit.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:search"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/index/{index_id}/ingest": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSubmitResponse"
+                }
+              }
+            },
+            "description": "A Task Submission response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GIngest"
+              }
+            }
+          }
+        },
+        "summary": "Ingest",
+        "description": "Create or update a single document or a collection of documents.\nThis submits an asynchronous task and returns the task ID.\n\nIt is possible for ingest to fail immediately with a non-200 response, but a 200 Ok\ndoes not indicate that the task will succeed. It just means it was accepted for\nprocessing. The status of the resulting task will be given by the state of the task.\n\nUse Get Task to monitor tasks after submission.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:ingest"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/task/{task_id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get Task",
+        "description": "Lookup a Task by ID.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:ingest"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/task_list/{index_id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskList"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Task List",
+        "description": "List up to 1000 of the most recent tasks for an index.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:ingest"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/index/{index_id}/entry": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "subject",
+            "description": "The subject for this entry",
+            "schema": {
+              "type": "string",
+              "example": "https://example.com/foo/bar"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "entry_id",
+            "description": "The entry ID for this entry. The default entry ID is null",
+            "schema": {
+              "type": "string",
+              "default": null,
+              "example": "foo-bar",
+              "nullable": true
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "bypass_visible_to",
+            "description": "Set to true to allow this operation to return data with visibility which does not include the current user. Only allowed for index admins and owners.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GMetaResult"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get Entry",
+        "description": "Lookup a specific entry by ID.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:search"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSubmitResponse"
+                }
+              }
+            },
+            "description": "A Task Submission response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GMetaEntry"
+              }
+            }
+          }
+        },
+        "summary": "Upsert Entry",
+        "description": "Create or update a single entry.\nThis is just a wrapper around Ingest.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:ingest"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSubmitResponse"
+                }
+              }
+            },
+            "description": "A Task Submission response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GMetaEntry"
+              }
+            }
+          }
+        },
+        "summary": "Upsert Entry",
+        "description": "Create or update a single entry.\nThis is just a wrapper around Ingest.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:ingest"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "subject",
+            "description": "The subject for this entry",
+            "schema": {
+              "type": "string",
+              "example": "https://example.com/foo/bar"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "entry_id",
+            "description": "The entry ID for this entry. The default entry ID is null",
+            "schema": {
+              "type": "string",
+              "default": null,
+              "example": "foo-bar",
+              "nullable": true
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSubmitResponse"
+                }
+              }
+            },
+            "description": "A Task Submission response"
+          }
+        },
+        "summary": "Delete Entry",
+        "description": "Delete a specific entry by ID.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:ingest"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/index/{index_id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexWithPermissions"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Index Info",
+        "description": "Lookup descriptive information about an index."
+      },
+      "patch": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexInfo"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexUpdate"
+              }
+            }
+          }
+        },
+        "summary": "Index Update Metadata",
+        "description": "Update an index's display_name and description. Only index owners and admins\ncan update an index's metadata. Only indexes with the open status can be updated.\n\nReturns the updated index metadata in the response."
+      },
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexDeleteResponse"
+                }
+              }
+            },
+            "description": "An index deletion response"
+          }
+        },
+        "summary": "Index Delete",
+        "description": "Delete an Index.\nThis operation is not instantaneous, but marks the index for deletion by\nputting it into the 'delete-pending' state.\nOnce all active tasks have been cancelled and the index is safe to clean up,\nit will be deleted.\n\nIf an index is non-trial, the deletion will wait for 30 days.\nDuring that time, the index will not be usable, except for the\n`POST /v1/index/<index_id>/reopen` operation, which cancels the deletion."
+      }
+    },
+    "/v1/index_list": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "filter_roles",
+            "schema": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "owner",
+                  "admin",
+                  "writer"
+                ]
+              }
+            },
+            "required": false,
+            "explode": true,
+            "style": "form"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexListWPermissions"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Index List",
+        "description": "Lookup descriptive information about all indices on which you have write or admin\npermissions. Returns a list of at most 100 such indices.\n\nThe indices will be annotated with a list of permissions which the current user has\non the indices.\n\nBy default, all indices where the user has a role are included in the results.\nTo filter to a subset of roles, pass the `filter_roles` query parameter."
+      }
+    },
+    "/v1/index": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexInfo"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexCreate"
+              }
+            }
+          }
+        },
+        "summary": "Index Create",
+        "description": "Create a new Index. You will automatically be assigned as an 'owner' on the\nresulting index.\n\nNew indices have `is_trial=true` when they are created. Users are limited\nin the number of trial indices they may own -- so the operation may fail if\nyou already own a trial index."
+      }
+    },
+    "/v1/index/{index_id}/reopen": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexReopenResponse"
+                }
+              }
+            },
+            "description": "An index reopen response"
+          }
+        },
+        "summary": "Index Reopen",
+        "description": "On an index which has a status of `delete-pending`, reopen that index and\nchange its status to `open`. This operation is a special case of index\nupdate and requires 'owner' permissions on the index.\n\nReopening an index is valid on trial and non-trial indices, but trial indices\nmay be deleted at any time after their deletion.\nTherefore, this API is most useful for cancelling the deletion of a non-trial index."
+      }
+    },
+    "/v1/index/{index_id}/role_list": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleList"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Role List",
+        "description": "List all roles on an index. In order to list roles, you must have the\n'admin' or 'owner' role on an index."
+      }
+    },
+    "/v1/index/{index_id}/role": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Role"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleCreate"
+              }
+            }
+          }
+        },
+        "summary": "Role Create",
+        "description": "Create a new Role on an index. In order to create a role, you must already\nhave the 'admin' or 'owner' role. Only owners can create other owners."
+      }
+    },
+    "/v1/index/{index_id}/role/{role_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "role_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedRole"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Role Delete",
+        "description": "Delete a Role on an index. In order to delete a role, you must have the\n'admin' or 'owner' role. Unlike role creation, admin users can delete owner\nroles.\n\nThe last owner role on an index cannot be deleted -- there is always at\nleast one owner."
+      }
+    },
+    "/v1/index/{index_id}/batch_delete_by_subject": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSubmitResponse"
+                }
+              }
+            },
+            "description": "A Task Submission response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteBySubjectRequest"
+              }
+            }
+          }
+        },
+        "summary": "Delete By Subject",
+        "description": "Delete the document with the given Subject(s).",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:ingest"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/index/{index_id}/subject": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "subject",
+            "description": "The subject for this operation",
+            "schema": {
+              "type": "string",
+              "example": "https://example.com/foo/bar"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "bypass_visible_to",
+            "description": "Set to true to allow this operation to return data with visibility which does not include the current user. Only allowed for index admins and owners.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GMetaResult"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get Subject",
+        "description": "Lookup the document for a given Subject.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:search"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "subject",
+            "description": "The subject for this operation",
+            "schema": {
+              "type": "string",
+              "example": "https://example.com/foo/bar"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSubmitResponse"
+                }
+              }
+            },
+            "description": "A Task Submission response"
+          }
+        },
+        "summary": "Delete Subject",
+        "description": "Delete the document with the given Subject.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:ingest"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/index/{index_id}/delete_by_query": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSubmitResponse"
+                }
+              }
+            },
+            "description": "A Task Submission response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteByQuery"
+              }
+            }
+          }
+        },
+        "summary": "Delete By Query",
+        "description": "Delete all documents in an index matching a given query.\nBoost, sort, limit, offset, and facet parameters are allowed but will be ignored.",
+        "security": [
+          {
+            "GlobusAuth": [
+              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:ingest"
+            ]
+          }
+        ]
+      }
+    },
+    "/beta/index/{index_id}/mapping/{field_name}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "field_name",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UGFieldMappings"
+                }
+              }
+            },
+            "description": "Field to type mapping."
+          }
+        },
+        "summary": "[BETA] Get Field Mapping",
+        "description": "Lookup the mapped type for a specific field in an index.\nThe `mappings` object will contain only one field.\n\nRequires a `writer`, `admin`, or `owner` role on the index."
+      }
+    },
+    "/beta/index/{index_id}/field_budget": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldBudget"
+                }
+              }
+            },
+            "description": "Field budget information, showing an index's usage of fields."
+          }
+        },
+        "summary": "[BETA] Get Field Budget Information",
+        "description": "Requires a `writer`, `admin`, or `owner` role on the index."
+      }
+    },
+    "/beta/index/{index_id}/mapping": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UGFieldMappings"
+                }
+              }
+            },
+            "description": "Field to type mapping."
+          }
+        },
+        "summary": "[BETA] Get Index Mapping",
+        "description": "Lookup the mapped types of all fields in an index.\n\nRequires a `writer`, `admin`, or `owner` role on the index."
+      }
+    }
+  },
+  "info": {
+    "title": "Globus Search",
+    "version": "1.45.2"
+  },
+  "openapi": "3.0.3",
+  "components": {
+    "schemas": {
+      "ResultEntry": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "entry_id": {
+            "type": "string"
+          },
+          "matched_principal_sets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "visible_to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "principal_sets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "GMetaResult": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2019-08-27",
+            "readOnly": true
+          },
+          "subject": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResultEntry"
+            }
+          }
+        }
+      },
+      "ApproximateMetricFacetResult": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01",
+            "readOnly": true
+          },
+          "name": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "approximate_value": {
+            "type": "number"
+          }
+        }
+      },
+      "MetricFacetResult": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01",
+            "readOnly": true
+          },
+          "name": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          }
+        }
+      },
+      "GBucket": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01",
+            "readOnly": true
+          },
+          "value": {},
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "BucketFacetResult": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01",
+            "readOnly": true
+          },
+          "name": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GBucket"
+            }
+          }
+        }
+      },
+      "GFacetResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ApproximateMetricFacetResult"
+          },
+          {
+            "$ref": "#/components/schemas/MetricFacetResult"
+          },
+          {
+            "$ref": "#/components/schemas/BucketFacetResult"
+          }
+        ]
+      },
+      "GSearchResult": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer",
+            "description": "The length of the 'gmeta' array."
+          },
+          "gmeta": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GMetaResult"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean",
+            "description": "True if another page of results is available with pagination."
+          },
+          "@version": {
+            "default": "2017-09-01",
+            "readOnly": true
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "facet_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFacetResult"
+            }
+          }
+        }
+      },
+      "TermsFacet": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field to which the facet refers.\nAny dots (`.`) must be escaped with a preceding backslash (`\\`) character.",
+            "example": "my_field_name"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A name for this facet which is referenced in the results.\n\nIf `name` is omitted, it will default to the value of the `field_name` property. If more than one facet in a single search request references the same field, a name *must* be provided."
+          },
+          "type": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 10000000000000
+          }
+        },
+        "required": [
+          "field_name",
+          "type"
+        ]
+      },
+      "MetricFacet": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field to which the facet refers.\nAny dots (`.`) must be escaped with a preceding backslash (`\\`) character.",
+            "example": "my_field_name"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A name for this facet which is referenced in the results.\n\nIf `name` is omitted, it will default to the value of the `field_name` property. If more than one facet in a single search request references the same field, a name *must* be provided."
+          },
+          "type": {
+            "type": "string"
+          },
+          "missing": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "field_name",
+          "type"
+        ]
+      },
+      "DateHistogramRange": {
+        "type": "object",
+        "properties": {
+          "low": {},
+          "high": {}
+        }
+      },
+      "DateHistogramFacet": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field to which the facet refers.\nAny dots (`.`) must be escaped with a preceding backslash (`\\`) character.",
+            "example": "my_field_name"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A name for this facet which is referenced in the results.\n\nIf `name` is omitted, it will default to the value of the `field_name` property. If more than one facet in a single search request references the same field, a name *must* be provided."
+          },
+          "type": {
+            "type": "string"
+          },
+          "histogram_range": {
+            "$ref": "#/components/schemas/DateHistogramRange"
+          },
+          "date_interval": {
+            "type": "string",
+            "enum": [
+              "year",
+              "quarter",
+              "month",
+              "week",
+              "day",
+              "hour",
+              "minute",
+              "second"
+            ]
+          }
+        },
+        "required": [
+          "date_interval",
+          "field_name",
+          "type"
+        ]
+      },
+      "NumericHistogramRange": {
+        "type": "object",
+        "properties": {
+          "low": {
+            "type": "number"
+          },
+          "high": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "high",
+          "low"
+        ]
+      },
+      "NumericHistogramFacet": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field to which the facet refers.\nAny dots (`.`) must be escaped with a preceding backslash (`\\`) character.",
+            "example": "my_field_name"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A name for this facet which is referenced in the results.\n\nIf `name` is omitted, it will default to the value of the `field_name` property. If more than one facet in a single search request references the same field, a name *must* be provided."
+          },
+          "type": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000000000
+          },
+          "histogram_range": {
+            "$ref": "#/components/schemas/NumericHistogramRange"
+          }
+        },
+        "required": [
+          "field_name",
+          "histogram_range",
+          "size",
+          "type"
+        ]
+      },
+      "GFacet": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TermsFacet"
+          },
+          {
+            "$ref": "#/components/schemas/MetricFacet"
+          },
+          {
+            "$ref": "#/components/schemas/MetricFacet"
+          },
+          {
+            "$ref": "#/components/schemas/DateHistogramFacet"
+          },
+          {
+            "$ref": "#/components/schemas/NumericHistogramFacet"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "terms": "#/components/schemas/TermsFacet",
+            "sum": "#/components/schemas/MetricFacet",
+            "avg": "#/components/schemas/MetricFacet",
+            "date_histogram": "#/components/schemas/DateHistogramFacet",
+            "numeric_histogram": "#/components/schemas/NumericHistogramFacet"
+          }
+        }
+      },
+      "GFilterMatchAll": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": false,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "items": {}
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "values"
+        ]
+      },
+      "GFilterMatchAny": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": true,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "items": {}
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "values"
+        ]
+      },
+      "RangeFilterValue": {
+        "type": "object",
+        "properties": {
+          "from": {},
+          "to": {},
+          "gte": {},
+          "gt": {},
+          "lte": {},
+          "lt": {}
+        }
+      },
+      "GFilterRange": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": true,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "values": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RangeFilterValue"
+            }
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "values"
+        ]
+      },
+      "Coordinate": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90.0,
+            "maximum": 90.0
+          },
+          "lon": {
+            "type": "number",
+            "minimum": -180.0,
+            "maximum": 180.0
+          }
+        },
+        "required": [
+          "lat",
+          "lon"
+        ]
+      },
+      "GFilterBoundingBox": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": true,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "top_left": {
+            "example": {
+              "lat": 40.9,
+              "lon": 87.5
+            },
+            "description": "A coordinate pair is a geographical point, expressed as an object with two keys, `lat`\nand `lon`, for latitude and longitude. The values must be floats, positive or negative,\nwithin the range of acceptable coordinate values: [-90.0, 90.0] for latitude, and\n[-180.0, 180.0] for longitude.\n",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Coordinate"
+              }
+            ]
+          },
+          "bottom_right": {
+            "example": {
+              "lat": 40.9,
+              "lon": 87.5
+            },
+            "description": "A coordinate pair is a geographical point, expressed as an object with two keys, `lat`\nand `lon`, for latitude and longitude. The values must be floats, positive or negative,\nwithin the range of acceptable coordinate values: [-90.0, 90.0] for latitude, and\n[-180.0, 180.0] for longitude.\n",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Coordinate"
+              }
+            ]
+          }
+        },
+        "required": [
+          "bottom_right",
+          "field_name",
+          "top_left",
+          "type"
+        ]
+      },
+      "GeoPolygon": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "default": "Polygon"
+          },
+          "coordinates": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 4,
+              "example": [
+                [
+                  180.0,
+                  40.0
+                ],
+                [
+                  180.0,
+                  50.0
+                ],
+                [
+                  170.0,
+                  50.0
+                ],
+                [
+                  170.0,
+                  40.0
+                ],
+                [
+                  180.0,
+                  40.0
+                ]
+              ],
+              "description": "A linear ring is a closed series of line segments with three or more positions.\nThe first and last positions must be equivalent.\n\nRings are represented as lists of '[lon,lat]' pairs.\n\nA ring is a simple polygon without holes.\n",
+              "items": {}
+            }
+          }
+        },
+        "required": [
+          "coordinates",
+          "type"
+        ]
+      },
+      "GeoShape": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GeoPolygon"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "Polygon": "#/components/schemas/GeoPolygon"
+          }
+        }
+      },
+      "GFilterGeoShape": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": true,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "shape": {
+            "$ref": "#/components/schemas/GeoShape"
+          },
+          "relation": {
+            "type": "string",
+            "default": "intersects",
+            "enum": [
+              "intersects",
+              "within"
+            ],
+            "description": "The relationship between the provided shape and the queried field.\n\n'intersects': (default) Return documents whose shape intersects the query shape.\n'within': Return documents whose shape is fully within the query shape.\n"
+          }
+        },
+        "required": [
+          "field_name",
+          "shape",
+          "type"
+        ]
+      },
+      "GFilterExists": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": true,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          }
+        },
+        "required": [
+          "field_name",
+          "type"
+        ]
+      },
+      "GFilterLike": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": true,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field name to query with this 'like' filter. This field must be a text field.",
+            "example": "my_field_name"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A filter expression containing * and ? wildcards for a 'like' filter."
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "value"
+        ]
+      },
+      "GFilterMatchAllNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "items": {}
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "values"
+        ]
+      },
+      "GFilterMatchAnyNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "items": {}
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "values"
+        ]
+      },
+      "GFilterRangeNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "values": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RangeFilterValue"
+            }
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "values"
+        ]
+      },
+      "GFilterBoundingBoxNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "top_left": {
+            "example": {
+              "lat": 40.9,
+              "lon": 87.5
+            },
+            "description": "A coordinate pair is a geographical point, expressed as an object with two keys, `lat`\nand `lon`, for latitude and longitude. The values must be floats, positive or negative,\nwithin the range of acceptable coordinate values: [-90.0, 90.0] for latitude, and\n[-180.0, 180.0] for longitude.\n",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Coordinate"
+              }
+            ]
+          },
+          "bottom_right": {
+            "example": {
+              "lat": 40.9,
+              "lon": 87.5
+            },
+            "description": "A coordinate pair is a geographical point, expressed as an object with two keys, `lat`\nand `lon`, for latitude and longitude. The values must be floats, positive or negative,\nwithin the range of acceptable coordinate values: [-90.0, 90.0] for latitude, and\n[-180.0, 180.0] for longitude.\n",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Coordinate"
+              }
+            ]
+          }
+        },
+        "required": [
+          "bottom_right",
+          "field_name",
+          "top_left",
+          "type"
+        ]
+      },
+      "GFilterGeoShapeNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "shape": {
+            "$ref": "#/components/schemas/GeoShape"
+          },
+          "relation": {
+            "type": "string",
+            "default": "intersects",
+            "enum": [
+              "intersects",
+              "within"
+            ],
+            "description": "The relationship between the provided shape and the queried field.\n\n'intersects': (default) Return documents whose shape intersects the query shape.\n'within': Return documents whose shape is fully within the query shape.\n"
+          }
+        },
+        "required": [
+          "field_name",
+          "shape",
+          "type"
+        ]
+      },
+      "GFilterExistsNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          }
+        },
+        "required": [
+          "field_name",
+          "type"
+        ]
+      },
+      "GFilterLikeNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field name to query with this 'like' filter. This field must be a text field.",
+            "example": "my_field_name"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A filter expression containing * and ? wildcards for a 'like' filter."
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "value"
+        ]
+      },
+      "GFilterNotNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "filter": {
+            "$ref": "#/components/schemas/GFilterNested"
+          }
+        },
+        "required": [
+          "filter",
+          "type"
+        ]
+      },
+      "GFilterOrNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "filters": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterNested"
+            }
+          }
+        },
+        "required": [
+          "filters",
+          "type"
+        ]
+      },
+      "GFilterAndNested": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "filters": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterNested"
+            }
+          }
+        },
+        "required": [
+          "filters",
+          "type"
+        ]
+      },
+      "GFilterNested": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GFilterMatchAllNested"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterMatchAnyNested"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterRangeNested"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterBoundingBoxNested"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterGeoShapeNested"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterExistsNested"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterLikeNested"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterNotNested"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterOrNested"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterAndNested"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "match_all": "#/components/schemas/GFilterMatchAllNested",
+            "match_any": "#/components/schemas/GFilterMatchAnyNested",
+            "range": "#/components/schemas/GFilterRangeNested",
+            "geo_bounding_box": "#/components/schemas/GFilterBoundingBoxNested",
+            "geo_shape": "#/components/schemas/GFilterGeoShapeNested",
+            "exists": "#/components/schemas/GFilterExistsNested",
+            "like": "#/components/schemas/GFilterLikeNested",
+            "not": "#/components/schemas/GFilterNotNested",
+            "or": "#/components/schemas/GFilterOrNested",
+            "and": "#/components/schemas/GFilterAndNested"
+          }
+        }
+      },
+      "GFilterNot": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": true,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "filter": {
+            "$ref": "#/components/schemas/GFilterNested"
+          }
+        },
+        "required": [
+          "filter",
+          "type"
+        ]
+      },
+      "GFilterOr": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": true,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "filters": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterNested"
+            }
+          }
+        },
+        "required": [
+          "filters",
+          "type"
+        ]
+      },
+      "GFilterAnd": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "type": {
+            "type": "string"
+          },
+          "post_filter": {
+            "type": "boolean",
+            "default": true,
+            "description": "Control whether or not this filter should be applied before or after facets are\ncalculated. If True, the filter will not impact facet results, but will filter the\nquery results.\n\nDefaults to True for all filters except `match_all`, where it defaults to False.\n"
+          },
+          "filters": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterNested"
+            }
+          }
+        },
+        "required": [
+          "filters",
+          "type"
+        ]
+      },
+      "GFilter": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GFilterMatchAll"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterMatchAny"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterRange"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterBoundingBox"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterGeoShape"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterExists"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterLike"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterNot"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterOr"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterAnd"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "match_all": "#/components/schemas/GFilterMatchAll",
+            "match_any": "#/components/schemas/GFilterMatchAny",
+            "range": "#/components/schemas/GFilterRange",
+            "geo_bounding_box": "#/components/schemas/GFilterBoundingBox",
+            "geo_shape": "#/components/schemas/GFilterGeoShape",
+            "exists": "#/components/schemas/GFilterExists",
+            "like": "#/components/schemas/GFilterLike",
+            "not": "#/components/schemas/GFilterNot",
+            "or": "#/components/schemas/GFilterOr",
+            "and": "#/components/schemas/GFilterAnd"
+          }
+        }
+      },
+      "GBoost": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "factor": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "factor",
+          "field_name"
+        ]
+      },
+      "GSort": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "order": {
+            "type": "string",
+            "default": "desc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "field_name"
+        ]
+      },
+      "GSearchRequestBody2017": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "limit": {
+            "type": "integer",
+            "default": 10,
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "advanced": {
+            "type": "boolean"
+          },
+          "bypass_visible_to": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set to true to allow this operation to return data with visibility which does not include the current user. Only allowed for index admins and owners."
+          },
+          "filter_principal_sets": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_-]*[a-z]$",
+              "example": "admin",
+              "description": "The name of a 'principal_set' for use in principal set filtering."
+            }
+          },
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999
+          },
+          "facets": {
+            "maxItems": 32,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFacet"
+            }
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilter"
+            }
+          },
+          "boosts": {
+            "maxItems": 16,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GBoost"
+            }
+          },
+          "sort": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GSort"
+            }
+          }
+        }
+      },
+      "GFilterMatchAllV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "items": {}
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "values"
+        ]
+      },
+      "GFilterMatchAnyV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "items": {}
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "values"
+        ]
+      },
+      "RangeFilterValueV1": {
+        "type": "object",
+        "properties": {
+          "from": {},
+          "to": {},
+          "gte": {},
+          "gt": {},
+          "lte": {},
+          "lt": {}
+        }
+      },
+      "GFilterRangeV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "values": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RangeFilterValueV1"
+            }
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "values"
+        ]
+      },
+      "GFilterBoundingBoxV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "top_left": {
+            "example": {
+              "lat": 40.9,
+              "lon": 87.5
+            },
+            "description": "A coordinate pair is a geographical point, expressed as an object with two keys, `lat`\nand `lon`, for latitude and longitude. The values must be floats, positive or negative,\nwithin the range of acceptable coordinate values: [-90.0, 90.0] for latitude, and\n[-180.0, 180.0] for longitude.\n",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Coordinate"
+              }
+            ]
+          },
+          "bottom_right": {
+            "example": {
+              "lat": 40.9,
+              "lon": 87.5
+            },
+            "description": "A coordinate pair is a geographical point, expressed as an object with two keys, `lat`\nand `lon`, for latitude and longitude. The values must be floats, positive or negative,\nwithin the range of acceptable coordinate values: [-90.0, 90.0] for latitude, and\n[-180.0, 180.0] for longitude.\n",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Coordinate"
+              }
+            ]
+          }
+        },
+        "required": [
+          "bottom_right",
+          "field_name",
+          "top_left",
+          "type"
+        ]
+      },
+      "GeoPolygonV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "default": "Polygon"
+          },
+          "coordinates": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 4,
+              "example": [
+                [
+                  180.0,
+                  40.0
+                ],
+                [
+                  180.0,
+                  50.0
+                ],
+                [
+                  170.0,
+                  50.0
+                ],
+                [
+                  170.0,
+                  40.0
+                ],
+                [
+                  180.0,
+                  40.0
+                ]
+              ],
+              "description": "A linear ring is a closed series of line segments with three or more positions.\nThe first and last positions must be equivalent.\n\nRings are represented as lists of '[lon,lat]' pairs.\n\nA ring is a simple polygon without holes.\n",
+              "items": {}
+            }
+          }
+        },
+        "required": [
+          "coordinates",
+          "type"
+        ]
+      },
+      "GeoShapeV1": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GeoPolygonV1"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "Polygon": "#/components/schemas/GeoPolygonV1"
+          }
+        }
+      },
+      "GFilterGeoShapeV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "shape": {
+            "$ref": "#/components/schemas/GeoShapeV1"
+          },
+          "relation": {
+            "type": "string",
+            "default": "intersects",
+            "enum": [
+              "intersects",
+              "within"
+            ],
+            "description": "The relationship between the provided shape and the queried field.\n\n'intersects': (default) Return documents whose shape intersects the query shape.\n'within': Return documents whose shape is fully within the query shape.\n"
+          }
+        },
+        "required": [
+          "field_name",
+          "shape",
+          "type"
+        ]
+      },
+      "GFilterExistsV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          }
+        },
+        "required": [
+          "field_name",
+          "type"
+        ]
+      },
+      "GFilterLikeV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field name to query with this 'like' filter. This field must be a text field.",
+            "example": "my_field_name"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A filter expression containing * and ? wildcards for a 'like' filter."
+          }
+        },
+        "required": [
+          "field_name",
+          "type",
+          "value"
+        ]
+      },
+      "GFilterNotV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "filter": {
+            "$ref": "#/components/schemas/GFilterV1"
+          }
+        },
+        "required": [
+          "filter",
+          "type"
+        ]
+      },
+      "GFilterOrV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "filters": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          }
+        },
+        "required": [
+          "filters",
+          "type"
+        ]
+      },
+      "GFilterAndV1": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "filters": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          }
+        },
+        "required": [
+          "filters",
+          "type"
+        ]
+      },
+      "GFilterV1": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GFilterMatchAllV1"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterMatchAnyV1"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterRangeV1"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterBoundingBoxV1"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterGeoShapeV1"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterExistsV1"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterLikeV1"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterNotV1"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterOrV1"
+          },
+          {
+            "$ref": "#/components/schemas/GFilterAndV1"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "match_all": "#/components/schemas/GFilterMatchAllV1",
+            "match_any": "#/components/schemas/GFilterMatchAnyV1",
+            "range": "#/components/schemas/GFilterRangeV1",
+            "geo_bounding_box": "#/components/schemas/GFilterBoundingBoxV1",
+            "geo_shape": "#/components/schemas/GFilterGeoShapeV1",
+            "exists": "#/components/schemas/GFilterExistsV1",
+            "like": "#/components/schemas/GFilterLikeV1",
+            "not": "#/components/schemas/GFilterNotV1",
+            "or": "#/components/schemas/GFilterOrV1",
+            "and": "#/components/schemas/GFilterAndV1"
+          }
+        }
+      },
+      "TermsFacetV1": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field to which the facet refers.\nAny dots (`.`) must be escaped with a preceding backslash (`\\`) character.",
+            "example": "my_field_name"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A name for this facet which is referenced in the results.\n\nIf `name` is omitted, it will default to the value of the `field_name` property. If more than one facet in a single search request references the same field, a name *must* be provided."
+          },
+          "type": {
+            "type": "string"
+          },
+          "additional_filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          },
+          "size": {
+            "type": "integer",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 10000000000000
+          }
+        },
+        "required": [
+          "field_name",
+          "type"
+        ]
+      },
+      "MetricFacetV1": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field to which the facet refers.\nAny dots (`.`) must be escaped with a preceding backslash (`\\`) character.",
+            "example": "my_field_name"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A name for this facet which is referenced in the results.\n\nIf `name` is omitted, it will default to the value of the `field_name` property. If more than one facet in a single search request references the same field, a name *must* be provided."
+          },
+          "type": {
+            "type": "string"
+          },
+          "additional_filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          },
+          "missing": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "field_name",
+          "type"
+        ]
+      },
+      "DistinctCountFacetV1": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field to which the facet refers.\nAny dots (`.`) must be escaped with a preceding backslash (`\\`) character.",
+            "example": "my_field_name"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A name for this facet which is referenced in the results.\n\nIf `name` is omitted, it will default to the value of the `field_name` property. If more than one facet in a single search request references the same field, a name *must* be provided."
+          },
+          "type": {
+            "type": "string"
+          },
+          "additional_filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          }
+        },
+        "required": [
+          "field_name",
+          "type"
+        ]
+      },
+      "DateHistogramRangeV1": {
+        "type": "object",
+        "properties": {
+          "low": {},
+          "high": {}
+        }
+      },
+      "DateHistogramFacetV1": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field to which the facet refers.\nAny dots (`.`) must be escaped with a preceding backslash (`\\`) character.",
+            "example": "my_field_name"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A name for this facet which is referenced in the results.\n\nIf `name` is omitted, it will default to the value of the `field_name` property. If more than one facet in a single search request references the same field, a name *must* be provided."
+          },
+          "type": {
+            "type": "string"
+          },
+          "additional_filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          },
+          "histogram_range": {
+            "$ref": "#/components/schemas/DateHistogramRangeV1"
+          },
+          "date_interval": {
+            "type": "string",
+            "enum": [
+              "year",
+              "quarter",
+              "month",
+              "week",
+              "day",
+              "hour",
+              "minute",
+              "second"
+            ]
+          }
+        },
+        "required": [
+          "date_interval",
+          "field_name",
+          "type"
+        ]
+      },
+      "NumericHistogramRangeV1": {
+        "type": "object",
+        "properties": {
+          "low": {
+            "type": "number"
+          },
+          "high": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "high",
+          "low"
+        ]
+      },
+      "NumericHistogramFacetV1": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The field to which the facet refers.\nAny dots (`.`) must be escaped with a preceding backslash (`\\`) character.",
+            "example": "my_field_name"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A name for this facet which is referenced in the results.\n\nIf `name` is omitted, it will default to the value of the `field_name` property. If more than one facet in a single search request references the same field, a name *must* be provided."
+          },
+          "type": {
+            "type": "string"
+          },
+          "additional_filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000000000
+          },
+          "histogram_range": {
+            "$ref": "#/components/schemas/NumericHistogramRangeV1"
+          }
+        },
+        "required": [
+          "field_name",
+          "histogram_range",
+          "size",
+          "type"
+        ]
+      },
+      "GFacetV1": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TermsFacetV1"
+          },
+          {
+            "$ref": "#/components/schemas/MetricFacetV1"
+          },
+          {
+            "$ref": "#/components/schemas/MetricFacetV1"
+          },
+          {
+            "$ref": "#/components/schemas/DistinctCountFacetV1"
+          },
+          {
+            "$ref": "#/components/schemas/DateHistogramFacetV1"
+          },
+          {
+            "$ref": "#/components/schemas/NumericHistogramFacetV1"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "terms": "#/components/schemas/TermsFacetV1",
+            "sum": "#/components/schemas/MetricFacetV1",
+            "avg": "#/components/schemas/MetricFacetV1",
+            "distinct_count": "#/components/schemas/DistinctCountFacetV1",
+            "date_histogram": "#/components/schemas/DateHistogramFacetV1",
+            "numeric_histogram": "#/components/schemas/NumericHistogramFacetV1"
+          }
+        }
+      },
+      "GBoostV1": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "factor": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "factor",
+          "field_name"
+        ]
+      },
+      "GSortV1": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "my_field_name"
+          },
+          "order": {
+            "type": "string",
+            "default": "desc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "field_name"
+        ]
+      },
+      "SimpleQSettings": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "default_operator": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "default_operator",
+          "mode"
+        ]
+      },
+      "AdvancedQSettings": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "default_operator": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "default_operator",
+          "mode"
+        ]
+      },
+      "TextMatchQSettings": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "default_operator": {
+            "type": "string",
+            "default": "and"
+          },
+          "fuzziness": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 0,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "QSettings": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SimpleQSettings"
+          },
+          {
+            "$ref": "#/components/schemas/AdvancedQSettings"
+          },
+          {
+            "$ref": "#/components/schemas/TextMatchQSettings"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "mode",
+          "mapping": {
+            "query_string": "#/components/schemas/SimpleQSettings",
+            "advanced_query_string": "#/components/schemas/AdvancedQSettings",
+            "text_match": "#/components/schemas/TextMatchQSettings"
+          }
+        }
+      },
+      "GSearchRequestBodyV1": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "limit": {
+            "type": "integer",
+            "default": 10,
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "advanced": {
+            "type": "boolean"
+          },
+          "bypass_visible_to": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set to true to allow this operation to return data with visibility which does not include the current user. Only allowed for index admins and owners."
+          },
+          "filter_principal_sets": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_-]*[a-z]$",
+              "example": "admin",
+              "description": "The name of a 'principal_set' for use in principal set filtering."
+            }
+          },
+          "@version": {
+            "default": "query#1.0.0"
+          },
+          "fields": {
+            "type": "array",
+            "default": [
+              "content"
+            ],
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "enum": [
+                "visible_to",
+                "principal_sets",
+                "content"
+              ]
+            }
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999
+          },
+          "facets": {
+            "maxItems": 32,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFacetV1"
+            }
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          },
+          "boosts": {
+            "maxItems": 16,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GBoostV1"
+            }
+          },
+          "sort": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GSortV1"
+            }
+          },
+          "q_settings": {
+            "$ref": "#/components/schemas/QSettings"
+          },
+          "post_facet_filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          }
+        }
+      },
+      "GSearchRequestBody": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GSearchRequestBody2017"
+          },
+          {
+            "$ref": "#/components/schemas/GSearchRequestBodyV1"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "@version",
+          "mapping": {
+            "2017-09-01": "#/components/schemas/GSearchRequestBody2017",
+            "query#1.0.0": "#/components/schemas/GSearchRequestBodyV1"
+          }
+        }
+      },
+      "GScrollRequest2017": {
+        "type": "object",
+        "properties": {
+          "marker": {},
+          "q": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "limit": {
+            "type": "integer",
+            "default": 10,
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "advanced": {
+            "type": "boolean"
+          },
+          "bypass_visible_to": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set to true to allow this operation to return data with visibility which does not include the current user. Only allowed for index admins and owners."
+          },
+          "filter_principal_sets": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_-]*[a-z]$",
+              "example": "admin",
+              "description": "The name of a 'principal_set' for use in principal set filtering."
+            }
+          },
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilter"
+            }
+          }
+        }
+      },
+      "GScrollRequestV1": {
+        "type": "object",
+        "properties": {
+          "marker": {},
+          "q": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "limit": {
+            "type": "integer",
+            "default": 10,
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "advanced": {
+            "type": "boolean"
+          },
+          "bypass_visible_to": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set to true to allow this operation to return data with visibility which does not include the current user. Only allowed for index admins and owners."
+          },
+          "filter_principal_sets": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_-]*[a-z]$",
+              "example": "admin",
+              "description": "The name of a 'principal_set' for use in principal set filtering."
+            }
+          },
+          "@version": {
+            "default": "scroll#1.0.0"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          },
+          "q_settings": {
+            "$ref": "#/components/schemas/QSettings"
+          },
+          "fields": {
+            "type": "array",
+            "default": [
+              "content"
+            ],
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "enum": [
+                "visible_to",
+                "principal_sets",
+                "content"
+              ]
+            }
+          }
+        }
+      },
+      "GScrollRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GScrollRequest2017"
+          },
+          {
+            "$ref": "#/components/schemas/GScrollRequestV1"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "@version",
+          "mapping": {
+            "2017-09-01": "#/components/schemas/GScrollRequest2017",
+            "scroll#1.0.0": "#/components/schemas/GScrollRequestV1"
+          }
+        }
+      },
+      "GScrollResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer",
+            "description": "The length of the 'gmeta' array."
+          },
+          "gmeta": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GMetaResult"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean",
+            "description": "True if another page of results is available with pagination."
+          },
+          "marker": {}
+        }
+      },
+      "GMetaEntry": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1
+          },
+          "id": {
+            "type": "string",
+            "default": null,
+            "minLength": 1,
+            "nullable": true
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "visible_to": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string"
+            }
+          },
+          "principal_sets": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "content",
+          "subject",
+          "visible_to"
+        ]
+      },
+      "GIngestEntry": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "ingest_type": {
+            "type": "string"
+          },
+          "field_mapping": {
+            "type": "object",
+            "example": {
+              "location.center": "geo_point",
+              "location.boundary": "geo_shape"
+            },
+            "description": "A field_mapping explicitly sets the type for fields being  used in the ingest document.\nThe fieldnames are used as keys and their values are the types to which they map.  Dots\nin fieldnames are interpreted as part of the path to a field, but may be escaped with a\nbackslash.\n\nCurrently, only geo datatypes are supported.\n",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "geo_point",
+                "geo_shape"
+              ]
+            }
+          },
+          "ingest_data": {
+            "$ref": "#/components/schemas/GMetaEntry"
+          }
+        },
+        "required": [
+          "ingest_data",
+          "ingest_type"
+        ]
+      },
+      "GMetaList": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "gmeta": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/GMetaEntry"
+            }
+          }
+        },
+        "required": [
+          "gmeta"
+        ]
+      },
+      "GIngestList": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01"
+          },
+          "ingest_type": {
+            "type": "string"
+          },
+          "field_mapping": {
+            "type": "object",
+            "example": {
+              "location.center": "geo_point",
+              "location.boundary": "geo_shape"
+            },
+            "description": "A field_mapping explicitly sets the type for fields being  used in the ingest document.\nThe fieldnames are used as keys and their values are the types to which they map.  Dots\nin fieldnames are interpreted as part of the path to a field, but may be escaped with a\nbackslash.\n\nCurrently, only geo datatypes are supported.\n",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "geo_point",
+                "geo_shape"
+              ]
+            }
+          },
+          "ingest_data": {
+            "$ref": "#/components/schemas/GMetaList"
+          }
+        },
+        "required": [
+          "ingest_data",
+          "ingest_type"
+        ]
+      },
+      "GIngest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GIngestEntry"
+          },
+          {
+            "$ref": "#/components/schemas/GIngestList"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "ingest_type",
+          "mapping": {
+            "GMetaEntry": "#/components/schemas/GIngestEntry",
+            "GMetaList": "#/components/schemas/GIngestList"
+          }
+        }
+      },
+      "TaskSubmitResponse": {
+        "type": "object",
+        "properties": {
+          "acknowledged": {
+            "type": "boolean",
+            "description": "Always true for successful task submission."
+          },
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The ID of the task which was just created."
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROGRESS",
+              "SUCCESS",
+              "FAILED",
+              "CREATING"
+            ]
+          },
+          "state_description": {
+            "type": "string"
+          },
+          "task_type": {
+            "type": "string"
+          },
+          "index_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "creation_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "message": {
+            "type": "string"
+          },
+          "additional_details": {},
+          "completion_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        }
+      },
+      "TaskList": {
+        "type": "object",
+        "properties": {
+          "index_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            }
+          }
+        }
+      },
+      "IndexWithPermissions": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01",
+            "readOnly": true
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "max_size_in_mb": {
+            "type": "integer"
+          },
+          "size_in_mb": {
+            "type": "integer"
+          },
+          "num_subjects": {
+            "type": "integer"
+          },
+          "num_entries": {
+            "type": "integer"
+          },
+          "creation_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "content_last_modified_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "entry_schema": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "subscription_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_trial": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "available": {
+            "type": "boolean",
+            "description": "The 'available' field indicates whether or not an index is available to serve queries and process tasks. It is `true` for active indices, but `false` when an index is being deleted or Globus Search is unable to access the index data."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "owner",
+                "admin",
+                "writer"
+              ]
+            }
+          }
+        }
+      },
+      "IndexUpdate": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "default": null,
+            "maxLength": 128,
+            "description": "The name of the index",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "default": null,
+            "maxLength": 1000,
+            "description": "A description of the index",
+            "nullable": true
+          }
+        }
+      },
+      "IndexInfo": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01",
+            "readOnly": true
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "max_size_in_mb": {
+            "type": "integer"
+          },
+          "size_in_mb": {
+            "type": "integer"
+          },
+          "num_subjects": {
+            "type": "integer"
+          },
+          "num_entries": {
+            "type": "integer"
+          },
+          "creation_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "content_last_modified_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "entry_schema": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "subscription_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_trial": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "available": {
+            "type": "boolean",
+            "description": "The 'available' field indicates whether or not an index is available to serve queries and process tasks. It is `true` for active indices, but `false` when an index is being deleted or Globus Search is unable to access the index data."
+          }
+        }
+      },
+      "IndexDeleteResponse": {
+        "type": "object",
+        "properties": {
+          "acknowledged": {
+            "type": "boolean",
+            "description": "Always true for successful index deletion."
+          },
+          "index_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The ID of the index which was marked for deletion."
+          }
+        }
+      },
+      "IndexListWPermissions": {
+        "type": "object",
+        "properties": {
+          "index_list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexWithPermissions"
+            }
+          }
+        }
+      },
+      "IndexCreate": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "The name of the index"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "A description of the index"
+          }
+        },
+        "required": [
+          "description",
+          "display_name"
+        ]
+      },
+      "IndexReopenResponse": {
+        "type": "object",
+        "properties": {
+          "acknowledged": {
+            "type": "boolean",
+            "description": "Always true for successful index reopen."
+          },
+          "index_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The ID of the index which was reopened."
+          }
+        }
+      },
+      "Role": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the role."
+          },
+          "role_name": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "writer"
+            ],
+            "description": "The name of the role. This implies some set of permissions."
+          },
+          "index_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "principal": {
+            "type": "string",
+            "description": "The principal URN for the entity which has this role."
+          },
+          "principal_type": {
+            "type": "string",
+            "enum": [
+              "identity",
+              "group"
+            ],
+            "description": "The type of principal encoded by the URN."
+          },
+          "creation_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "RoleList": {
+        "type": "object",
+        "properties": {
+          "role_list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            }
+          }
+        }
+      },
+      "RoleCreate": {
+        "type": "object",
+        "properties": {
+          "role_name": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "writer"
+            ],
+            "description": "The name of the role. This implies some set of permissions."
+          },
+          "principal": {
+            "type": "string",
+            "description": "The principal URN for the entity which has this role."
+          }
+        }
+      },
+      "DeletedRole": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeleteBySubjectRequest": {
+        "type": "object",
+        "properties": {
+          "subjects": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 65536,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "subjects"
+        ]
+      },
+      "DeleteByQueryV1": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "delete_by_query#1.0.0"
+          },
+          "q": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "advanced": {
+            "type": "boolean"
+          },
+          "q_settings": {
+            "$ref": "#/components/schemas/QSettings"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GFilterV1"
+            }
+          }
+        }
+      },
+      "DeleteByQuery": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GSearchRequestBody2017"
+          },
+          {
+            "$ref": "#/components/schemas/DeleteByQueryV1"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "@version",
+          "mapping": {
+            "2017-09-01": "#/components/schemas/GSearchRequestBody2017",
+            "delete_by_query#1.0.0": "#/components/schemas/DeleteByQueryV1"
+          }
+        }
+      },
+      "UGFieldMappings": {
+        "type": "object",
+        "properties": {
+          "@version": {
+            "default": "2017-09-01",
+            "readOnly": true
+          },
+          "mappings": {
+            "type": "object",
+            "example": {
+              "foo": "long",
+              "bar.baz": "text"
+            },
+            "description": "A mapping from full field names to their types.",
+            "additionalProperties": {}
+          }
+        }
+      },
+      "FieldBudget": {
+        "type": "object",
+        "properties": {
+          "budget": {
+            "type": "integer",
+            "description": "The size of the budget for the index."
+          },
+          "used": {
+            "type": "integer",
+            "description": "The amount of the budget which has been used (i.e., budget - remaining)."
+          },
+          "remaining": {
+            "type": "integer",
+            "description": "The amount of the budget remaining (i.e., budget - used)."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "GlobusAuth": {
+        "type": "oauth2",
+        "description": "Globus Auth OAuth2 authorization flows to use Globus Search",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://auth.globus.org/v2/oauth2/token",
+            "scopes": {
+              "urn:globus:auth:scope:search.api.globus.org:all": "Full access to Globus Search",
+              "urn:globus:auth:scope:search.api.globus.org:search": "Query and search data",
+              "urn:globus:auth:scope:search.api.globus.org:ingest": "Write data and view tasks on a search index"
+            }
+          },
+          "authorizationCode": {
+            "authorizationUrl": "https://auth.globus.org/v2/oauth2/authorize",
+            "tokenUrl": "https://auth.globus.org/v2/oauth2/token",
+            "refreshUrl": "https://auth.globus.org/v2/oauth2/token",
+            "scopes": {
+              "urn:globus:auth:scope:search.api.globus.org:all": "Full access to Globus Search",
+              "urn:globus:auth:scope:search.api.globus.org:search": "Query and search data",
+              "urn:globus:auth:scope:search.api.globus.org:ingest": "Write data and view tasks on a search index"
+            }
+          },
+          "implicit": {
+            "authorizationUrl": "https://auth.globus.org/v2/oauth2/authorize",
+            "scopes": {
+              "urn:globus:auth:scope:search.api.globus.org:all": "Full access to Globus Search",
+              "urn:globus:auth:scope:search.api.globus.org:search": "Query and search data",
+              "urn:globus:auth:scope:search.api.globus.org:ingest": "Write data and view tasks on a search index"
+            }
+          }
+        }
+      }
+    }
+  }
+}

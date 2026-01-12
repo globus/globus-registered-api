@@ -1,0 +1,4668 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Globus Groups",
+    "description": "An API for managing user groups in Globus",
+    "version": "v2-beta"
+  },
+  "paths": {
+    "/v2/groups/my_groups": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Retrieve your groups and memberships",
+        "description": "This endpoint returns, as an array, all groups in which the user and\nits linked identities is an active member, manager, or admin, by default.\n\nThe my_memberships field is included by default.\n\nThe optional query parameter, `statuses`, results in the array containing\nthose memberships with one of the specified status(es). The default value\nis `active`.",
+        "operationId": "get_my_groups_and_memberships_v2_groups_my_groups_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "statuses",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Form-encoded or comma-separated list of statuses.  Memberships with these statuses will be included in the memberships array.  Valid values are `active`, `invited`, `pending`, `rejected`, `removed`, `left`, and `declined`.",
+              "default": [
+                "active"
+              ],
+              "title": "Statuses"
+            },
+            "description": "Form-encoded or comma-separated list of statuses.  Memberships with these statuses will be included in the memberships array.  Valid values are `active`, `invited`, `pending`, `rejected`, `removed`, `left`, and `declined`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GroupReadModel"
+                  },
+                  "title": "Response Get My Groups And Memberships V2 Groups My Groups Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": []
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "SchemaError": {
+                    "summary": "SchemaError",
+                    "value": {
+                      "code": "INVALID_PARAMETERS",
+                      "detail": "Invalid parameter: invite"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/v2/groups/statuses": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Get the status counts of memberships for each group you are an admin or manager of.",
+        "description": "This endpoint retreives all the membership counts for groups where the caller is\neither an admin or manager.",
+        "operationId": "get_statuses_v2_groups_statuses_get",
+        "responses": {
+          "200": {
+            "description": "A mapping from group_id to an object of status counts for memberships",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/GroupStatusCounts"
+                  },
+                  "type": "object",
+                  "title": "Response Get Statuses V2 Groups Statuses Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                },
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                },
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                },
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                },
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v2/groups/{group_id}": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Get Group",
+        "description": "Get details and members of a group by group id.\n\nIf `memberships` or `my_memberships` are in the `include` parameter and the\nscopes in the provided authorization token allow memberships to be viewed,\nthe memberships will be returned in the response.\n\nIf `allowed_actions` are in the `include` parameter, and the scopes in the\ntokens allow managing memberships, an object will be returned detailing which\nmembership actions each identity in the user's set is allowed to perform.\n\nA group can be viewed if:\n- The group policy is that any authenticated user can view it.\n- The group is private, and the user has an active/invited/pending membership.\n\nGroup memberships can only be viewed by active members. Depending on group policy,\nthis may be further restricted to only admins and managers. Note that future\nversions may relax this restriction for specific cases, such as allowing invited\nor pending members to view the membership of the user that invited them.",
+        "operationId": "get_group_v2_groups__group_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Form encoded or comma separated list of additional fields to include (allowed fields are `memberships`, `my_memberships`,`policies`, `allowed_actions`, and `child_ids` )",
+              "default": [],
+              "title": "Include"
+            },
+            "description": "Form encoded or comma separated list of additional fields to include (allowed fields are `memberships`, `my_memberships`,`policies`, `allowed_actions`, and `child_ids` )"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupReadModel"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": []
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Perform actions on members of the group.",
+        "description": "This endpoint supports bulk actions on collections of members of the group.\nCurrently the following actions are supported:\n\n- **accept**: Identities in the `accept` list which are in the users identity set\n  will be accepted into the group. Only `invited` memberships can `accept`.\n- **add**: Identities in the `add` list will be added to the group as long\n  as the identity exists and they have not previously left the group, or indicated\n  via settings that they can not be added to any group. Adding an identity which\n  already have an active membership in the group will not modify the membership,\n  and is an error for informational purposes. All active admins and managers are\n  permitted to add members to a group. Active admins are also permitted to add\n  admins and managers to a group.  Role is an optional parameter to set the\n  membership role on addition.\n- **approve**: Identities in the `approve` list will be\n  accepted into the group. Only `pending` memberships can be included in\n  the `approve` list. All active admins and managers are permitted to approve\n  pending members to a group.\n- **change_role**: Identities in the `change_role` list whose roles in the group are\n  to be updated.  Only admins can change member roles.  Only `active` memberships\n  are eligible for role changes.\n- **decline**: Identities in the `decline` list which are in the users identity set\n  will be rejected from the group. Only `invited` memberships can `decline`.\n- **invite**:  Identities in the `invite` list will be invited to join the group.\n  All active admins and managers are permitted to invite members to a group. Members\n  may also invite other members if the policy allows it. Role is an optional\n  parameter to set the membership role on invitation.\n- **join**: Identities in the `join` list which are in the users identity set\n  will join the group, if the group policy is to allow users to join. High Assurance\n  groups cannot use this action.\n- **leave**: Identities in the `leave` list which are in the users identity set\n  will be removed from the group. Only `active` memberships can `leave`. If the\n  identity is the last remaining `admin` of the group leaving is not allowed,\n  since this would leave the group in an orphaned state.\n- **reject**: Identities in the `reject` list will be\n  rejected from the group. Only `pending` memberships can be included in\n  the `reject` list. All active admins and managers are permitted to reject pending\n  members from a group.\n- **remove**: Identities in the `remove` list will be removed from the group.\n  Admins can remove admins, managers, and members. Managers can remove managers and\n  members. Regular members cannot remove any members. Only `active` and `invited`\n  memberships can be removed, and users cannot remove their own memberships.\n- **request_join**: Identities in the `request_join` list which are in the users\n  identity set will be set as pending memberships for the group if the group policy\n  requires membership approval. Pending memberships must be approved or rejected by\n  administrators or managers.\n\nThe response will include the current state of any membership that was\nsuccessfully processed. The response will also include a list of errors\nindicating the identity of any requested membership action that failed to\nbe processed.\n\nIdentity IDs must be unique across all actions in the same call. For example,\ntrying to add and remove the same identity in the same request will cause the\nentire request to fail.",
+        "operationId": "group_membership_post_actions_v2_groups__group_id__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          },
+          {
+            "name": "community-context",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "go",
+              "title": "Community-Context"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMembershipPostAction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A list of the changed memberships and a list of errors that occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMembershipPostActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AmbiguousIdentities": {
+                    "summary": "AmbiguousIdentities",
+                    "value": {
+                      "code": "AMBIGUOUS_IDENTITIES",
+                      "detail": "Each identity_id can only be processed once per request.",
+                      "ambiguous_identities": [
+                        "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestErrorModel"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "IdentityProvisionError": {
+                    "summary": "IdentityProvisionError",
+                    "value": {
+                      "code": "IDENTITY_PROVISION_CONFLICT",
+                      "detail": "Temporary Internal Error"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Update an existing group",
+        "description": "Update the details of a group by group id.\n\nIf `allowed_actions` are in the `include` parameter, and the scopes in the\ntokens allow managing memberships, an object will be returned detailing which\nmembership actions each identity in the user's set is allowed to perform.\n\nA group can be updated if:\n- The user is an admin.\n\nGroup memberships should be updated using the membership endpoint.",
+        "operationId": "update_group_v2_groups__group_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupWriteModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated group.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupReadModel"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Delete a group",
+        "description": "This endpoint allows a group to be deleted by an admin.\n\n> Note: Groups can only be deleted by admins.",
+        "operationId": "delete_group_v2_groups__group_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupReadModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AmbiguousIdentities": {
+                    "summary": "AmbiguousIdentities",
+                    "value": {
+                      "code": "AMBIGUOUS_IDENTITIES",
+                      "detail": "Each identity_id can only be processed once per request.",
+                      "ambiguous_identities": [
+                        "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+                      ]
+                    }
+                  },
+                  "GroupLimitExceeded": {
+                    "summary": "GroupLimitExceeded",
+                    "value": {
+                      "code": "GROUP_LIMIT_EXCEEDED",
+                      "detail": "Cannot create group when already a member of 1000 or more groups."
+                    }
+                  },
+                  "GlobusAdminGroupDelete": {
+                    "summary": "GlobusAdminGroupDelete",
+                    "value": {
+                      "code": "GLOBUS_ADMIN_GROUP_DELETE",
+                      "detail": "Do not delete the Globus Admin group"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestErrorModel"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/groups/{group_id}/children": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Get Children",
+        "description": "Get the children of the group.",
+        "operationId": "get_children_v2_groups__group_id__children_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Form encoded or comma separated list of additional fields to include (allowed fields are `memberships`, `my_memberships`,`policies`, `allowed_actions`, and `child_ids` )",
+              "default": [],
+              "title": "Include"
+            },
+            "description": "Form encoded or comma separated list of additional fields to include (allowed fields are `memberships`, `my_memberships`,`policies`, `allowed_actions`, and `child_ids` )"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupChildrenReadModel"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/groups": {
+      "post": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Create a new group",
+        "description": "MVP limitations:\n\n- For users with more than one linked identity, ability to specify\nwhich identity becomes the admin will be added later.\n- Non-default policies can not be specified. They can be adjusted using the\nGlobus web app.\n\nCreate a new group with the given name. The effective identity (typically\nthe user's primary identity) of the Auth token used for the call will be\nadded to the group as an administrator. The group will be created with\ndefault polices that:\n\n* Allow membership requests only to be approved by admins and managers\n* Allow subgroups to be created only by admins\n* Allow the group to be visible only to members\n* Allow member names to be visible only to managers and admins\n* Allow invititations to be sent by managers and admins\n* Disallow requests to join\n\nGroups can only be created by users with 1000 or fewer active memberships.",
+        "operationId": "create_group_v2_groups_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupCreateModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupReadModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestErrorModel"
+                },
+                "examples": {
+                  "AmbiguousIdentities": {
+                    "summary": "AmbiguousIdentities",
+                    "value": {
+                      "code": "AMBIGUOUS_IDENTITIES",
+                      "detail": "Each identity_id can only be processed once per request.",
+                      "ambiguous_identities": [
+                        "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+                      ]
+                    }
+                  },
+                  "GroupLimitExceeded": {
+                    "summary": "GroupLimitExceeded",
+                    "value": {
+                      "code": "GROUP_LIMIT_EXCEEDED",
+                      "detail": "Cannot create group when already a member of 1000 or more groups."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                },
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                },
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                },
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                },
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v2/groups/{group_id}/policies": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Get the policies for the group.",
+        "description": "Get the policies for a group.",
+        "operationId": "get_policies_v2_groups__group_id__policies_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current group policies.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPolicyReadModel"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": []
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Set the policies for the group.",
+        "description": "Update the policies for a group.",
+        "operationId": "update_policies_v2_groups__group_id__policies_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupPolicyWriteModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated set of policies.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPolicyReadModel"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/preferences": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Get the preferences for your identity set.",
+        "description": "This endpoint allows users to get preferences for each of their\n identities that affect how their identity can be used in groups.\n  Currently, the supported preferences are:\n\n- **allow_add**: Whether or not an identity can be added",
+        "operationId": "get_identity_set_preferences_v2_preferences_get",
+        "responses": {
+          "200": {
+            "description": "A mapping from identity_id to a list of preferences.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/IdentityPreferences"
+                  },
+                  "type": "object",
+                  "title": "Response Get Identity Set Preferences V2 Preferences Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                },
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                },
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                },
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                },
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Set the preferences for your identity set.",
+        "description": "This endpoint allows users to set preferences for each of their\n identities that affect how their identity can be used in groups.\n  Currently, the supported preferences are:\n\n- **allow_add**: Whether or not an identity can be added",
+        "operationId": "put_identity_set_preferences_v2_preferences_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/IdentityPreferences"
+                },
+                "type": "object",
+                "title": "Preferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A mapping from identity_id to a list of preferences.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/IdentityPreferences"
+                  },
+                  "type": "object",
+                  "title": "Response Put Identity Set Preferences V2 Preferences Put"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                },
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                },
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                },
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                },
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v2/groups/{group_id}/membership_fields": {
+      "put": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Set the membership fields for your identity set.",
+        "description": "This endpoint allows users to set preferences for each of their identities\n that affect how their identity can be used in groups. Currently, the supported\n preferences are:",
+        "operationId": "put_membership_fields_v2_groups__group_id__membership_fields_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MembershipFields"
+                },
+                "title": "Membership Fields"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A mapping from identity_id to a list of membership fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/MembershipFields"
+                  },
+                  "title": "Response Put Membership Fields V2 Groups  Group Id  Membership Fields Put"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Get the membership fields for your identity set.",
+        "description": "This endpoint allows users to get preferences for each of their identities\n that affect how their identity can be used in groups. Currently, the\n supported preferences are:",
+        "operationId": "get_membership_fields_v2_groups__group_id__membership_fields_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A mapping from identity_id to an object of membership fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/MembershipFields"
+                  },
+                  "title": "Response Get Membership Fields V2 Groups  Group Id  Membership Fields Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/subscription_info/{subscription_id}": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Get groups by subscription_id",
+        "description": "This endpoint allows users to retrieve limited information about all groups that\nhave the given subscription_id. Currently, the fields returned for each group are:\n\n- **group_id**: The unique UUID for the group\n- **subscription_id**: The unique UUID for the subscription; identical to the id\n  provided in the request\n- **subscription_info**: Basic information about the subscription; excludes the\n  subscription name for privacy purposes",
+        "operationId": "get_group_by_subscription_id_v2_subscription_info__subscription_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Subscription Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of groups with the given subscription_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSubscriptionModel"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/groups/{group_id}/subscription_admin_verified": {
+      "put": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Update the subscription_admin_verified_id",
+        "description": "Update the subscription_admin_verified_id on a group.\n\nIf the group already has a subscription_admin_verified_id associated with it, then\nthe user must be an admin of the subscription group whose subscription_id\ncorresponds to the old value.\n\nIf the user is setting the subscription_admin_verified_id to a non-null value,\nthen they must be an admin of the subscription group whose subscription_id\ncorresponds to the new value.\n\nGroup admins can clear the value by using the regular groups update endpoint.",
+        "operationId": "update_subscription_admin_verified_id_v2_groups__group_id__subscription_admin_verified_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionVerifiedWriteModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated group.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionVerifiedReadModel"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "AuthenticationError": {
+                    "summary": "AuthenticationError",
+                    "value": {
+                      "code": "AUTHENTICATION_ERROR",
+                      "detail": "Authorization header missing",
+                      "authorization_parameters": {
+                        "session_message": "Authorization header missing"
+                      }
+                    }
+                  },
+                  "InvalidToken": {
+                    "summary": "InvalidToken",
+                    "value": {
+                      "code": "INVALID_TOKEN",
+                      "detail": "Expired or invalid bearer token",
+                      "authorization_parameters": {
+                        "session_message": "Expired or invalid bearer token"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Forbidden": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "detail": "Only admins and managers can view memberships"
+                    }
+                  },
+                  "InsufficientScopes": {
+                    "summary": "InsufficientScopes",
+                    "value": {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "detail": "Token scopes do not allow this action",
+                      "provided_scopes": [
+                        "urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFound": {
+                    "summary": "NotFound",
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "detail": "The resource could not be found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GroupsAPIError": {
+                    "summary": "GroupsAPIError",
+                    "value": {
+                      "code": "UNKNOWN_ERROR",
+                      "detail": "An unexpected error occurred"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AllowedActionsModel": {
+        "properties": {
+          "add": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Add",
+            "description": "User's identities which are allowed to add members to the group."
+          },
+          "change_role": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Change Role",
+            "description": "User's identities which are allowed to change group members' roles."
+          },
+          "invite": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Invite",
+            "description": "User's identities which are allowed to invite members to the group."
+          },
+          "remove": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Remove",
+            "description": "User's identities which are allowed to remove members from the group."
+          },
+          "join": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Join",
+            "description": "User's identities which can join the group, becoming active members."
+          },
+          "request_join": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Request Join",
+            "description": "User's identities which can request to join the group, pending admin/manager approval."
+          },
+          "approve": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Approve",
+            "description": "Identities that are approved to join the group."
+          },
+          "reject": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Reject",
+            "description": "Identities that are rejected from joining the group."
+          },
+          "accept": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Accept",
+            "description": "User's identities which can accept an invitation to the group, pending admin/manager approval."
+          },
+          "leave": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Leave",
+            "description": "User's active identities which can leave the group."
+          },
+          "decline": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Decline",
+            "description": "User's invited identities which can decline an invitation."
+          }
+        },
+        "type": "object",
+        "required": [
+          "add",
+          "change_role",
+          "invite",
+          "remove",
+          "join",
+          "request_join",
+          "approve",
+          "reject",
+          "accept",
+          "leave",
+          "decline"
+        ],
+        "title": "AllowedActionsModel",
+        "description": "Specifies which identities associated with the current token, if any, are\nin principle allowed to perform various actions.\n\nAttempting to perform an action which no identity has permissions for is a\ntransactional error, and the entire request will fail."
+      },
+      "AuthErrorModel": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "A machine parsable string representing the type of error."
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "A human readable explanation of the error."
+          },
+          "authorization_parameters": {
+            "$ref": "#/components/schemas/AuthParamsModel",
+            "description": "Additional fields in compliance with the Globus Auth Requirements Error format."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "detail",
+          "authorization_parameters"
+        ],
+        "title": "AuthErrorModel"
+      },
+      "AuthParamsModel": {
+        "properties": {
+          "session_message": {
+            "type": "string",
+            "title": "Session Message",
+            "description": "A message to be displayed to the user."
+          },
+          "session_required_identities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Session Required Identities",
+            "description": "A list of identities required for the session."
+          },
+          "session_required_policies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Session Required Policies",
+            "description": "A list of policies required for the session."
+          },
+          "session_required_single_domain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Session Required Single Domain",
+            "description": "A list of domains required for the session."
+          },
+          "session_required_mfa": {
+            "type": "boolean",
+            "title": "Session Required Mfa",
+            "description": "Whether MFA is required for the session."
+          },
+          "required_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Scopes",
+            "description": "A list of scopes for which consent is required."
+          },
+          "extra": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Extra",
+            "description": "A dictionary of additional fields that were provided."
+          }
+        },
+        "type": "object",
+        "title": "AuthParamsModel"
+      },
+      "BadRequestErrorModel": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "A machine parsable string representing the type of error."
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "A human readable explanation of the error."
+          },
+          "ambiguous_identities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ambiguous Identities",
+            "description": "List of duplicate identities that caused the exception."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "detail",
+          "ambiguous_identities"
+        ],
+        "title": "BadRequestErrorModel"
+      },
+      "BaseErrorModel": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "A machine parsable string representing the type of error."
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "A human readable explanation of the error."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "detail"
+        ],
+        "title": "BaseErrorModel"
+      },
+      "ConnectorSubscriptionInfo": {
+        "properties": {
+          "is_ha": {
+            "type": "boolean",
+            "title": "Is Ha",
+            "description": "True if HA connector subscription."
+          },
+          "is_baa": {
+            "type": "boolean",
+            "title": "Is Baa",
+            "description": "True if BAA connector subscription."
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_ha",
+          "is_baa"
+        ],
+        "title": "ConnectorSubscriptionInfo"
+      },
+      "ForbiddenErrorModel": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "A machine parsable string representing the type of error."
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "A human readable explanation of the error."
+          },
+          "provided_scopes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provided Scopes",
+            "description": "List of all scopes provided to the user."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "detail"
+        ],
+        "title": "ForbiddenErrorModel"
+      },
+      "GroupChildrenReadModel": {
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/GroupReadModel"
+            },
+            "type": "array",
+            "title": "Children",
+            "description": "The children of the group."
+          }
+        },
+        "type": "object",
+        "required": [
+          "children"
+        ],
+        "title": "GroupChildrenReadModel"
+      },
+      "GroupCreateModel": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the group."
+          },
+          "terms_and_conditions": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms And Conditions",
+            "description": "The terms and conditions for group membership"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the group."
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent of the group to be created.  The identity creating this group must be an admin of the parent group."
+          },
+          "policies": {
+            "$ref": "#/components/schemas/GroupPolicyWriteModel",
+            "description": "Policies for the group regarding members etc."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "GroupCreateModel"
+      },
+      "GroupMemberVisibilityPolicyEnum": {
+        "type": "string",
+        "enum": [
+          "members",
+          "managers"
+        ],
+        "title": "GroupMemberVisibilityPolicyEnum",
+        "description": "Who can view group memberships.\n\n- **members**: All members of the group.\n- **managers**: Only admins and managers."
+      },
+      "GroupMembershipPostAction": {
+        "properties": {
+          "accept": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionStatusModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accept",
+            "description": "List of identities that have been invited and should be accepted to the group."
+          },
+          "add": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionStatusAndRoleModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add",
+            "description": "List of identities to add as active members of the group"
+          },
+          "change_role": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipsActionChangeRoleModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Role",
+            "description": "List of identities whose roles are to be changed"
+          },
+          "decline": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionStatusModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decline",
+            "description": "List of identities that are declining an invitation to join."
+          },
+          "invite": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionInviteModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite",
+            "description": "List of identities to invite to the group."
+          },
+          "leave": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionStatusModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leave",
+            "description": "List of user's active memberships to leave the group"
+          },
+          "join": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionBaseModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Join",
+            "description": "List of identities that will join the group if policies allow directly joining.  These must be identities in the authenticated user's identity set."
+          },
+          "remove": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionStatusModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remove",
+            "description": "List of identities to remove from the group"
+          },
+          "request_join": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionBaseModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Join",
+            "description": "List of identities that are requesting to join the group. These must be identities in the authenticated user's identity set."
+          },
+          "approve": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionStatusModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approve",
+            "description": "List of pending identities that will be approved to join the group. "
+          },
+          "reject": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipActionStatusModel"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reject",
+            "description": "List of pending identities that will be rejected from joining the group."
+          }
+        },
+        "type": "object",
+        "title": "GroupMembershipPostAction"
+      },
+      "GroupMembershipPostActionErrors": {
+        "properties": {
+          "accept": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accept"
+          },
+          "add": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add"
+          },
+          "change_role": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Role"
+          },
+          "decline": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decline"
+          },
+          "invite": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite"
+          },
+          "join": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Join"
+          },
+          "leave": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leave"
+          },
+          "remove": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remove"
+          },
+          "request_join": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Join"
+          },
+          "approve": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approve"
+          },
+          "reject": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reject"
+          }
+        },
+        "type": "object",
+        "title": "GroupMembershipPostActionErrors"
+      },
+      "GroupMembershipPostActionResponse": {
+        "properties": {
+          "accept": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accept"
+          },
+          "add": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add"
+          },
+          "change_role": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Role"
+          },
+          "decline": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decline"
+          },
+          "invite": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite"
+          },
+          "join": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Join"
+          },
+          "leave": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leave"
+          },
+          "remove": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remove"
+          },
+          "request_join": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Join"
+          },
+          "approve": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approve"
+          },
+          "reject": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reject"
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroupMembershipPostActionErrors"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "GroupMembershipPostActionResponse"
+      },
+      "GroupPolicyReadModel": {
+        "properties": {
+          "is_high_assurance": {
+            "type": "boolean",
+            "title": "Is High Assurance"
+          },
+          "authentication_assurance_timeout": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authentication Assurance Timeout",
+            "description": "Maximum allowed seconds before a user must reauthenticate to access the group if is set to High Assurance. Defaults to 28800 for HA groups."
+          },
+          "group_visibility": {
+            "$ref": "#/components/schemas/GroupVisibilityPolicyEnum"
+          },
+          "group_members_visibility": {
+            "$ref": "#/components/schemas/GroupMemberVisibilityPolicyEnum"
+          },
+          "join_requests": {
+            "type": "boolean",
+            "title": "Join Requests",
+            "description": "If true then users may request to join the group."
+          },
+          "signup_fields": {
+            "items": {
+              "$ref": "#/components/schemas/SignupFieldsEnum"
+            },
+            "type": "array",
+            "title": "Signup Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_high_assurance",
+          "group_visibility",
+          "group_members_visibility",
+          "signup_fields"
+        ],
+        "title": "GroupPolicyReadModel"
+      },
+      "GroupPolicyWriteModel": {
+        "properties": {
+          "is_high_assurance": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is High Assurance"
+          },
+          "authentication_assurance_timeout": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authentication Assurance Timeout",
+            "description": "Maximum allowed seconds before a user must reauthenticate to access the group if is set to High Assurance. Defaults to 28800 for HA groups."
+          },
+          "group_visibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroupVisibilityPolicyEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "group_members_visibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroupMemberVisibilityPolicyEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "join_requests": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Join Requests",
+            "description": "If true then users may request to join the group."
+          },
+          "signup_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SignupFieldsEnum"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signup Fields"
+          }
+        },
+        "type": "object",
+        "title": "GroupPolicyWriteModel"
+      },
+      "GroupReadModel": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the group."
+          },
+          "terms_and_conditions": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms And Conditions",
+            "description": "The terms and conditions for group membership"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the group."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "The ID of the group."
+          },
+          "group_type": {
+            "$ref": "#/components/schemas/GroupTypeEnum",
+            "description": "The type of group (regular or Globus Plus).",
+            "default": "regular"
+          },
+          "child_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Child Ids",
+            "description": "IDs of the children groups (some of the groups in this list might be private)."
+          },
+          "enforce_session": {
+            "type": "boolean",
+            "title": "Enforce Session",
+            "default": false
+          },
+          "session_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Limit",
+            "description": "Number of seconds required for most recent authentication token"
+          },
+          "session_timeouts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TimeoutData"
+            },
+            "type": "object",
+            "title": "Session Timeouts",
+            "description": "A mapping of identity_ids to data about when that identity's authentication falls out of this group's session limit. Only identities in the session will be included here.",
+            "default": {}
+          },
+          "my_memberships": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Memberships",
+            "description": "Optional list of memberships the authenticated user has in the group."
+          },
+          "memberships": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembershipReadModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memberships",
+            "description": "Optional list of all memberships in the group."
+          },
+          "allowed_actions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AllowedActionsModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The actions allowed for the authenticated user's identities. This is intended to assist clients in determining which actions are possible for a given user."
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "The subscription ID"
+          },
+          "subscription_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Detailed information regarding the subscription."
+          },
+          "policies": {
+            "$ref": "#/components/schemas/GroupPolicyReadModel",
+            "description": "Policies for the group regarding members etc."
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent of the group to be created.  The identity creating this group must be an admin of the parent group."
+          },
+          "subscription_admin_verified_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Admin Verified Id",
+            "description": "The ID of the subscription whose admin has verified this resource."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "parent_id"
+        ],
+        "title": "GroupReadModel"
+      },
+      "GroupStatusCounts": {
+        "properties": {
+          "active": {
+            "type": "integer",
+            "title": "Active",
+            "description": "Count of active group members",
+            "default": 0
+          },
+          "invited": {
+            "type": "integer",
+            "title": "Invited",
+            "description": "Count of identities invited to join the group.",
+            "default": 0
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "description": "Count of identities pending acceptance to join the group.",
+            "default": 0
+          },
+          "rejected": {
+            "type": "integer",
+            "title": "Rejected",
+            "description": "Count of indentities that were rejected.",
+            "default": 0
+          },
+          "removed": {
+            "type": "integer",
+            "title": "Removed",
+            "description": "Count of former group members who were removed.",
+            "default": 0
+          },
+          "left": {
+            "type": "integer",
+            "title": "Left",
+            "description": "Count of former group members who left the group.",
+            "default": 0
+          },
+          "declined": {
+            "type": "integer",
+            "title": "Declined",
+            "description": "Count of declined group members.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "GroupStatusCounts"
+      },
+      "GroupSubscriptionModel": {
+        "properties": {
+          "group_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Group Id",
+            "description": "The ID of the group."
+          },
+          "subscription_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Subscription Id",
+            "description": "The subscription ID"
+          },
+          "subscription_info": {
+            "$ref": "#/components/schemas/SubscriptionModelLimited",
+            "description": "Detailed information regarding the subscription."
+          }
+        },
+        "type": "object",
+        "required": [
+          "group_id",
+          "subscription_id",
+          "subscription_info"
+        ],
+        "title": "GroupSubscriptionModel"
+      },
+      "GroupTypeEnum": {
+        "type": "string",
+        "enum": [
+          "regular",
+          "plus"
+        ],
+        "title": "GroupTypeEnum"
+      },
+      "GroupVisibilityPolicyEnum": {
+        "type": "string",
+        "enum": [
+          "authenticated",
+          "private"
+        ],
+        "title": "GroupVisibilityPolicyEnum",
+        "description": "Who can view the group.\n\n- **authenticated**: Any authenticated user.\n- **private**: Only active/invited/pending members of the group."
+      },
+      "GroupWriteModel": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the group."
+          },
+          "terms_and_conditions": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms And Conditions",
+            "description": "The terms and conditions for group membership"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the group."
+          },
+          "subscription_admin_verified_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Admin Verified Id",
+            "description": "The ID of the subscription whose admin has verified this resource."
+          }
+        },
+        "type": "object",
+        "title": "GroupWriteModel"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IdentityPreferences": {
+        "properties": {
+          "allow_add": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Add",
+            "description": "If false, then this identity can not be added directly to a group by an admin."
+          }
+        },
+        "type": "object",
+        "required": [
+          "allow_add"
+        ],
+        "title": "IdentityPreferences"
+      },
+      "MembershipActionBaseModel": {
+        "properties": {
+          "identity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Identity Id",
+            "description": "The identity of the user whose membership is being created or updated."
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity_id"
+        ],
+        "title": "MembershipActionBaseModel"
+      },
+      "MembershipActionInviteModel": {
+        "properties": {
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoleEnum"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The membership role for the user that is being added, invited, or changed.",
+            "default": "member"
+          },
+          "identity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Identity Id",
+            "description": "The identity of the user whose membership is being created or updated."
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason",
+            "description": "The reason provided when changing the member status."
+          },
+          "invite_email_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Email Address",
+            "description": "Send the group invitation to the specified email address."
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity_id"
+        ],
+        "title": "MembershipActionInviteModel"
+      },
+      "MembershipActionStatusAndRoleModel": {
+        "properties": {
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoleEnum"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The membership role for the user that is being added, invited, or changed.",
+            "default": "member"
+          },
+          "identity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Identity Id",
+            "description": "The identity of the user whose membership is being created or updated."
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason",
+            "description": "The reason provided when changing the member status."
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity_id"
+        ],
+        "title": "MembershipActionStatusAndRoleModel"
+      },
+      "MembershipActionStatusModel": {
+        "properties": {
+          "identity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Identity Id",
+            "description": "The identity of the user whose membership is being created or updated."
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason",
+            "description": "The reason provided when changing the member status."
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity_id"
+        ],
+        "title": "MembershipActionStatusModel"
+      },
+      "MembershipError": {
+        "properties": {
+          "identity_id": {
+            "type": "string",
+            "title": "Identity Id",
+            "description": "The identity from the request that caused the error."
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "A machine parsable string representing the type of error."
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "A human readable explanation of the error."
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity_id",
+          "code",
+          "detail"
+        ],
+        "title": "MembershipError"
+      },
+      "MembershipFields": {
+        "properties": {
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization"
+          },
+          "institution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Institution"
+          },
+          "current_project_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Project Name"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "address1": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address1"
+          },
+          "address2": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address2"
+          },
+          "zip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zip"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department"
+          },
+          "field_of_science": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Of Science"
+          }
+        },
+        "type": "object",
+        "title": "MembershipFields"
+      },
+      "MembershipReadModel": {
+        "properties": {
+          "group_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Group Id",
+            "description": "The id of the group the member belongs to."
+          },
+          "source_group_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Group Id",
+            "description": "The subgroup that the identity is a member of causing membership to be implied in this group."
+          },
+          "identity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Identity Id",
+            "description": "The identity of the user that is a member."
+          },
+          "username": {
+            "type": "string",
+            "title": "Username",
+            "description": "The username of the user that is a member."
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleEnum",
+            "description": "The role of the member in the group."
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusEnum",
+            "description": "The status of the member in the group."
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason",
+            "description": "The reason provided when changing the member status."
+          },
+          "invite_email_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Email Address",
+            "description": "Email address for the group invitation."
+          },
+          "updated": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated",
+            "description": "RFC 8601 format date and time when the membership was last updated."
+          },
+          "invite_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Time",
+            "description": "RFC 8601 format date and time when the user was invited to the group."
+          },
+          "membership_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Membership Fields",
+            "description": "The additional sign-up fields required by the group.",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "group_id",
+          "identity_id",
+          "username",
+          "role",
+          "status"
+        ],
+        "title": "MembershipReadModel"
+      },
+      "MembershipsActionChangeRoleModel": {
+        "properties": {
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoleEnum"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The membership role for the user that is being added, invited, or changed.",
+            "default": "member"
+          },
+          "identity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Identity Id",
+            "description": "The identity of the user whose membership is being created or updated."
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity_id"
+        ],
+        "title": "MembershipsActionChangeRoleModel"
+      },
+      "RoleEnum": {
+        "type": "string",
+        "enum": [
+          "member",
+          "manager",
+          "admin"
+        ],
+        "title": "RoleEnum"
+      },
+      "SignupFieldsEnum": {
+        "type": "string",
+        "enum": [
+          "institution",
+          "current_project_name",
+          "address",
+          "city",
+          "state",
+          "country",
+          "address1",
+          "address2",
+          "zip",
+          "phone",
+          "department",
+          "field_of_science"
+        ],
+        "title": "SignupFieldsEnum",
+        "description": "The available signup fields."
+      },
+      "StatusEnum": {
+        "type": "string",
+        "enum": [
+          "active",
+          "invited",
+          "pending",
+          "rejected",
+          "removed",
+          "left",
+          "declined"
+        ],
+        "title": "StatusEnum"
+      },
+      "SubscriptionModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The subscription name."
+          },
+          "subscriber_name": {
+            "type": "string",
+            "title": "Subscriber Name",
+            "description": "The subscriber's name."
+          },
+          "is_high_assurance": {
+            "type": "boolean",
+            "title": "Is High Assurance",
+            "description": "True if HA subscriber.",
+            "default": false
+          },
+          "is_baa": {
+            "type": "boolean",
+            "title": "Is Baa",
+            "description": "True if BAA subscriber.",
+            "default": false
+          },
+          "connectors": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ConnectorSubscriptionInfo"
+            },
+            "propertyNames": {
+              "format": "uuid"
+            },
+            "type": "object",
+            "title": "Connectors",
+            "description": "A mapping of connector UUIDs to connector subscription data.",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "subscriber_name"
+        ],
+        "title": "SubscriptionModel"
+      },
+      "SubscriptionModelLimited": {
+        "properties": {
+          "is_high_assurance": {
+            "type": "boolean",
+            "title": "Is High Assurance",
+            "description": "True if HA subscriber.",
+            "default": false
+          },
+          "is_baa": {
+            "type": "boolean",
+            "title": "Is Baa",
+            "description": "True if BAA subscriber.",
+            "default": false
+          },
+          "connectors": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ConnectorSubscriptionInfo"
+            },
+            "propertyNames": {
+              "format": "uuid"
+            },
+            "type": "object",
+            "title": "Connectors",
+            "description": "A mapping of connector UUIDs to connector subscription data.",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "SubscriptionModelLimited"
+      },
+      "SubscriptionVerifiedReadModel": {
+        "properties": {
+          "subscription_admin_verified_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Admin Verified Id",
+            "description": "The ID of the subscription whose admin has verified this resource."
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Group Id",
+            "description": "The ID of the group."
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_admin_verified_id",
+          "group_id"
+        ],
+        "title": "SubscriptionVerifiedReadModel"
+      },
+      "SubscriptionVerifiedWriteModel": {
+        "properties": {
+          "subscription_admin_verified_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Admin Verified Id",
+            "description": "The ID of the subscription whose admin has verified this resource."
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_admin_verified_id"
+        ],
+        "title": "SubscriptionVerifiedWriteModel"
+      },
+      "TimeoutData": {
+        "properties": {
+          "expire_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expire Time",
+            "description": "RFC 8601 format date and time when the identity will have passed the session limit"
+          },
+          "expires_in": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Expires In",
+            "description": "Seconds until authentication will have passed the session limit."
+          }
+        },
+        "type": "object",
+        "required": [
+          "expire_time",
+          "expires_in"
+        ],
+        "title": "TimeoutData"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "groups",
+      "description": "Operations on groups",
+      "externalDocs": {
+        "description": "Production documentation",
+        "url": "https://docs.globus.org/api/groups/"
+      }
+    }
+  ]
+}

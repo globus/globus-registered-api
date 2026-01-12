@@ -2,13 +2,17 @@
 # https://github.com/globusonline/globus-registered-api
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
-
 from __future__ import annotations
 
 import json
 import os
 import sys
 from collections.abc import Iterable
+import typing as t
+
+import json
+import os
+from difflib import Differ
 
 import click
 from globus_sdk import AuthClient
@@ -20,6 +24,9 @@ from globus_sdk import Scope
 from globus_sdk import UserApp
 
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
+from globus_registered_api.aperture_science import OpenApiEnrichmentCenter
+from globus_registered_api.loader import load_openapi_schema
+from globus_registered_api.services import SERVICE_CONFIGS
 
 # Constants
 RAPI_NATIVE_CLIENT_ID = "9dc7dfff-cfe8-4339-927b-28d29e1b2f42"
@@ -202,3 +209,89 @@ def list_registered_apis(
                     click.echo("-------------------------------------|-----")
                     first = False
                 click.echo(f"{api['id']} | {api['name']}")
+
+
+@cli.command()
+@click.argument("service_name", type=click.Choice(["search", "groups"]))
+def enrich_known(service_name: str) -> None:
+    """
+    Enrich a service's openapi schema with registered-api associated information.
+
+    To be "known" a service must have a distinct config in the `services` module.
+    """
+    if service_name not in SERVICE_CONFIGS:
+        raise click.ClickException(f"Service '{service_name}' is not a known service.")
+    config = SERVICE_CONFIGS[service_name]
+
+    orig_schema = load_openapi_schema(config["openapi_uri"])
+    enriched_schema = OpenApiEnrichmentCenter(config).enrich(orig_schema)
+
+    schema_diff = _diff(orig_schema, enriched_schema)
+
+    click.echo(schema_diff)
+
+
+def _diff(orig_schema: dict[str, t.Any], enriched_schema: dict[str, t.Any]) -> str:
+    """ Produce a minimized diff between two OpenAPI schemas. """
+
+    left = json.dumps(orig_schema, indent=2).splitlines(keepends=True)
+    right = json.dumps(enriched_schema, indent=2).splitlines(keepends=True)
+
+    diff_lines = list(Differ().compare(left, right))
+    return "".join(_minimize_diff_lines(diff_lines))
+
+
+def _minimize_diff_lines(lines: list[str]) -> t.Iterator[str]:
+    """
+    Minimize diff lines, yielding a generator of lines that should be shown.
+
+    Lines will be printed if they:
+        1. Have a "+ " or "- " prefix (indicating addition or removal)
+        2. Are contextually useful are parents of added/removed lines.
+    """
+
+    ranges = _compute_diff_index_ranges(lines)
+
+    for range_idx, (start, end) in enumerate(ranges):
+        prev = ranges[range_idx - 1] if range_idx > 0 else (0, 0)
+
+        context_lines: list[str] = []
+        if start > 0:
+            # Add lines of parent elements, identified by indentation changes.
+            indent_level = _compute_indent_level(lines[start])
+            for idx in reversed(range(prev[1] + 1, start)):
+                new_level = _compute_indent_level(lines[idx])
+                if new_level < indent_level:
+                    context_lines.append(lines[idx])
+                    indent_level = new_level
+
+        for line in reversed(context_lines):
+            yield line
+        for idx in range(start, end + 1):
+            yield lines[idx]
+
+
+def _compute_diff_index_ranges(lines: t.Iterable[str]) -> list[tuple[int, int]]:
+    ranges: list[tuple[int, int]] = []
+    current_range = None
+
+    for idx, line in enumerate(lines):
+        if not line.startswith("  "):
+            # Line is "important" (addition, removal)
+            if current_range is None:
+                current_range = idx, None
+            else:
+                current_range = current_range[0], idx
+
+        else:
+            # Line is not "important"
+            if current_range is not None:
+                ranges.append(current_range)
+                current_range = None
+
+    if current_range is not None:
+        ranges.append(current_range)
+    return ranges
+
+def _compute_indent_level(line: str) -> int:
+    return len(line[1:]) - len(line[1:].lstrip())
