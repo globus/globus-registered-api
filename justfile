@@ -12,7 +12,7 @@ install:
 
 # Run the full test suite locally.
 test:
-    tox run -m testsuite
+    tox run --color=yes
 
 # Rebuild the project's documentation locally (at ./`build`).
 docs:

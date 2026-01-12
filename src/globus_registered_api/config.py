@@ -1,3 +1,8 @@
+# This file is a part of globus-registered-api.
+# https://github.com/globusonline/globus-registered-api
+# Copyright 2025 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import typing as t
@@ -6,6 +11,7 @@ from globus_sdk import Scope
 
 
 class RegisteredApiConfig(t.TypedDict, total=False):
+    openapi_uri: str
     globus_auth: GlobusAuthConfig
 
 

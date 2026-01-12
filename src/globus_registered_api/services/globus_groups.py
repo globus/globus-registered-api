@@ -1,8 +1,13 @@
-from pathlib import Path
+# This file is a part of globus-registered-api.
+# https://github.com/globusonline/globus-registered-api
+# Copyright 2025 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
 
 from globus_sdk.scopes import GroupsScopes
 
-GROUPS_CONFIG = {
+from globus_registered_api.config import RegisteredApiConfig
+
+GROUPS_CONFIG: RegisteredApiConfig = {
     # Load the OpenAPI spec from the service-hosted URI
     "openapi_uri": "https://groups.api.globus.org/openapi.json",
     "globus_auth": {

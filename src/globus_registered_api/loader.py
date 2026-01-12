@@ -1,3 +1,8 @@
+# This file is a part of globus-registered-api.
+# https://github.com/globusonline/globus-registered-api
+# Copyright 2025 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import json
@@ -24,10 +29,10 @@ class _UriOpenApiSchemaLoader(t.Protocol):
 class _LocalOpenApiSchemaLoader(_UriOpenApiSchemaLoader):
     def load_schema(self, uri: str) -> dict[str, t.Any]:
         with open(uri, "r") as fp:
-            return json.load(fp)
+            return json.load(fp)  # type: ignore[no-any-return]
 
 class _HTTPOpenApiSchemaLoader(_UriOpenApiSchemaLoader):
     def load_schema(self, uri: str) -> dict[str, t.Any]:
         resp = requests.get(uri)
         resp.raise_for_status()
-        return resp.json()
+        return resp.json()  # type: ignore[no-any-return]

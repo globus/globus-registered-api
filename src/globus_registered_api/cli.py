@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-import json
-import os
 import sys
 from collections.abc import Iterable
 import typing as t
@@ -273,15 +271,17 @@ def _minimize_diff_lines(lines: list[str]) -> t.Iterator[str]:
 
 def _compute_diff_index_ranges(lines: t.Iterable[str]) -> list[tuple[int, int]]:
     ranges: list[tuple[int, int]] = []
-    current_range = None
+    current_range: None | tuple[int, int] = None
 
     for idx, line in enumerate(lines):
         if not line.startswith("  "):
             # Line is "important" (addition, removal)
             if current_range is None:
-                current_range = idx, None
+                # Create a new range
+                current_range = idx, idx
             else:
-                current_range = current_range[0], idx
+                # Extend the current range
+                current_range = (current_range[0], idx)
 
         else:
             # Line is not "important"
