@@ -1,0 +1,69 @@
+# This file is a part of globus-registered-api.
+# https://github.com/globusonline/globus-registered-api
+# Copyright 2025 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
+
+from __future__ import annotations
+
+import typing as t
+import uuid
+
+from globus_sdk import FlowsClient
+from globus_sdk import GlobusHTTPResponse
+from globus_sdk import paging
+
+
+def _filter_nones(d: dict[str, t.Any]) -> dict[str, t.Any]:
+    return {k: v for k, v in d.items() if v is not None}
+
+
+class ExtendedFlowsClient(FlowsClient):
+    """
+    Extended FlowsClient with additional methods for registered API management.
+    """
+
+    @paging.has_paginator(paging.MarkerPaginator, items_key="registered_apis")
+    def list_registered_apis(
+        self,
+        *,
+        filter_roles: str | t.Iterable[str] | None = None,
+        orderby: str | t.Iterable[str] | None = None,
+        per_page: int | None = None,
+        marker: str | uuid.UUID | None = None,
+        query_params: dict[str, t.Any] | None = None,
+    ) -> GlobusHTTPResponse:
+        """
+        List registered APIs for which the caller has a role.
+
+        :param filter_roles: A list of role names to filter by. Valid values are
+            owner, administrator, viewer.
+        :param orderby: Field(s) to order results by
+        :param per_page: Number of results per page (default 10, max 100)
+        :param marker: Marker for pagination
+        :param query_params: Any additional parameters to be passed through
+        :return: Response containing list of registered APIs
+        """
+        if query_params is None:
+            query_params = {}
+
+        query_params = {
+            **query_params,
+            **_filter_nones(
+                {
+                    "filter_roles": (
+                        filter_roles
+                        if isinstance(filter_roles, str)
+                        else ",".join(filter_roles) if filter_roles else None
+                    ),
+                    "orderby": (
+                        orderby
+                        if isinstance(orderby, str)
+                        else list(orderby) if orderby else None
+                    ),
+                    "per_page": per_page,
+                    "marker": str(marker) if marker else None,
+                }
+            ),
+        }
+
+        return self.get("/registered_apis", query_params=query_params)
