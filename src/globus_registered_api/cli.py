@@ -20,6 +20,11 @@ from globus_sdk import Scope
 from globus_sdk import UserApp
 
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
+from globus_registered_api.openapi import AmbiguousContentTypeError
+from globus_registered_api.openapi import OpenAPILoadError
+from globus_registered_api.openapi import TargetNotFoundError
+from globus_registered_api.openapi import TargetSpecifier
+from globus_registered_api.openapi import process_target
 
 # Constants
 RAPI_NATIVE_CLIENT_ID = "9dc7dfff-cfe8-4339-927b-28d29e1b2f42"
@@ -202,3 +207,43 @@ def list_registered_apis(
                     click.echo("-------------------------------------|-----")
                     first = False
                 click.echo(f"{api['id']} | {api['name']}")
+
+
+# --- willdelete command group ---
+
+
+@cli.group()
+def willdelete() -> None:
+    """Temporary commands for OpenAPI processing development."""
+
+
+@willdelete.command("print")
+@click.argument("openapi_spec", type=click.Path(exists=False))
+@click.argument("route")
+@click.argument("method")
+@click.option(
+    "--content-type",
+    default="*",
+    help="Content-type for request body (required if multiple exist)",
+)
+def willdelete_print(
+    openapi_spec: str, route: str, method: str, content_type: str
+) -> None:
+    """
+    Print a reduced OpenAPI spec for a target endpoint.
+
+    OPENAPI_SPEC is the path to an OpenAPI specification (JSON or YAML).
+    ROUTE is the path to match (e.g., /items or /items/{id}).
+    METHOD is the HTTP method (e.g., get, post, put, delete).
+    """
+    try:
+        target = TargetSpecifier.create(method, route, content_type)
+    except ValueError as e:
+        raise click.ClickException(str(e))
+
+    try:
+        result = process_target(openapi_spec, target)
+    except (OpenAPILoadError, TargetNotFoundError, AmbiguousContentTypeError) as e:
+        raise click.ClickException(str(e))
+
+    click.echo(json.dumps(result.to_dict(), indent=2))
