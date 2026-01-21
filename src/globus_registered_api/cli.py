@@ -209,6 +209,31 @@ def list_registered_apis(
                 click.echo(f"{api['id']} | {api['name']}")
 
 
+@cli.command("get")
+@click.argument("registered_api_id")
+@click.option("--format", type=click.Choice(["json", "text"]), default="text")
+@click.pass_context
+def get_registered_api(
+    ctx: click.Context, registered_api_id: str, format: str
+) -> None:
+    """
+    Get a registered API by ID.
+    """
+    app: UserApp | ClientApp = ctx.obj
+    flows_client = _create_flows_client(app)
+
+    res = flows_client.get_registered_api(registered_api_id)
+
+    if format == "json":
+        click.echo(json.dumps(res.data, indent=2))
+    else:
+        click.echo(f"ID:          {res['id']}")
+        click.echo(f"Name:        {res['name']}")
+        click.echo(f"Description: {res['description']}")
+        click.echo(f"Created:     {res['created_timestamp']}")
+        click.echo(f"Updated:     {res['updated_timestamp']}")
+
+
 # --- willdelete command group ---
 
 

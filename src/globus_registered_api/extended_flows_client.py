@@ -67,3 +67,15 @@ class ExtendedFlowsClient(FlowsClient):
         }
 
         return self.get("/registered_apis", query_params=query_params)
+
+    def get_registered_api(
+        self,
+        registered_api_id: str | uuid.UUID,
+    ) -> GlobusHTTPResponse:
+        """
+        Get a single registered API by ID.
+
+        :param registered_api_id: The ID of the registered API to retrieve
+        :return: Response containing the registered API details
+        """
+        return self.get(f"/registered_apis/{registered_api_id}")

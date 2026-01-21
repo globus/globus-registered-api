@@ -3,7 +3,6 @@
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-import re
 from unittest.mock import patch
 
 import responses
@@ -11,7 +10,7 @@ import responses
 import globus_registered_api.cli
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
 
-REGISTERED_APIS_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis")
+from conftest import LIST_REGISTERED_APIS_URL
 
 
 @patch("globus_registered_api.cli._create_flows_client")
@@ -19,7 +18,7 @@ def test_list_registered_apis_text_format(mock_create_client, cli_runner):
     mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [
                 {"id": "abc-123", "name": "Test API 1"},
@@ -46,7 +45,7 @@ def test_list_registered_apis_json_format(mock_create_client, cli_runner):
     mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [
                 {"id": "abc-123", "name": "Test API 1"},
@@ -70,7 +69,7 @@ def test_list_registered_apis_empty_result(mock_create_client, cli_runner):
     mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [],
             "has_next_page": False,
@@ -89,7 +88,7 @@ def test_list_registered_apis_with_filter_roles(mock_create_client, cli_runner):
     mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [],
             "has_next_page": False,
@@ -110,7 +109,7 @@ def test_list_registered_apis_with_per_page(mock_create_client, cli_runner):
     mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [],
             "has_next_page": False,
