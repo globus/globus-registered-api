@@ -3,12 +3,19 @@
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
+import re
 import typing as t
 from pathlib import Path
 
 import pytest
 import responses
 from click.testing import CliRunner
+
+# URL patterns for mocking Flows service responses
+LIST_REGISTERED_APIS_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis")
+GET_REGISTERED_API_URL = re.compile(
+    r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"
+)
 
 
 @pytest.fixture(autouse=True)
