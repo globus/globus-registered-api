@@ -3,11 +3,19 @@
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
+import re
 import typing as t
+from pathlib import Path
 
 import pytest
 import responses
 from click.testing import CliRunner
+
+# URL patterns for mocking Flows service responses
+LIST_REGISTERED_APIS_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis")
+GET_REGISTERED_API_URL = re.compile(
+    r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -31,3 +39,37 @@ def mock_client_env(monkeypatch):
 @pytest.fixture
 def cli_runner() -> t.Generator[CliRunner, None, None]:
     return CliRunner()
+
+
+@pytest.fixture
+def spec_path():
+    """
+    Factory fixture that returns the path to a spec file by name.
+
+    Usage:
+        def test_something(spec_path):
+            path = spec_path("minimal.json")
+    """
+
+    def _get_path(filename: str) -> Path:
+        return Path(__file__).parent / "files" / "openapi_specs" / filename
+
+    return _get_path
+
+
+@pytest.fixture
+def temp_spec_file(tmp_path):
+    """
+    Factory fixture that creates a temporary spec file with given content.
+
+    Usage:
+        def test_something(temp_spec_file):
+            path = temp_spec_file("test.json", '{"invalid": "content"}')
+    """
+
+    def _create_file(filename: str, content: str) -> Path:
+        file_path = tmp_path / filename
+        file_path.write_text(content)
+        return file_path
+
+    return _create_file

@@ -25,6 +25,11 @@ from globus_registered_api.extended_flows_client import ExtendedFlowsClient
 from globus_registered_api.aperture_science import OpenApiEnrichmentCenter
 from globus_registered_api.loader import load_openapi_schema
 from globus_registered_api.services import SERVICE_CONFIGS
+from globus_registered_api.openapi import AmbiguousContentTypeError
+from globus_registered_api.openapi import OpenAPILoadError
+from globus_registered_api.openapi import TargetNotFoundError
+from globus_registered_api.openapi import TargetSpecifier
+from globus_registered_api.openapi import process_target
 
 # Constants
 RAPI_NATIVE_CLIENT_ID = "9dc7dfff-cfe8-4339-927b-28d29e1b2f42"
@@ -295,3 +300,67 @@ def _compute_diff_index_ranges(lines: t.Iterable[str]) -> list[tuple[int, int]]:
 
 def _compute_indent_level(line: str) -> int:
     return len(line[1:]) - len(line[1:].lstrip())
+
+@cli.command("get")
+@click.argument("registered_api_id")
+@click.option("--format", type=click.Choice(["json", "text"]), default="text")
+@click.pass_context
+def get_registered_api(
+    ctx: click.Context, registered_api_id: str, format: str
+) -> None:
+    """
+    Get a registered API by ID.
+    """
+    app: UserApp | ClientApp = ctx.obj
+    flows_client = _create_flows_client(app)
+
+    res = flows_client.get_registered_api(registered_api_id)
+
+    if format == "json":
+        click.echo(json.dumps(res.data, indent=2))
+    else:
+        click.echo(f"ID:          {res['id']}")
+        click.echo(f"Name:        {res['name']}")
+        click.echo(f"Description: {res['description']}")
+        click.echo(f"Created:     {res['created_timestamp']}")
+        click.echo(f"Updated:     {res['updated_timestamp']}")
+
+
+# --- willdelete command group ---
+
+
+@cli.group()
+def willdelete() -> None:
+    """Temporary commands for OpenAPI processing development."""
+
+
+@willdelete.command("print")
+@click.argument("openapi_spec", type=click.Path(exists=False))
+@click.argument("route")
+@click.argument("method")
+@click.option(
+    "--content-type",
+    default="*",
+    help="Content-type for request body (required if multiple exist)",
+)
+def willdelete_print(
+    openapi_spec: str, route: str, method: str, content_type: str
+) -> None:
+    """
+    Print a reduced OpenAPI spec for a target endpoint.
+
+    OPENAPI_SPEC is the path to an OpenAPI specification (JSON or YAML).
+    ROUTE is the path to match (e.g., /items or /items/{id}).
+    METHOD is the HTTP method (e.g., get, post, put, delete).
+    """
+    try:
+        target = TargetSpecifier.create(method, route, content_type)
+    except ValueError as e:
+        raise click.ClickException(str(e))
+
+    try:
+        result = process_target(openapi_spec, target)
+    except (OpenAPILoadError, TargetNotFoundError, AmbiguousContentTypeError) as e:
+        raise click.ClickException(str(e))
+
+    click.echo(json.dumps(result.to_dict(), indent=2))

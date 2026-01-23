@@ -3,7 +3,6 @@
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-import re
 import uuid
 
 import pytest
@@ -12,8 +11,7 @@ from globus_sdk import GlobusHTTPResponse
 
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
 
-# Match any Flows service base URL (production or sandbox)
-REGISTERED_APIS_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis")
+from conftest import GET_REGISTERED_API_URL, LIST_REGISTERED_APIS_URL
 
 
 @pytest.fixture
@@ -25,7 +23,7 @@ def test_list_registered_apis_basic(client):
     api_id = str(uuid.uuid4())
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Test API"},
@@ -48,7 +46,7 @@ def test_list_registered_apis_with_filter_roles(client):
     api_id = str(uuid.uuid4())
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Owned API"},
@@ -70,7 +68,7 @@ def test_list_registered_apis_with_filter_roles_string(client):
     api_id = str(uuid.uuid4())
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Viewable API"},
@@ -92,7 +90,7 @@ def test_list_registered_apis_with_per_page(client):
     api_ids = [str(uuid.uuid4()) for _ in range(3)]
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [
                 {"id": api_ids[0], "name": "API One"},
@@ -117,7 +115,7 @@ def test_list_registered_apis_with_marker(client):
     api_id = str(uuid.uuid4())
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Next Page API"},
@@ -140,7 +138,7 @@ def test_list_registered_apis_with_orderby_string(client):
     api_ids = [str(uuid.uuid4()) for _ in range(2)]
     responses.add(
         responses.GET,
-        REGISTERED_APIS_URL,
+        LIST_REGISTERED_APIS_URL,
         json={
             "registered_apis": [
                 {"id": api_ids[0], "name": "Alpha API"},
@@ -158,3 +156,26 @@ def test_list_registered_apis_with_orderby_string(client):
     assert len(response["registered_apis"]) == 2
     assert response["registered_apis"][0]["name"] == "Alpha API"
     assert response["registered_apis"][1]["name"] == "Beta API"
+
+
+def test_get_registered_api(client):
+    api_id = uuid.uuid4()
+    responses.add(
+        responses.GET,
+        GET_REGISTERED_API_URL,
+        json={
+            "id": str(api_id),
+            "name": "Test API",
+            "description": "A test API",
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T00:00:00+00:00",
+        },
+    )
+
+    response = client.get_registered_api(api_id)
+
+    assert isinstance(response, GlobusHTTPResponse)
+    assert response["id"] == str(api_id)
+    assert response["name"] == "Test API"
+    assert response["description"] == "A test API"
+    assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
