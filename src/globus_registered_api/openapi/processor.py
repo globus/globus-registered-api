@@ -19,10 +19,10 @@ from typing import Any
 
 import openapi_pydantic as oa
 
+from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.openapi.reducer import OpenAPITarget
 from globus_registered_api.openapi.reducer import reduce_to_target
-from globus_registered_api.openapi.selector import TargetSpecifier
 from globus_registered_api.openapi.selector import find_target
 
 
