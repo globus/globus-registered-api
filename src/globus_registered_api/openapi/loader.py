@@ -63,16 +63,16 @@ def _load_local_schema(path: str | Path) -> dict[str, t.Any]:
 
 
 
-def _load_schema_content(content: str, suffix: str | Path) -> dict[str, t.Any]:
+def _load_schema_content(content: str, suffix: str) -> dict[str, t.Any]:
     match suffix.lower():
         case ".json":
             try:
-                return json.loads(content)
+                return json.loads(content)  # type: ignore[no-any-return]
             except json.JSONDecodeError as e:
                 raise OpenAPILoadError(f"Failed to parse JSON: {e}") from e
         case ".yaml" | ".yml":
             try:
-                return yaml.safe_load(content)
+                return yaml.safe_load(content)  # type: ignore[no-any-return]
             except yaml.YAMLError as e:
                 raise OpenAPILoadError(f"Failed to parse YAML: {e}") from e
         case _:

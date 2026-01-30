@@ -19,7 +19,7 @@ class _GlobusAuthSecurityScheme(oa.SecurityScheme):
     def __init__(self, config: RegisteredApiConfig, environment: str) -> None:
         auth_url = globus_sdk.config.get_service_url("auth", environment=environment)
         scopes = {
-            str(scope): scope_config.get("description", "")
+            str(scope): scope_config.get("description") or ""
             for scope, scope_config in config["globus_auth"]["scopes"].items()
         }
 
@@ -64,8 +64,10 @@ class _GlobusAuthSecurityScheme(oa.SecurityScheme):
             if oval != sval:
                 raise ValueError(f"'{key}': {oval} != {sval}.")
 
-        if missing_scopes := (scode.scopes.keys() - ocode.scopes.keys()):
-            raise ValueError(f"Missing scopes in security scheme: {missing_scopes}.")
+        oscopes, sscopes = ocode.scopes, scode.scopes
+        if oscopes and sscopes:
+            if missing := (sscopes.keys() - oscopes.keys()):
+                raise ValueError(f"Missing scopes in security scheme: {missing}.")
 
 
 class InjectDefaultSecuritySchemas(SchemaMutation):
