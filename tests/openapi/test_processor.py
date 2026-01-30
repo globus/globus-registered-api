@@ -78,5 +78,5 @@ def test_process_target_with_invalid_route_raises_target_not_found(spec_path):
     target = TargetSpecifier.create("get", "/nonexistent")
 
     # Act & Assert
-    with pytest.raises(TargetNotFoundError, match="^Route not found: /nonexistent$"):
+    with pytest.raises(TargetNotFoundError, match="^Route not found: '/nonexistent'"):
         process_target(spec_path("minimal.json"), target)

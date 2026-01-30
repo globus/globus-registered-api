@@ -50,16 +50,26 @@ def find_target(
     # Find matching path
     matched_path = _find_matching_path(spec, target.path)
     if matched_path is None or spec.paths is None:
-        raise TargetNotFoundError(f"Route not found: {target.path}")
+        msg = f"Route not found: '{target.path}'."
+        if spec.paths:
+            available_routes = "\n  ".join(sorted(spec.paths.keys()))
+            msg += f"\n Available routes:\n  {available_routes}"
+
+        raise TargetNotFoundError(msg)
 
     path_item = spec.paths[matched_path]
 
     # Get operation for method
-    operation = _get_operation_for_method(path_item, method)
-    if operation is None:
-        raise TargetNotFoundError(
-            f"Method '{target.method}' not found for route '{matched_path}'"
-        )
+    method_map = _operation_method_map(path_item)
+    if (operation := method_map.get(method, None)) is None:
+        msg = f"Method '{target.method}' not found for route '{matched_path}'."
+        if method_map:
+            available_methods = ", ".join(
+                m.upper() for m, op in method_map.items() if op is not None
+            )
+            msg += f"\n Available methods:\n  {available_methods}"
+
+        raise TargetNotFoundError(msg)
 
     # Resolve content type
     resolved_content_type = _resolve_content_type(operation, target.content_type)
@@ -94,11 +104,9 @@ def _find_matching_path(spec: oa.OpenAPI, route: str) -> str | None:
     return None
 
 
-def _get_operation_for_method(
-    path_item: oa.PathItem, method: str
-) -> oa.Operation | None:
-    """Get the operation for a given HTTP method from a path item."""
-    method_map = {
+def _operation_method_map(path_item: oa.PathItem) -> dict[str, oa.Operation | None]:
+    """ Map HTTP methods to their corresponding operations in a PathItem."""
+    return {
         "get": path_item.get,
         "put": path_item.put,
         "post": path_item.post,
@@ -108,7 +116,6 @@ def _get_operation_for_method(
         "patch": path_item.patch,
         "trace": path_item.trace,
     }
-    return method_map.get(method)
 
 
 def _resolve_content_type(

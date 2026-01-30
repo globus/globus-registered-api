@@ -75,7 +75,7 @@ def test_willdelete_print_with_invalid_route_shows_error(cli_runner, spec_path):
 
     # Assert
     assert result.exit_code != 0
-    assert "Route not found: /nonexistent" in result.output
+    assert "Route not found: '/nonexistent'" in result.output
 
 
 def test_willdelete_print_with_invalid_method_shows_error(cli_runner, spec_path):

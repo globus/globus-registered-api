@@ -93,7 +93,7 @@ def test_find_target_with_nonexistent_route_raises_error(spec_path):
     target = TargetSpecifier.create("get", "/nonexistent")
 
     # Act & Assert
-    with pytest.raises(TargetNotFoundError, match="^Route not found: /nonexistent$"):
+    with pytest.raises(TargetNotFoundError, match="^Route not found: '/nonexistent'"):
         find_target(spec, target)
 
 
@@ -104,7 +104,7 @@ def test_find_target_with_nonexistent_method_raises_error(spec_path):
 
     # Act & Assert
     with pytest.raises(
-        TargetNotFoundError, match="^Method 'DELETE' not found for route '/items'$"
+        TargetNotFoundError, match="^Method 'DELETE' not found for route '/items'"
     ):
         find_target(spec, target)
 
