@@ -19,7 +19,7 @@ test:
 
 # Type check the project with mypy.
 mypy:
-    MYPYPATH=./src tox -e mypy-py3.12
+    tox -e mypy-py3.12 -- ./src
 
 # Rebuild the project's documentation locally (at ./`build`).
 docs:
