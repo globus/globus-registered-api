@@ -17,6 +17,10 @@ install:
 test:
 	tox run -m testsuite
 
+# Type check the project with mypy.
+mypy:
+    tox -e mypy-py3.12 -- ./src
+
 # Rebuild the project's documentation locally (at ./`build`).
 docs:
     tox -e docs
