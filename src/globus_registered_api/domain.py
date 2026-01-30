@@ -9,11 +9,7 @@ import re
 import typing as t
 from dataclasses import dataclass
 
-import attrs
-
-
-
-_HTTP_METHODS = ("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "TRACE", "OPTIONS")
+HTTP_METHODS = ("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "TRACE", "OPTIONS")
 HTTPMethod = t.Literal[
     "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "TRACE", "OPTIONS"
 ]
@@ -27,35 +23,91 @@ _TARGET_SPECIFIER_REGEX = re.compile(
 def _uppercase(v: str) -> str:
     return v.upper()
 
-@attrs.define(frozen=True, eq=True)
-# @dataclass(frozen=True, eq=True)
+@dataclass(frozen=True, eq=True)
 class TargetSpecifier:
-    # An HTTP method, uppercased.
-    method: HTTPMethod = attrs.field(
-        converter=_uppercase,
-        validator=attrs.validators.in_(_HTTP_METHODS)
-    )
+    """
+    Identifies a target operation in an OpenAPI spec.
 
-    # An operation path, starting with a leading slash.
+    Combines HTTP method, path, and optional content-type into a single
+    immutable identifier. Methods are stored uppercase (canonical form).
+
+    Both ``path`` and ``content_type`` support fnmatch-style pattern matching:
+
+    - ``*`` matches everything
+    - ``?`` matches any single character
+    - ``[seq]`` matches any character in seq
+    - ``[!seq]`` matches any character not in seq
+
+    Examples:
+        - ``/items/*`` matches ``/items/{id}``
+        - ``/item?`` matches ``/items``
+        - ``application/*`` matches ``application/json`` or ``application/xml``
+
+    :param method: HTTP method (stored uppercase).
+    :param path: Path to match. Supports fnmatch patterns.
+    :param content_type: Content-type for request body. Supports fnmatch patterns.
+        Defaults to ``"*"`` which matches any content-type.
+    """
+
+    method: HTTPMethod
     path: str
+    content_type: str = "*"
 
-    # Optional Content-Type specifier.
-    # Currently unused.
-    content_type: str | None = attrs.field(default=None)
+    def __post_init__(self) -> None:
+        if self.method not in HTTP_METHODS:
+            raise ValueError(
+                f"Invalid HTTP method: {self.method}. "
+                f"Must be one of: {', '.join(HTTP_METHODS)}"
+            )
+        if not self.path.startswith("/"):
+            raise ValueError(f"Path must start with '/': {self.path}")
+
+    @classmethod
+    def create(
+        cls,
+        method: str,
+        path: str,
+        content_type: str = "*",
+    ) -> TargetSpecifier:
+        """
+        Create a TargetSpecifier with method normalization.
+
+        :param method: HTTP method (case-insensitive)
+        :param path: Operation path (must start with /)
+        :param content_type: Content-type for request body (default: "*")
+        :return: TargetSpecifier with uppercase method
+        """
+        return cls(
+            method=t.cast(HTTPMethod, method.upper()),
+            path=path,
+            content_type=content_type,
+        )
 
     @classmethod
     def load(cls, value: str) -> TargetSpecifier:
         """
-        Load a TargetSpecifier string in the form "METHOD /path [content-type]".
+        Parse a TargetSpecifier from string format.
+
+        Format: "METHOD /path [content-type]"
+
+        Examples:
+            - "GET /items"
+            - "POST /items application/json"
+            - "PUT /items/{id} application/json"
+
+        :param value: String in the format "METHOD /path [content-type]"
+        :return: Parsed TargetSpecifier
+        :raises ValueError: If the string format is invalid
         """
-        if (match := _TARGET_SPECIFIER_REGEX.match(value)) is None:
+        match = _TARGET_SPECIFIER_REGEX.match(value)
+        if match is None:
             raise ValueError(
                 f"Invalid TargetSpecifier string: {value!r}. "
                 "Expected format: 'METHOD /path [content-type]'"
             )
 
-        return cls(
+        return cls.create(
             method=match.group("method"),
             path=match.group("path"),
-            content_type=match.group("content_type"),
+            content_type=match.group("content_type") or "*",
         )

@@ -5,7 +5,7 @@
 
 import pytest
 
-from globus_registered_api.openapi import TargetSpecifier
+from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.openapi.selector import find_target
 from globus_registered_api.openapi.reducer import reduce_to_target

@@ -56,7 +56,7 @@ def test_load_openapi_spec_with_components_returns_parsed_components(spec_path):
 
 def test_load_openapi_spec_with_nonexistent_file_raises_error(spec_path):
     # Act & Assert
-    with pytest.raises(OpenAPILoadError, match="^File not found:"):
+    with pytest.raises(OpenAPILoadError, match="^Failed to read file:"):
         load_openapi_spec(spec_path("nonexistent.json"))
 
 
@@ -83,7 +83,7 @@ def test_load_openapi_spec_with_invalid_openapi_structure_raises_error(temp_spec
     path = temp_spec_file("invalid_structure.json", '{"not": "a valid openapi spec"}')
 
     # Act & Assert
-    with pytest.raises(OpenAPILoadError, match="^Invalid OpenAPI specification:"):
+    with pytest.raises(OpenAPILoadError, match="^Malformed OpenAPI specification"):
         load_openapi_spec(path)
 
 

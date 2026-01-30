@@ -8,13 +8,15 @@ import typing as t
 import pytest
 from globus_sdk import Scope
 
-from globus_registered_api.aperture_science import OpenApiEnrichmentCenter
+import openapi_pydantic as oa
+
 from globus_registered_api.config import RegisteredApiConfig
+from globus_registered_api.openapi.mutations import OpenAPIMutator
 
 
 @pytest.fixture
-def basic_openapi_schema() -> dict[str, t.Any]:
-    return {
+def basic_openapi_schema() -> oa.OpenAPI:
+    schema = {
         "openapi": "3.1.0",
         "info": {"title": "Minimal API", "version": "1.0.0"},
         "paths": {
@@ -24,8 +26,9 @@ def basic_openapi_schema() -> dict[str, t.Any]:
             }
         },
     }
+    return oa.OpenAPI.model_validate(schema)
 
-def test_enricher_inserts_targeted_scopes(basic_openapi_schema):
+def test_mutation_inserts_targeted_scopes(basic_openapi_schema):
     config: RegisteredApiConfig = {
         "globus_auth": {
             "scopes": {
@@ -41,18 +44,19 @@ def test_enricher_inserts_targeted_scopes(basic_openapi_schema):
         }
     }
 
-    enricher = OpenApiEnrichmentCenter(config)
-    enriched = enricher.enrich(basic_openapi_schema)
+    mutator = OpenAPIMutator(config, "production")
+    mutated = mutator.mutate(basic_openapi_schema)
 
-    assert enriched["components"]["securitySchemes"]["GlobusAuth"]["type"] == "oauth2"
+    assert mutated.components.securitySchemes["GlobusAuth"].type == "oauth2"
 
-    get_security = enriched["paths"]["/example"]["get"]["security"]
-    post_security = enriched["paths"]["/example"]["post"]["security"]
+    get_security = mutated.paths["/example"].get.security
+    post_security = mutated.paths["/example"].post.security
+
     assert get_security == [{"GlobusAuth": ["my_service:read"]}]
     assert post_security == [{"GlobusAuth": ["my_service:write"]}]
 
 
-def test_enricher_inserts_all_scopes(basic_openapi_schema):
+def test_mutation_inserts_all_scopes(basic_openapi_schema):
     config: RegisteredApiConfig = {
         "globus_auth": {
             "scopes": {
@@ -64,18 +68,19 @@ def test_enricher_inserts_all_scopes(basic_openapi_schema):
         }
     }
 
-    enricher = OpenApiEnrichmentCenter(config)
-    enriched = enricher.enrich(basic_openapi_schema)
+    mutator = OpenAPIMutator(config, "production")
+    mutated = mutator.mutate(basic_openapi_schema)
 
-    assert enriched["components"]["securitySchemes"]["GlobusAuth"]["type"] == "oauth2"
+    assert mutated.components.securitySchemes["GlobusAuth"].type == "oauth2"
 
-    get_security = enriched["paths"]["/example"]["get"]["security"]
+    get_security = mutated.paths["/example"].get.security
+    post_security = mutated.paths["/example"].post.security
+
     assert get_security == [{"GlobusAuth": ["my_service:all"]}]
-    post_security = enriched["paths"]["/example"]["post"]["security"]
     assert post_security == [{"GlobusAuth": ["my_service:all"]}]
 
 
-def test_enricher_combines_all_and_targeted_scopes(basic_openapi_schema):
+def test_mutation_combines_all_and_targeted_scopes(basic_openapi_schema):
     config: RegisteredApiConfig = {
         "globus_auth": {
             "scopes": {
@@ -91,15 +96,17 @@ def test_enricher_combines_all_and_targeted_scopes(basic_openapi_schema):
         }
     }
 
-    enricher = OpenApiEnrichmentCenter(config)
-    enriched = enricher.enrich(basic_openapi_schema)
+    mutator = OpenAPIMutator(config, "production")
+    mutated = mutator.mutate(basic_openapi_schema)
 
-    assert enriched["components"]["securitySchemes"]["GlobusAuth"]["type"] == "oauth2"
+    assert mutated.components.securitySchemes["GlobusAuth"].type == "oauth2"
 
-    get_security = enriched["paths"]["/example"]["get"]["security"]
-    post_security = enriched["paths"]["/example"]["post"]["security"]
+    get_security = mutated.paths["/example"].get.security
+    post_security = mutated.paths["/example"].post.security
+
     assert get_security == [
-        {"GlobusAuth": ["my_service:all"]}, {"GlobusAuth": ["my_service:read"]}
+        {"GlobusAuth": ["my_service:all"]},
+        {"GlobusAuth": ["my_service:read"]},
     ]
     assert post_security == [{"GlobusAuth": ["my_service:all"]}]
 

@@ -5,7 +5,7 @@
 
 import pytest
 
-from globus_registered_api.openapi import TargetSpecifier
+from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.openapi.selector import find_target
 from globus_registered_api.openapi.selector import TargetNotFoundError
@@ -26,8 +26,8 @@ def test_find_target_with_exact_route_returns_target_info(spec_path):
 
     # Assert
     assert isinstance(result, TargetInfo)
-    assert result.specifier.path == "/items"
-    assert result.specifier.method == "GET"
+    assert result.matched_target.path == "/items"
+    assert result.matched_target.method == "GET"
     assert result.operation.summary == "List items"
 
 
@@ -40,7 +40,7 @@ def test_find_target_with_post_method_returns_correct_operation(spec_path):
     result = find_target(spec, target)
 
     # Assert
-    assert result.specifier.method == "POST"
+    assert result.matched_target.method == "POST"
     assert result.operation.summary == "Create item"
 
 
@@ -53,7 +53,7 @@ def test_find_target_with_path_parameter_returns_target(spec_path):
     result = find_target(spec, target)
 
     # Assert
-    assert result.specifier.path == "/items/{id}"
+    assert result.matched_target.path == "/items/{id}"
     assert result.operation.summary == "Get item by ID"
 
 
@@ -69,7 +69,7 @@ def test_find_target_with_wildcard_route_matches(spec_path):
     result = find_target(spec, target)
 
     # Assert
-    assert result.specifier.path == "/items/{id}"
+    assert result.matched_target.path == "/items/{id}"
 
 
 def test_find_target_with_question_mark_wildcard_matches(spec_path):
@@ -81,7 +81,7 @@ def test_find_target_with_question_mark_wildcard_matches(spec_path):
     result = find_target(spec, target)
 
     # Assert
-    assert result.specifier.path == "/items"
+    assert result.matched_target.path == "/items"
 
 
 # --- Error cases ---
@@ -121,7 +121,7 @@ def test_find_target_with_single_content_type_auto_selects(spec_path):
     result = find_target(spec, target)
 
     # Assert
-    assert result.specifier.content_type == "application/json"
+    assert result.matched_target.content_type == "application/json"
 
 
 def test_find_target_with_explicit_content_type_selects_it(spec_path):
@@ -133,7 +133,7 @@ def test_find_target_with_explicit_content_type_selects_it(spec_path):
     result = find_target(spec, target)
 
     # Assert
-    assert result.specifier.content_type == "application/xml"
+    assert result.matched_target.content_type == "application/xml"
 
 
 def test_find_target_with_wildcard_content_type_matching_multiple_raises_error(spec_path):
@@ -186,7 +186,7 @@ def test_find_target_without_request_body_preserves_default_content_type(spec_pa
     result = find_target(spec, target)
 
     # Assert - no request body, content_type unchanged
-    assert result.specifier.content_type == "*"
+    assert result.matched_target.content_type == "*"
 
 
 def test_find_target_without_request_body_preserves_explicit_content_type(spec_path):
@@ -198,7 +198,7 @@ def test_find_target_without_request_body_preserves_explicit_content_type(spec_p
     result = find_target(spec, target)
 
     # Assert - no request body, content_type unchanged
-    assert result.specifier.content_type == "application/json"
+    assert result.matched_target.content_type == "application/json"
 
 
 # --- Case insensitivity ---
@@ -213,4 +213,4 @@ def test_find_target_method_is_case_insensitive(spec_path):
     result = find_target(spec, target)
 
     # Assert
-    assert result.specifier.method == "GET"
+    assert result.matched_target.method == "GET"

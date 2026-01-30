@@ -116,7 +116,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:search"
             ]
           }
@@ -159,7 +163,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:search"
             ]
           }
@@ -204,7 +212,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:search"
             ]
           }
@@ -249,7 +261,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:ingest"
             ]
           }
@@ -285,7 +301,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:ingest"
             ]
           }
@@ -321,7 +341,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:ingest"
             ]
           }
@@ -389,7 +413,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:search"
             ]
           }
@@ -432,7 +460,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:ingest"
             ]
           }
@@ -475,7 +507,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:ingest"
             ]
           }
@@ -531,7 +567,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:ingest"
             ]
           }
@@ -861,7 +901,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:ingest"
             ]
           }
@@ -917,7 +961,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:search"
             ]
           }
@@ -961,7 +1009,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:ingest"
             ]
           }
@@ -1006,7 +1058,11 @@
         "security": [
           {
             "GlobusAuth": [
-              "urn:globus:auth:scope:search.api.globus.org:all",
+              "urn:globus:auth:scope:search.api.globus.org:all"
+            ]
+          },
+          {
+            "GlobusAuth": [
               "urn:globus:auth:scope:search.api.globus.org:ingest"
             ]
           }
@@ -1108,9 +1164,9 @@
   },
   "info": {
     "title": "Globus Search",
-    "version": "1.45.2"
+    "version": "1.45.4"
   },
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "components": {
     "schemas": {
       "ResultEntry": {

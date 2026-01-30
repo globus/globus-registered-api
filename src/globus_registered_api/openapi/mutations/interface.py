@@ -5,7 +5,10 @@
 
 import typing as t
 
+import openapi_pydantic as oa
+
+
 class SchemaMutation(t.Protocol):
 
-    def mutate(self, openapi_schema: dict[str, t.Any]) -> None:
+    def mutate(self, openapi_schema: oa.OpenAPI) -> None:
         ...

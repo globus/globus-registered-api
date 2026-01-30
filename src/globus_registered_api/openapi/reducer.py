@@ -29,7 +29,7 @@ class OpenAPITarget:
             "type": "openapi",
             "openapi_version": "3.1",
             "destination": self.destination,
-            "specification": self.operation.model_dump(exclude_none=True),
+            "specification": self.operation.model_dump(by_alias=True, exclude_none=True),
             "transforms": self.transforms,
         }
 
@@ -67,10 +67,10 @@ def _build_destination(spec: oa.OpenAPI, target: TargetInfo) -> dict[str, str]:
     if spec.servers and len(spec.servers) > 0:
         base_url = spec.servers[0].url.rstrip("/")
 
-    url = f"{base_url}{target.specifier.path}"
+    url = f"{base_url}{target.matched_target.path}"
 
     return {
-        "method": target.specifier.method.lower(),
+        "method": target.matched_target.method.lower(),
         "url": url,
     }
 
@@ -88,7 +88,7 @@ def _collect_components(
         return None
 
     # Find all $ref strings in the operation
-    operation_dict = operation.model_dump(exclude_none=True)
+    operation_dict = operation.model_dump(by_alias=True, exclude_none=True)
     refs = _find_all_refs(operation_dict)
 
     if not refs:
@@ -113,7 +113,7 @@ def _collect_components(
             continue
 
         schema = spec.components.schemas[schema_name]
-        schema_dict = schema.model_dump(exclude_none=True)
+        schema_dict = schema.model_dump(by_alias=True, exclude_none=True)
         collected_schemas[schema_name] = schema_dict
 
         # Find transitive refs in this schema

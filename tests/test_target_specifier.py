@@ -5,7 +5,7 @@
 
 import pytest
 
-from globus_registered_api.openapi import TargetSpecifier
+from globus_registered_api.domain import TargetSpecifier
 
 
 def test_target_specifier_create_normalizes_method_to_uppercase():

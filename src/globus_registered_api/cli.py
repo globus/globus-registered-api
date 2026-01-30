@@ -21,14 +21,15 @@ from globus_sdk import GlobusAppConfig
 from globus_sdk import Scope
 from globus_sdk import UserApp
 
+from globus_registered_api.domain import TargetSpecifier, HTTP_METHODS
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
-from globus_registered_api.aperture_science import OpenApiEnrichmentCenter
-from globus_registered_api.loader import load_openapi_schema
+from globus_registered_api.openapi.loader import load_openapi_spec
+from globus_registered_api.openapi.mutations import OpenAPIMutator
+from globus_registered_api.schema_diff import diff_schema
 from globus_registered_api.services import SERVICE_CONFIGS
 from globus_registered_api.openapi import AmbiguousContentTypeError
 from globus_registered_api.openapi import OpenAPILoadError
 from globus_registered_api.openapi import TargetNotFoundError
-from globus_registered_api.openapi import TargetSpecifier
 from globus_registered_api.openapi import process_target
 
 # Constants
@@ -214,93 +215,6 @@ def list_registered_apis(
                 click.echo(f"{api['id']} | {api['name']}")
 
 
-@cli.command()
-@click.argument("service_name", type=click.Choice(["search", "groups"]))
-def enrich_known(service_name: str) -> None:
-    """
-    Enrich a service's openapi schema with registered-api associated information.
-
-    To be "known" a service must have a distinct config in the `services` module.
-    """
-    if service_name not in SERVICE_CONFIGS:
-        raise click.ClickException(f"Service '{service_name}' is not a known service.")
-    config = SERVICE_CONFIGS[service_name]
-
-    orig_schema = load_openapi_schema(config["openapi_uri"])
-    enriched_schema = OpenApiEnrichmentCenter(config).enrich(orig_schema)
-
-    schema_diff = _diff(orig_schema, enriched_schema)
-
-    click.echo(schema_diff)
-
-
-def _diff(orig_schema: dict[str, t.Any], enriched_schema: dict[str, t.Any]) -> str:
-    """ Produce a minimized diff between two OpenAPI schemas. """
-
-    left = json.dumps(orig_schema, indent=2).splitlines(keepends=True)
-    right = json.dumps(enriched_schema, indent=2).splitlines(keepends=True)
-
-    diff_lines = list(Differ().compare(left, right))
-    return "".join(_minimize_diff_lines(diff_lines))
-
-
-def _minimize_diff_lines(lines: list[str]) -> t.Iterator[str]:
-    """
-    Minimize diff lines, yielding a generator of lines that should be shown.
-
-    Lines will be printed if they:
-        1. Have a "+ " or "- " prefix (indicating addition or removal)
-        2. Are contextually useful are parents of added/removed lines.
-    """
-
-    ranges = _compute_diff_index_ranges(lines)
-
-    for range_idx, (start, end) in enumerate(ranges):
-        prev = ranges[range_idx - 1] if range_idx > 0 else (0, 0)
-
-        context_lines: list[str] = []
-        if start > 0:
-            # Add lines of parent elements, identified by indentation changes.
-            indent_level = _compute_indent_level(lines[start])
-            for idx in reversed(range(prev[1] + 1, start)):
-                new_level = _compute_indent_level(lines[idx])
-                if new_level < indent_level:
-                    context_lines.append(lines[idx])
-                    indent_level = new_level
-
-        for line in reversed(context_lines):
-            yield line
-        for idx in range(start, end + 1):
-            yield lines[idx]
-
-
-def _compute_diff_index_ranges(lines: t.Iterable[str]) -> list[tuple[int, int]]:
-    ranges: list[tuple[int, int]] = []
-    current_range: None | tuple[int, int] = None
-
-    for idx, line in enumerate(lines):
-        if not line.startswith("  "):
-            # Line is "important" (addition, removal)
-            if current_range is None:
-                # Create a new range
-                current_range = idx, idx
-            else:
-                # Extend the current range
-                current_range = (current_range[0], idx)
-
-        else:
-            # Line is not "important"
-            if current_range is not None:
-                ranges.append(current_range)
-                current_range = None
-
-    if current_range is not None:
-        ranges.append(current_range)
-    return ranges
-
-def _compute_indent_level(line: str) -> int:
-    return len(line[1:]) - len(line[1:].lstrip())
-
 @cli.command("get")
 @click.argument("registered_api_id")
 @click.option("--format", type=click.Choice(["json", "text"]), default="text")
@@ -333,25 +247,27 @@ def get_registered_api(
 def willdelete() -> None:
     """Temporary commands for OpenAPI processing development."""
 
-
-@willdelete.command("print")
+@willdelete.command("print-target")
 @click.argument("openapi_spec", type=click.Path(exists=False))
+@click.argument("method", type=click.Choice(HTTP_METHODS, case_sensitive=False))
 @click.argument("route")
-@click.argument("method")
 @click.option(
     "--content-type",
     default="*",
-    help="Content-type for request body (required if multiple exist)",
+    help="Target content-type for request body (required if multiple exist)",
 )
-def willdelete_print(
-    openapi_spec: str, route: str, method: str, content_type: str
+def willdelete_print_target(
+    openapi_spec: str,
+    method: str,
+    route: str,
+    content_type: str,
 ) -> None:
     """
-    Print a reduced OpenAPI spec for a target endpoint.
+    Print a target api, narrowed from a supplied full OpenAPI spec.
 
-    OPENAPI_SPEC is the path to an OpenAPI specification (JSON or YAML).
-    ROUTE is the path to match (e.g., /items or /items/{id}).
-    METHOD is the HTTP method (e.g., get, post, put, delete).
+    OPENAPI_SPEC - A filepath or URL to a OpenAPI specification containing the target (JSON or YAML).
+    ROUTE - Target API's route path (e.g., /items or /items/{item_id}).
+    METHOD - Target API's HTTP method (e.g., get, post, put, delete).
     """
     try:
         target = TargetSpecifier.create(method, route, content_type)
@@ -364,3 +280,69 @@ def willdelete_print(
         raise click.ClickException(str(e))
 
     click.echo(json.dumps(result.to_dict(), indent=2))
+
+
+@willdelete.command("print-service-target")
+@click.argument(
+    "service_name",
+    metavar="SERVICE_NAME",
+    type=click.Choice(SERVICE_CONFIGS.keys()),
+)
+@click.argument(
+    "method",
+    metavar="METHOD",
+    type=click.Choice(HTTP_METHODS, case_sensitive=False),
+)
+@click.argument("route")
+@click.option(
+    "--content-type",
+    default="*",
+    help="Target content-type for request body (required if multiple exist)",
+)
+@click.option(
+    "--environment",
+    type=click.Choice(["sandbox", "integration", "test", "preview", "staging", "production"]),
+    default="production",
+)
+@click.option(
+    "--diff-only",
+    is_flag=True,
+    default=False,
+    help="Print only the enrichments performed on the target.",
+)
+def willdelete_print_service_target(
+    service_name: str,
+    method: str,
+    route: str,
+    content_type: str,
+    environment: str,
+    diff_only: bool,
+) -> None:
+    """
+    Print a uniquely matched api target from a registered service's OpenAPI spec.
+
+    SERVICE_NAME - A known service with a registered config.
+    ROUTE - Target API's route path (e.g., /items or /items/{item_id}).
+    METHOD - Target API's HTTP method (e.g., get, post, put, delete).
+    """
+    config = SERVICE_CONFIGS[service_name]
+
+    try:
+        target = TargetSpecifier.create(method, route, content_type)
+    except ValueError as e:
+        raise click.ClickException(str(e))
+
+    try:
+        orig_schema = load_openapi_spec(config["openapi_uri"])
+        enriched_schema = OpenAPIMutator(config, environment).mutate(orig_schema)
+
+        enriched_target = process_target(enriched_schema, target)
+
+        if diff_only:
+            orig_target = process_target(orig_schema, target)
+            click.echo(diff_schema(orig_target.to_dict(), enriched_target.to_dict()))
+        else:
+            click.echo(json.dumps(enriched_target.to_dict(), indent=2))
+
+    except (OpenAPILoadError, TargetNotFoundError, AmbiguousContentTypeError) as e:
+        raise click.ClickException(str(e))

@@ -5,7 +5,7 @@
 
 import pytest
 
-from globus_registered_api.openapi import TargetSpecifier
+from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi import OpenAPILoadError
 from globus_registered_api.openapi import TargetNotFoundError
 from globus_registered_api.openapi import process_target
@@ -69,7 +69,7 @@ def test_process_target_with_invalid_path_raises_load_error():
     target = TargetSpecifier.create("get", "/items")
 
     # Act & Assert
-    with pytest.raises(OpenAPILoadError, match="^File not found:"):
+    with pytest.raises(OpenAPILoadError, match="^Failed to read file:"):
         process_target("/nonexistent/path.json", target)
 
 
