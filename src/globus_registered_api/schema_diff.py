@@ -24,7 +24,7 @@ def _minimize_diff_lines(lines: list[str]) -> t.Iterator[str]:
 
     Lines will be printed if they:
         1. Have a "+ " or "- " prefix (indicating addition or removal)
-        2. Are contextually useful are parents of added/removed lines.
+       2. Are contextually useful as parents of added/removed lines.
     """
 
     ranges = _compute_diff_index_ranges(lines)
