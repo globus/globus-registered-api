@@ -10,7 +10,7 @@ from globus_sdk import Scope
 
 import openapi_pydantic as oa
 
-from globus_registered_api.config import RegisteredApiConfig
+from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.openapi.enchricher import OpenAPIEnricher
 
 
@@ -29,7 +29,7 @@ def basic_openapi_schema() -> oa.OpenAPI:
     return oa.OpenAPI.model_validate(schema)
 
 def test_mutation_inserts_targeted_scopes(basic_openapi_schema):
-    config: RegisteredApiConfig = {
+    config: RegisteredAPIConfig = {
         "globus_auth": {
             "scopes": {
                 Scope("my_service:read"): {
@@ -57,7 +57,7 @@ def test_mutation_inserts_targeted_scopes(basic_openapi_schema):
 
 
 def test_mutation_inserts_all_scopes(basic_openapi_schema):
-    config: RegisteredApiConfig = {
+    config: RegisteredAPIConfig = {
         "globus_auth": {
             "scopes": {
                 Scope("my_service:all"): {
@@ -81,7 +81,7 @@ def test_mutation_inserts_all_scopes(basic_openapi_schema):
 
 
 def test_mutation_combines_all_and_targeted_scopes(basic_openapi_schema):
-    config: RegisteredApiConfig = {
+    config: RegisteredAPIConfig = {
         "globus_auth": {
             "scopes": {
                 Scope("my_service:all"): {

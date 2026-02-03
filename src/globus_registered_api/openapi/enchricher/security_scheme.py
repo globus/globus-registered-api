@@ -10,13 +10,13 @@ import typing as t
 import openapi_pydantic as oa
 
 from globus_registered_api.openapi.enchricher.interface import SchemaMutation
-from globus_registered_api.config import RegisteredApiConfig
+from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.domain import TargetSpecifier, HTTP_METHODS
 
 
 class _GlobusAuthSecurityScheme(oa.SecurityScheme):
 
-    def __init__(self, config: RegisteredApiConfig, environment: str) -> None:
+    def __init__(self, config: RegisteredAPIConfig, environment: str) -> None:
         auth_url = globus_sdk.config.get_service_url("auth", environment=environment)
         scopes = {
             str(scope): scope_config.get("description") or ""
@@ -79,7 +79,7 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
         *   Operation-level "GlobusAuth" security requirements with configured scopes.
     """
 
-    def __init__(self, config: RegisteredApiConfig, environment: str) -> None:
+    def __init__(self, config: RegisteredAPIConfig, environment: str) -> None:
         self._security_scheme = _GlobusAuthSecurityScheme(config, environment)
 
         self._wildcard_scopes: list[Scope] = []

@@ -7,10 +7,10 @@ from pathlib import Path
 
 from globus_sdk.scopes import SearchScopes
 
-from globus_registered_api.config import RegisteredApiConfig
+from globus_registered_api.config import RegisteredAPIConfig
 
 
-SEARCH_CONFIG: RegisteredApiConfig = {
+SEARCH_CONFIG: RegisteredAPIConfig = {
     # Temporarily load the OpenAPI spec from a local file.
     # This file was obtained from https://search.api.globus.org/openapi.json but
     #    but modified to document itself a 3.1.0 instead of 3.0.3.

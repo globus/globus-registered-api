@@ -5,9 +5,9 @@
 
 from globus_sdk.scopes import GroupsScopes
 
-from globus_registered_api.config import RegisteredApiConfig
+from globus_registered_api.config import RegisteredAPIConfig
 
-GROUPS_CONFIG: RegisteredApiConfig = {
+GROUPS_CONFIG: RegisteredAPIConfig = {
     # Load the OpenAPI spec from the service-hosted URI
     "openapi_uri": "https://groups.api.globus.org/openapi.json",
     "globus_auth": {

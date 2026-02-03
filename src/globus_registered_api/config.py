@@ -10,7 +10,7 @@ import typing as t
 from globus_sdk import Scope
 
 
-class RegisteredApiConfig(t.TypedDict, total=False):
+class RegisteredAPIConfig(t.TypedDict, total=False):
     openapi_uri: str
     globus_auth: GlobusAuthConfig
 
