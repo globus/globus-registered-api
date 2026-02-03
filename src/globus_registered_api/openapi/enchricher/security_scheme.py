@@ -34,7 +34,7 @@ class _GlobusAuthSecurityScheme(oa.SecurityScheme):
             )
         )
 
-    def assert_contained_in(self, other: t.Any) -> None:
+    def verify_contained_in(self, other: t.Any) -> None:
         """
         Confirm that `other` contains this security scheme.
 
@@ -99,15 +99,15 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
 
 
     def mutate(self, schema: oa.OpenAPI) -> None:
-        self._validate_components(schema)
+        self._validate_and_update_components(schema)
 
         for path_str, path in (schema.paths or {}).items():
             for method in HTTP_METHODS:
                 if operation := getattr(path, method.lower(), None):
-                    self._validate_operation(path_str, method, operation)
+                    self._validate_and_update_operation(path_str, method, operation)
 
 
-    def _validate_components(self, schema: oa.OpenAPI) -> None:
+    def _validate_and_update_components(self, schema: oa.OpenAPI) -> None:
         """
         Ensure the components security sufficiently defines the GlobusAuth scheme:
 
@@ -136,14 +136,14 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
 
         if existing_scheme := security_schemes.get("GlobusAuth", None):
             # If the scheme already exists, ensure it matches our expected config.
-            self._security_scheme.assert_contained_in(existing_scheme)
+            self._security_scheme.verify_contained_in(existing_scheme)
 
         else:
             # If it doesn't exist, insert it.
             security_schemes["GlobusAuth"] = self._security_scheme
 
 
-    def _validate_operation(
+    def _validate_and_update_operation(
         self, path: str, method: str, operation: oa.Operation,
     ) -> None:
         """
