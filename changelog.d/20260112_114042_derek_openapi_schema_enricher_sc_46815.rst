@@ -10,7 +10,7 @@ Development
 Added
 -----
 
-*   Added a new command, `willdelete print-service-target` which prints a target from
+*   Added a new command, ``willdelete print-service-target``, which prints a target from
     a registered service's config whose schema has been "enriched".
 
 *   Added service config registration for globus-search and globus-groups.
