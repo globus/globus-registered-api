@@ -2,7 +2,7 @@
 # https://github.com/globusonline/globus-registered-api
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
-
+import globus_sdk.config
 import openapi_pydantic as oa
 import pytest
 from globus_sdk import Scope
@@ -26,7 +26,7 @@ def basic_openapi_schema() -> oa.OpenAPI:
     return oa.OpenAPI.model_validate(schema)
 
 
-def test_mutation_inserts_targeted_scopes(basic_openapi_schema):
+def test_enrichment_inserts_targeted_scopes(basic_openapi_schema):
     config: RegisteredAPIConfig = {
         "globus_auth": {
             "scopes": {
@@ -54,7 +54,7 @@ def test_mutation_inserts_targeted_scopes(basic_openapi_schema):
     assert post_security == [{"GlobusAuth": ["my_service:write"]}]
 
 
-def test_mutation_inserts_all_scopes(basic_openapi_schema):
+def test_enrichment_inserts_all_scopes(basic_openapi_schema):
     config: RegisteredAPIConfig = {
         "globus_auth": {
             "scopes": {
@@ -77,8 +77,12 @@ def test_mutation_inserts_all_scopes(basic_openapi_schema):
     assert get_security == [{"GlobusAuth": ["my_service:all"]}]
     assert post_security == [{"GlobusAuth": ["my_service:all"]}]
 
+    # Ensure we don't insert a new, previously undefined method to a path just because
+    #   we have a wildcard scope.
+    assert enriched.paths["/example"].patch is None
 
-def test_mutation_combines_all_and_targeted_scopes(basic_openapi_schema):
+
+def test_enrichment_combines_all_and_targeted_scopes(basic_openapi_schema):
     config: RegisteredAPIConfig = {
         "globus_auth": {
             "scopes": {
@@ -107,3 +111,34 @@ def test_mutation_combines_all_and_targeted_scopes(basic_openapi_schema):
         {"GlobusAuth": ["my_service:read"]},
     ]
     assert post_security == [{"GlobusAuth": ["my_service:all"]}]
+
+
+@pytest.mark.parametrize(
+    "environment",
+    ("sandbox", "integration", "test", "preview", "staging", "production"),
+)
+def test_enrichment_inserts_the_proper_environment_auth_url(
+    basic_openapi_schema,
+    environment,
+):
+    config: RegisteredAPIConfig = {
+        "globus_auth": {
+            "scopes": {
+                Scope("my_service:read"): {
+                    "description": "Read access to My Service",
+                    "targets": ["get /example"],
+                },
+            }
+        }
+    }
+
+    enricher = OpenAPIEnricher(config, environment)
+    enriched = enricher.enrich(basic_openapi_schema)
+
+    auth_url = globus_sdk.config.get_service_url("auth", environment)
+
+    security_scheme = enriched.components.securitySchemes["GlobusAuth"]
+    authorization_code_flow = security_scheme.flows.authorizationCode
+
+    assert authorization_code_flow.authorizationUrl == f"{auth_url}v2/oauth2/authorize"
+    assert authorization_code_flow.tokenUrl == f"{auth_url}v2/oauth2/token"
