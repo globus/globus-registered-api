@@ -6,11 +6,9 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Iterable
-import typing as t
 
 import json
 import os
-from difflib import Differ
 
 import click
 from globus_sdk import AuthClient
