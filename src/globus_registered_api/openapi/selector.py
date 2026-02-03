@@ -105,7 +105,7 @@ def _find_matching_path(spec: oa.OpenAPI, route: str) -> str | None:
 
 
 def _operation_method_map(path_item: oa.PathItem) -> dict[str, oa.Operation | None]:
-    """ Map HTTP methods to their corresponding operations in a PathItem."""
+    """Map HTTP methods to their corresponding operations in a PathItem."""
     return {
         "get": path_item.get,
         "put": path_item.put,
