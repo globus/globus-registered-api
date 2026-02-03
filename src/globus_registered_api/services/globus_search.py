@@ -14,7 +14,7 @@ SEARCH_CONFIG: RegisteredAPIConfig = {
     # This file was obtained from https://search.api.globus.org/openapi.json but
     #    but modified to document itself a 3.1.0 instead of 3.0.3.
     "openapi_uri": str(
-        Path(__file__).parent / "specifications" / "search.openapi.json"
+        Path(__file__).parent / "specifications" / "2025.02.03.search.openapi.json"
     ),
     "globus_auth": {
         "scopes": {
