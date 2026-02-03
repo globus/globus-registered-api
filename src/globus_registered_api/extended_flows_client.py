@@ -79,3 +79,48 @@ class ExtendedFlowsClient(FlowsClient):
         :return: Response containing the registered API details
         """
         return self.get(f"/registered_apis/{registered_api_id}")
+
+    def update_registered_api(
+        self,
+        registered_api_id: str | uuid.UUID,
+        *,
+        name: str | None = None,
+        description: str | None = None,
+        owners: list[str] | None = None,
+        administrators: list[str] | None = None,
+        viewers: list[str] | None = None,
+        target: dict[str, t.Any] | None = None,
+    ) -> GlobusHTTPResponse:
+        """
+        Update a registered API by ID.
+
+        :param registered_api_id: The ID of the registered API to update
+        :param name: New name for the registered API
+        :param description: New description for the registered API
+        :param owners: List of owner URNs (replaces existing owners)
+        :param administrators: List of administrator URNs (replaces existing)
+        :param viewers: List of viewer URNs (replaces existing)
+        :param target: Target definition dict
+        :return: Response containing the updated registered API
+        """
+        body: dict[str, t.Any] = {}
+
+        if name is not None:
+            body["name"] = name
+        if description is not None:
+            body["description"] = description
+
+        roles = _filter_nones(
+            {
+                "owners": owners,
+                "administrators": administrators,
+                "viewers": viewers,
+            }
+        )
+        if roles:
+            body["roles"] = roles
+
+        if target is not None:
+            body["target"] = target
+
+        return self.patch(f"/registered_apis/{registered_api_id}", data=body)
