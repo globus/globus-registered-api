@@ -19,7 +19,7 @@ Added
 Changed
 -------
 
-*   Changed `willdelete print` to `willdelete print-target`
+*   Changed ``willdelete print`` to ``willdelete print-target``
 
     *   Updated the ordering of the `ROUTE` and `METHOD` arguments.
     *   New order: `willdelete print-target <METHOD> <ROUTE>`
