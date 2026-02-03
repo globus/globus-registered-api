@@ -3,8 +3,6 @@
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-import typing as t
-
 import openapi_pydantic as oa
 import pytest
 from globus_sdk import Scope

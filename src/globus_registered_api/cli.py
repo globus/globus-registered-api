@@ -262,7 +262,8 @@ def willdelete_print_target(
     """
     Print a target api, narrowed from a supplied full OpenAPI spec.
 
-    OPENAPI_SPEC - A filepath or URL to a OpenAPI specification containing the target (JSON or YAML).
+    OPENAPI_SPEC - A filepath or URL to a OpenAPI specification containing the target
+        (JSON or YAML).
     ROUTE - Target API's route path (e.g., /items or /items/{item_id}).
     METHOD - Target API's HTTP method (e.g., get, post, put, delete).
     """

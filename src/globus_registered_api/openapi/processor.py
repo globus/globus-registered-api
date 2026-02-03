@@ -11,11 +11,11 @@ by coordinating loader, selector, and reducer components.
 """
 
 from __future__ import annotations
+import typing as t
 
 from dataclasses import dataclass
 from dataclasses import field
 from pathlib import Path
-from typing import Any
 
 import openapi_pydantic as oa
 
@@ -33,7 +33,7 @@ class ProcessingResult:
     target: OpenAPITarget
     warnings: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, t.Any]:
         """Convert to the format expected by POST /registered_api."""
         return self.target.to_dict()
 

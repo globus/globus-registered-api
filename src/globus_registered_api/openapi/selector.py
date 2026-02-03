@@ -41,7 +41,7 @@ def find_target(
     :param target: The target specifier (method, path, optional content-type)
     :return: Information about the matched target
     :raises TargetNotFoundError: If the route or method is not found
-    :raises AmbiguousContentTypeError: If multiple content types exist and none specified
+    :raises AmbiguousContentTypeError: If many content types exist but none is specified
     """
     # Convert to lowercase for OpenAPI spec lookup
     method = target.method.lower()

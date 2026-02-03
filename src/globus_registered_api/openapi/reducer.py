@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
+import typing as t
 import re
 from dataclasses import dataclass
-from typing import Any
 
 import openapi_pydantic as oa
 
@@ -20,12 +20,12 @@ class OpenAPITarget:
 
     operation: oa.Operation
     destination: dict[str, str]
-    components: dict[str, Any] | None = None
-    transforms: dict[str, Any] | None = None
+    components: dict[str, t.Any] | None = None
+    transforms: dict[str, t.Any] | None = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, t.Any]:
         """Convert to the format expected by POST /registered_api."""
-        result: dict[str, Any] = {
+        result: dict[str, t.Any] = {
             "type": "openapi",
             "openapi_version": "3.1",
             "destination": self.destination,
@@ -79,7 +79,7 @@ def _build_destination(spec: oa.OpenAPI, target: TargetInfo) -> dict[str, str]:
 
 def _collect_components(
     spec: oa.OpenAPI, operation: oa.Operation
-) -> dict[str, Any] | None:
+) -> dict[str, t.Any] | None:
     """
     Collect all components referenced by an operation.
 
@@ -97,7 +97,7 @@ def _collect_components(
         return None
 
     # Collect schemas for each ref
-    collected_schemas: dict[str, Any] = {}
+    collected_schemas: dict[str, t.Any] = {}
     schemas_to_process = set(refs)
     processed_refs: set[str] = set()
 
@@ -130,7 +130,7 @@ def _collect_components(
     return {"schemas": collected_schemas}
 
 
-def _find_all_refs(obj: Any) -> set[str]:
+def _find_all_refs(obj: t.Any) -> set[str]:
     """Recursively find all $ref strings in a nested dict/list structure."""
     refs: set[str] = set()
 

@@ -108,7 +108,6 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
         """
         Ensure the components security sufficiently defines the GlobusAuth scheme:
 
-        // editorconfig-checker-disable
         ```yaml
         components:
           securitySchemes:
@@ -122,7 +121,6 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
                     resource:all: Full access to the resource.
                     resource:read: Read-only access to the resource.
         ```
-        // editorconfig-checker-enable
 
         If the scheme already exists, it is validated.
         Otherwise, it is inserted.
@@ -151,7 +149,6 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
         Ensure every operation has the configured security scopes defined as
         isolated security requirements in the form:
 
-        // editorconfig-checker-disable
         ```yaml
         /my-resource:
           get:
@@ -159,7 +156,6 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
               - GlobusAuth: ["resource:all"]
               - GlobusAuth: ["resource:read"]
         ```
-        // editorconfig-checker-enable
 
         Any missing scopes are inserted automatically.
         """

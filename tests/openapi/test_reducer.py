@@ -3,8 +3,6 @@
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-
 from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.openapi.reducer import OpenAPITarget
