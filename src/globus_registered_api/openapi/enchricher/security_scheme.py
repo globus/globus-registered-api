@@ -9,7 +9,7 @@ import typing as t
 
 import openapi_pydantic as oa
 
-from globus_registered_api.openapi.mutations.interface import SchemaMutation
+from globus_registered_api.openapi.enchricher.interface import SchemaMutation
 from globus_registered_api.config import RegisteredApiConfig
 from globus_registered_api.domain import TargetSpecifier, HTTP_METHODS
 

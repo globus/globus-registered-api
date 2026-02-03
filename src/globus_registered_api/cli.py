@@ -24,7 +24,7 @@ from globus_sdk import UserApp
 from globus_registered_api.domain import TargetSpecifier, HTTP_METHODS
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
 from globus_registered_api.openapi.loader import load_openapi_spec
-from globus_registered_api.openapi.mutations import OpenAPIMutator
+from globus_registered_api.openapi.enchricher import OpenAPIEnricher
 from globus_registered_api.schema_diff import diff_schema
 from globus_registered_api.services import SERVICE_CONFIGS
 from globus_registered_api.openapi import AmbiguousContentTypeError
@@ -334,7 +334,7 @@ def willdelete_print_service_target(
 
     try:
         orig_schema = load_openapi_spec(config["openapi_uri"])
-        enriched_schema = OpenAPIMutator(config, environment).mutate(orig_schema)
+        enriched_schema = OpenAPIEnricher(config, environment).enrich(orig_schema)
 
         enriched_target = process_target(enriched_schema, target)
 

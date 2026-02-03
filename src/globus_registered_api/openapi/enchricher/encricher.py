@@ -12,9 +12,9 @@ from .security_scheme import InjectDefaultSecuritySchemas
 from globus_registered_api.config import RegisteredApiConfig
 
 
-class OpenAPIMutator:
+class OpenAPIEnricher:
     """
-    An OpenApi schema mutator.
+    An OpenAPI schema enricher.
 
     Applies a series of configured mutations, preparing it for use as an isolated
     RegisteredApi.
@@ -26,7 +26,7 @@ class OpenAPIMutator:
         ]
 
 
-    def mutate(self, schema: oa.OpenAPI) -> oa.OpenAPI:
+    def enrich(self, schema: oa.OpenAPI) -> oa.OpenAPI:
         """
         Enrich the provided OpenAPI schema.
         The supplied schema will not be changed.

@@ -11,7 +11,7 @@ from globus_sdk import Scope
 import openapi_pydantic as oa
 
 from globus_registered_api.config import RegisteredApiConfig
-from globus_registered_api.openapi.mutations import OpenAPIMutator
+from globus_registered_api.openapi.enchricher import OpenAPIEnricher
 
 
 @pytest.fixture
@@ -44,13 +44,13 @@ def test_mutation_inserts_targeted_scopes(basic_openapi_schema):
         }
     }
 
-    mutator = OpenAPIMutator(config, "production")
-    mutated = mutator.mutate(basic_openapi_schema)
+    enricher = OpenAPIEnricher(config, "production")
+    enriched = enricher.enrich(basic_openapi_schema)
 
-    assert mutated.components.securitySchemes["GlobusAuth"].type == "oauth2"
+    assert enriched.components.securitySchemes["GlobusAuth"].type == "oauth2"
 
-    get_security = mutated.paths["/example"].get.security
-    post_security = mutated.paths["/example"].post.security
+    get_security = enriched.paths["/example"].get.security
+    post_security = enriched.paths["/example"].post.security
 
     assert get_security == [{"GlobusAuth": ["my_service:read"]}]
     assert post_security == [{"GlobusAuth": ["my_service:write"]}]
@@ -68,13 +68,13 @@ def test_mutation_inserts_all_scopes(basic_openapi_schema):
         }
     }
 
-    mutator = OpenAPIMutator(config, "production")
-    mutated = mutator.mutate(basic_openapi_schema)
+    enricher = OpenAPIEnricher(config, "production")
+    enriched = enricher.enrich(basic_openapi_schema)
 
-    assert mutated.components.securitySchemes["GlobusAuth"].type == "oauth2"
+    assert enriched.components.securitySchemes["GlobusAuth"].type == "oauth2"
 
-    get_security = mutated.paths["/example"].get.security
-    post_security = mutated.paths["/example"].post.security
+    get_security = enriched.paths["/example"].get.security
+    post_security = enriched.paths["/example"].post.security
 
     assert get_security == [{"GlobusAuth": ["my_service:all"]}]
     assert post_security == [{"GlobusAuth": ["my_service:all"]}]
@@ -96,13 +96,13 @@ def test_mutation_combines_all_and_targeted_scopes(basic_openapi_schema):
         }
     }
 
-    mutator = OpenAPIMutator(config, "production")
-    mutated = mutator.mutate(basic_openapi_schema)
+    enricher = OpenAPIEnricher(config, "production")
+    enriched = enricher.enrich(basic_openapi_schema)
 
-    assert mutated.components.securitySchemes["GlobusAuth"].type == "oauth2"
+    assert enriched.components.securitySchemes["GlobusAuth"].type == "oauth2"
 
-    get_security = mutated.paths["/example"].get.security
-    post_security = mutated.paths["/example"].post.security
+    get_security = enriched.paths["/example"].get.security
+    post_security = enriched.paths["/example"].post.security
 
     assert get_security == [
         {"GlobusAuth": ["my_service:all"]},

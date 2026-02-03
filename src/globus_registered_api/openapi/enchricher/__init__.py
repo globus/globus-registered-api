@@ -1,8 +1,8 @@
 
-from .mutator import OpenAPIMutator
+from .encricher import OpenAPIEnricher
 from .interface import SchemaMutation
 
 __all__ = (
-    "OpenAPIMutator",
+    "OpenAPIEnricher",
     "SchemaMutation",
 )
