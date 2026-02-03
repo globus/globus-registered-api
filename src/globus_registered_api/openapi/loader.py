@@ -38,7 +38,7 @@ def load_openapi_spec(path: str | Path) -> oa.OpenAPI:
     try:
         return oa.OpenAPI.model_validate(data)
     except ValidationError as e:
-        raise OpenAPILoadError(f"Malformed OpenAPI specification") from e
+        raise OpenAPILoadError("Malformed OpenAPI specification") from e
 
 
 def _load_http_schema(uri: str) -> dict[str, t.Any]:
