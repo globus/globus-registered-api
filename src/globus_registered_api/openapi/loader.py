@@ -43,7 +43,7 @@ def load_openapi_spec(path: str | Path) -> oa.OpenAPI:
 
 def _load_http_schema(uri: str) -> dict[str, t.Any]:
     try:
-        resp = requests.get(uri)
+        resp = requests.get(uri, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as e:
         raise OpenAPILoadError(f"Failed to fetch schema from URL: {uri}") from e
