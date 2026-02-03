@@ -19,10 +19,6 @@ _TARGET_SPECIFIER_REGEX = re.compile(
     r"^(?P<method>[A-Za-z]+)\s+(?P<path>/\S+)(\s+(?P<content_type>\S+))?$"
 )
 
-
-def _uppercase(v: str) -> str:
-    return v.upper()
-
 @dataclass(frozen=True, eq=True)
 class TargetSpecifier:
     """
