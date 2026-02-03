@@ -1,6 +1,5 @@
-import typing as t
-
 import json
+import typing as t
 from difflib import Differ
 
 
@@ -42,8 +41,7 @@ def _minimize_diff_lines(lines: list[str]) -> t.Iterator[str]:
                     context_lines.append(lines[idx])
                     indent_level = new_level
 
-        for line in reversed(context_lines):
-            yield line
+        yield from reversed(context_lines)
         for idx in range(start, end + 1):
             yield lines[idx]
 
@@ -71,6 +69,7 @@ def _compute_diff_index_ranges(lines: t.Iterable[str]) -> list[tuple[int, int]]:
     if current_range is not None:
         ranges.append(current_range)
     return ranges
+
 
 def _compute_indent_level(line: str) -> int:
     return len(line[1:]) - len(line[1:].lstrip())

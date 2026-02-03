@@ -9,7 +9,6 @@ from globus_sdk.scopes import SearchScopes
 
 from globus_registered_api.config import RegisteredAPIConfig
 
-
 SEARCH_CONFIG: RegisteredAPIConfig = {
     # Temporarily load the OpenAPI spec from a local file.
     # This file was obtained from https://search.api.globus.org/openapi.json but
@@ -42,7 +41,7 @@ SEARCH_CONFIG: RegisteredAPIConfig = {
                     "POST /v1/index/{index_id}/entry",
                     "PUT /v1/index/{index_id}/entry",
                     "DELETE /v1/index/{index_id}/entry",
-                ]
+                ],
             },
             SearchScopes.search: {
                 "description": (
@@ -54,9 +53,9 @@ SEARCH_CONFIG: RegisteredAPIConfig = {
                     "GET /v1/index/{index_id}/search",
                     "POST /v1/index/{index_id}/search",
                     "POST /v1/index/{index_id}/scroll",
-                    "GET /v1/index/{index_id}/entry"
-                ]
-            }
+                    "GET /v1/index/{index_id}/entry",
+                ],
+            },
         }
-    }
+    },
 }

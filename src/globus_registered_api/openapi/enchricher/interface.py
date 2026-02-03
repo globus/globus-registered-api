@@ -10,5 +10,4 @@ import openapi_pydantic as oa
 
 class SchemaMutation(t.Protocol):
 
-    def mutate(self, openapi_schema: oa.OpenAPI) -> None:
-        ...
+    def mutate(self, openapi_schema: oa.OpenAPI) -> None: ...

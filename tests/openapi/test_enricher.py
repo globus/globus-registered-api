@@ -5,10 +5,9 @@
 
 import typing as t
 
+import openapi_pydantic as oa
 import pytest
 from globus_sdk import Scope
-
-import openapi_pydantic as oa
 
 from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.openapi.enchricher import OpenAPIEnricher
@@ -27,6 +26,7 @@ def basic_openapi_schema() -> oa.OpenAPI:
         },
     }
     return oa.OpenAPI.model_validate(schema)
+
 
 def test_mutation_inserts_targeted_scopes(basic_openapi_schema):
     config: RegisteredAPIConfig = {
@@ -109,4 +109,3 @@ def test_mutation_combines_all_and_targeted_scopes(basic_openapi_schema):
         {"GlobusAuth": ["my_service:read"]},
     ]
     assert post_security == [{"GlobusAuth": ["my_service:all"]}]
-

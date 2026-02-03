@@ -2,16 +2,16 @@
 # https://github.com/globusonline/globus-registered-api
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
-import globus_sdk.config
-from globus_sdk import Scope
-
 import typing as t
 
+import globus_sdk.config
 import openapi_pydantic as oa
+from globus_sdk import Scope
 
-from globus_registered_api.openapi.enchricher.interface import SchemaMutation
 from globus_registered_api.config import RegisteredAPIConfig
-from globus_registered_api.domain import TargetSpecifier, HTTP_METHODS
+from globus_registered_api.domain import HTTP_METHODS
+from globus_registered_api.domain import TargetSpecifier
+from globus_registered_api.openapi.enchricher.interface import SchemaMutation
 
 
 class _GlobusAuthSecurityScheme(oa.SecurityScheme):
@@ -31,7 +31,7 @@ class _GlobusAuthSecurityScheme(oa.SecurityScheme):
                     tokenUrl=f"{auth_url}v2/oauth2/token",
                     scopes=scopes,
                 )
-            )
+            ),
         )
 
     def verify_contained_in(self, other: t.Any) -> None:
@@ -49,7 +49,6 @@ class _GlobusAuthSecurityScheme(oa.SecurityScheme):
 
         if self.type != other.type:
             raise ValueError(f"Security scheme mismatch: {self.type} != {other.type}.")
-
 
         oflows, sflows = other.flows, self.flows
         if oflows is None or sflows is None:
@@ -97,7 +96,6 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
                 specifier = TargetSpecifier.load(target)
                 self._target_specifier_scopes.setdefault(specifier, []).append(scope)
 
-
     def mutate(self, schema: oa.OpenAPI) -> None:
         self._validate_and_update_components(schema)
 
@@ -106,11 +104,11 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
                 if operation := getattr(path, method.lower(), None):
                     self._validate_and_update_operation(path_str, method, operation)
 
-
     def _validate_and_update_components(self, schema: oa.OpenAPI) -> None:
         """
         Ensure the components security sufficiently defines the GlobusAuth scheme:
 
+        // editorconfig-checker-disable
         ```yaml
         components:
           securitySchemes:
@@ -124,6 +122,7 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
                     resource:all: Full access to the resource.
                     resource:read: Read-only access to the resource.
         ```
+        // editorconfig-checker-enable
 
         If the scheme already exists, it is validated.
         Otherwise, it is inserted.
@@ -142,14 +141,17 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
             # If it doesn't exist, insert it.
             security_schemes["GlobusAuth"] = self._security_scheme
 
-
     def _validate_and_update_operation(
-        self, path: str, method: str, operation: oa.Operation,
+        self,
+        path: str,
+        method: str,
+        operation: oa.Operation,
     ) -> None:
         """
         Ensure every operation has the configured security scopes defined as
         isolated security requirements in the form:
 
+        // editorconfig-checker-disable
         ```yaml
         /my-resource:
           get:
@@ -157,6 +159,7 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
               - GlobusAuth: ["resource:all"]
               - GlobusAuth: ["resource:read"]
         ```
+        // editorconfig-checker-enable
 
         Any missing scopes are inserted automatically.
         """

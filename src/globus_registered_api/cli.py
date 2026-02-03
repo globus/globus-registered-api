@@ -4,11 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-import sys
-from collections.abc import Iterable
-
 import json
 import os
+import sys
+from collections.abc import Iterable
 
 import click
 from globus_sdk import AuthClient
@@ -19,16 +18,17 @@ from globus_sdk import GlobusAppConfig
 from globus_sdk import Scope
 from globus_sdk import UserApp
 
-from globus_registered_api.domain import TargetSpecifier, HTTP_METHODS
+from globus_registered_api.domain import HTTP_METHODS
+from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
-from globus_registered_api.openapi.loader import load_openapi_spec
-from globus_registered_api.openapi.enchricher import OpenAPIEnricher
-from globus_registered_api.schema_diff import diff_schema
-from globus_registered_api.services import SERVICE_CONFIGS
 from globus_registered_api.openapi import AmbiguousContentTypeError
 from globus_registered_api.openapi import OpenAPILoadError
 from globus_registered_api.openapi import TargetNotFoundError
 from globus_registered_api.openapi import process_target
+from globus_registered_api.openapi.enchricher import OpenAPIEnricher
+from globus_registered_api.openapi.loader import load_openapi_spec
+from globus_registered_api.schema_diff import diff_schema
+from globus_registered_api.services import SERVICE_CONFIGS
 
 # Constants
 RAPI_NATIVE_CLIENT_ID = "9dc7dfff-cfe8-4339-927b-28d29e1b2f42"
@@ -217,9 +217,7 @@ def list_registered_apis(
 @click.argument("registered_api_id")
 @click.option("--format", type=click.Choice(["json", "text"]), default="text")
 @click.pass_context
-def get_registered_api(
-    ctx: click.Context, registered_api_id: str, format: str
-) -> None:
+def get_registered_api(ctx: click.Context, registered_api_id: str, format: str) -> None:
     """
     Get a registered API by ID.
     """
@@ -244,6 +242,7 @@ def get_registered_api(
 @cli.group()
 def willdelete() -> None:
     """Temporary commands for OpenAPI processing development."""
+
 
 @willdelete.command("print-target")
 @click.argument("openapi_spec", type=click.Path(exists=False))
@@ -299,7 +298,9 @@ def willdelete_print_target(
 )
 @click.option(
     "--environment",
-    type=click.Choice(["sandbox", "integration", "test", "preview", "staging", "production"]),
+    type=click.Choice(
+        ["sandbox", "integration", "test", "preview", "staging", "production"]
+    ),
     default="production",
 )
 @click.option(

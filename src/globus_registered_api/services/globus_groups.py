@@ -20,8 +20,8 @@ GROUPS_CONFIG: RegisteredAPIConfig = {
                 "description": "View your groups and memberships",
                 "targets": [
                     "GET /v2/groups/my_groups",
-                ]
-            }
+                ],
+            },
         }
-    }
+    },
 }

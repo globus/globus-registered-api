@@ -48,7 +48,7 @@ def _load_http_schema(uri: str) -> dict[str, t.Any]:
     except requests.RequestException as e:
         raise OpenAPILoadError(f"Failed to fetch schema from URL: {uri}") from e
 
-    suffix = uri[uri.rfind("."):].lower()
+    suffix = uri[uri.rfind(".") :].lower()
     return _load_schema_content(resp.text, suffix)
 
 
@@ -60,7 +60,6 @@ def _load_local_schema(path: str | Path) -> dict[str, t.Any]:
         raise OpenAPILoadError(f"Failed to read file: {path}") from e
 
     return _load_schema_content(content, path.suffix)
-
 
 
 def _load_schema_content(content: str, suffix: str) -> dict[str, t.Any]:

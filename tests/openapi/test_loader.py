@@ -6,8 +6,8 @@
 import openapi_pydantic as oa
 import pytest
 
-from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.openapi.loader import OpenAPILoadError
+from globus_registered_api.openapi.loader import load_openapi_spec
 
 
 def test_load_openapi_spec_from_json_file_returns_openapi_object(spec_path):

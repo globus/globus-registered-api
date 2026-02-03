@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from globus_registered_api.openapi.loader import OpenAPILoadError
-from globus_registered_api.openapi.processor import process_target
 from globus_registered_api.openapi.processor import ProcessingResult
+from globus_registered_api.openapi.processor import process_target
 from globus_registered_api.openapi.selector import AmbiguousContentTypeError
 from globus_registered_api.openapi.selector import TargetNotFoundError
 

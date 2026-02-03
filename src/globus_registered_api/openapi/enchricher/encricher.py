@@ -7,9 +7,10 @@ import typing as t
 
 import openapi_pydantic as oa
 
+from globus_registered_api.config import RegisteredAPIConfig
+
 from .interface import SchemaMutation
 from .security_scheme import InjectDefaultSecuritySchemas
-from globus_registered_api.config import RegisteredAPIConfig
 
 
 class OpenAPIEnricher:
@@ -24,7 +25,6 @@ class OpenAPIEnricher:
         self.mutations: list[SchemaMutation] = [
             InjectDefaultSecuritySchemas(config, environment),
         ]
-
 
     def enrich(self, schema: oa.OpenAPI) -> oa.OpenAPI:
         """
@@ -41,6 +41,3 @@ class OpenAPIEnricher:
             mutation.mutate(mutable_schema)
 
         return mutable_schema
-
-
-

@@ -24,4 +24,3 @@ in which you can interactively write and test changes.
         of a traditional ``Makefile``.
 
         To learn more about ``just``, visit https://just.systems/man/en/.
-

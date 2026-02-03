@@ -21,7 +21,6 @@ class AmbiguousContentTypeError(Exception):
     """Raised when multiple content types match and none was specified."""
 
 
-
 @dataclass
 class TargetInfo:
     """Information about a matched target in an OpenAPI spec."""

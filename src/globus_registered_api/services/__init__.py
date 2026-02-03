@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from ..config import RegisteredAPIConfig
 from .globus_groups import GROUPS_CONFIG
 from .globus_search import SEARCH_CONFIG
-from ..config import RegisteredAPIConfig
 
 SERVICE_CONFIGS: dict[str, RegisteredAPIConfig] = {
     "search": SEARCH_CONFIG,

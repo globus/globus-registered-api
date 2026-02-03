@@ -1,4 +1,3 @@
-
 from .encricher import OpenAPIEnricher
 from .interface import SchemaMutation
 

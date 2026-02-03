@@ -29,7 +29,9 @@ class OpenAPITarget:
             "type": "openapi",
             "openapi_version": "3.1",
             "destination": self.destination,
-            "specification": self.operation.model_dump(by_alias=True, exclude_none=True),
+            "specification": self.operation.model_dump(
+                by_alias=True, exclude_none=True
+            ),
             "transforms": self.transforms,
         }
 

@@ -51,7 +51,7 @@ def test_target_specifier_load_parses_method_and_path():
     # Assert
     assert target.method == "GET"
     assert target.path == "/items"
-    assert target.content_type == "*" # Default content-type
+    assert target.content_type == "*"  # Default content-type
 
 
 def test_target_specifier_load_parses_with_content_type():

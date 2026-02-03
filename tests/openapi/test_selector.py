@@ -7,11 +7,10 @@ import pytest
 
 from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi.loader import load_openapi_spec
-from globus_registered_api.openapi.selector import find_target
-from globus_registered_api.openapi.selector import TargetNotFoundError
 from globus_registered_api.openapi.selector import AmbiguousContentTypeError
 from globus_registered_api.openapi.selector import TargetInfo
-
+from globus_registered_api.openapi.selector import TargetNotFoundError
+from globus_registered_api.openapi.selector import find_target
 
 # --- Exact route matching ---
 
@@ -136,7 +135,9 @@ def test_find_target_with_explicit_content_type_selects_it(spec_path):
     assert result.matched_target.content_type == "application/xml"
 
 
-def test_find_target_with_wildcard_content_type_matching_multiple_raises_error(spec_path):
+def test_find_target_with_wildcard_content_type_matching_multiple_raises_error(
+    spec_path,
+):
     # Arrange
     spec = load_openapi_spec(spec_path("multiple_content_types.json"))
     target = TargetSpecifier.create("post", "/upload", "application/*")
