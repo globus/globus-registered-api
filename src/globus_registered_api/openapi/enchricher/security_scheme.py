@@ -153,8 +153,8 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
         /my-resource:
           get:
             security:
-              - GlobusAuth: ["resource:all"]
               - GlobusAuth: ["resource:read"]
+              - GlobusAuth: ["resource:all"]
         ```
 
         Any missing scopes are inserted automatically.
@@ -168,7 +168,7 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
             if globus_scopes and len(globus_scopes) == 1:
                 registered_scopes.add(globus_scopes[0])
 
-        # Insert any target-specifier matched scopes to the start of the list:
+        # Insert any target-specifier matched scopes to the end of the list:
         #    Given the operation's level of specificity, this ignores content-types.
         for specifier, scopes in self._target_specifier_scopes.items():
             if specifier.path == path and specifier.method == method:
@@ -176,14 +176,14 @@ class InjectDefaultSecuritySchemas(SchemaMutation):
                     scope_str = str(scope)
                     if scope_str not in registered_scopes:
                         registered_scopes.add(scope_str)
-                        security.insert(0, {"GlobusAuth": [scope_str]})
+                        security.append({"GlobusAuth": [scope_str]})
 
-        # Insert any wildcard scopes to the start of the list:
+        # Insert any wildcard scopes to the end of the list:
         for scope in self._wildcard_scopes:
             scope_str = str(scope)
             if scope_str not in registered_scopes:
                 registered_scopes.add(scope_str)
-                security.insert(0, {"GlobusAuth": [scope_str]})
+                security.append({"GlobusAuth": [scope_str]})
 
         if security:
             operation.security = security

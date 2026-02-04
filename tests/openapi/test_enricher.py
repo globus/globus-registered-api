@@ -107,8 +107,8 @@ def test_enrichment_combines_all_and_targeted_scopes(basic_openapi_schema):
     post_security = enriched.paths["/example"].post.security
 
     assert get_security == [
-        {"GlobusAuth": ["my_service:all"]},
         {"GlobusAuth": ["my_service:read"]},
+        {"GlobusAuth": ["my_service:all"]},
     ]
     assert post_security == [{"GlobusAuth": ["my_service:all"]}]
 
