@@ -121,21 +121,32 @@ def test_enrichment_inserts_the_proper_environment_auth_url(
     basic_openapi_schema,
     environment,
 ):
-    config: RegisteredAPIConfig = {
-        "globus_auth": {
-            "scopes": {
-                Scope("my_service:read"): {
-                    "description": "Read access to My Service",
-                    "targets": ["get /example"],
-                },
-            }
-        }
-    }
+    config: RegisteredAPIConfig = {"globus_auth": {"scopes": {}}}
 
     enricher = OpenAPIEnricher(config, environment)
     enriched = enricher.enrich(basic_openapi_schema)
 
     auth_url = globus_sdk.config.get_service_url("auth", environment)
+
+    security_scheme = enriched.components.securitySchemes["GlobusAuth"]
+    authorization_code_flow = security_scheme.flows.authorizationCode
+
+    assert authorization_code_flow.authorizationUrl == f"{auth_url}v2/oauth2/authorize"
+    assert authorization_code_flow.tokenUrl == f"{auth_url}v2/oauth2/token"
+
+
+def test_enrichment_is_unaffected_by_sdk_environment_variable(
+    monkeypatch,
+    basic_openapi_schema
+):
+    """Ensure that the Enricher ignores the conventional Globus SDK environment var."""
+    monkeypatch.setenv("GLOBUS_SDK_ENVIRONMENT", "sandbox")
+    config: RegisteredAPIConfig = {"globus_auth": {"scopes": {}}}
+
+    enricher = OpenAPIEnricher(config, "test")
+    enriched = enricher.enrich(basic_openapi_schema)
+
+    auth_url = globus_sdk.config.get_service_url("auth", "test")
 
     security_scheme = enriched.components.securitySchemes["GlobusAuth"]
     authorization_code_flow = security_scheme.flows.authorizationCode
