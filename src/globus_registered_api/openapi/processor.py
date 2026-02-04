@@ -11,8 +11,8 @@ by coordinating loader, selector, and reducer components.
 """
 
 from __future__ import annotations
-import typing as t
 
+import typing as t
 from dataclasses import dataclass
 from dataclasses import field
 from pathlib import Path

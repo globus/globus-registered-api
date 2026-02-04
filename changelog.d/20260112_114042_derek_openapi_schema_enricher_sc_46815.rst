@@ -23,3 +23,9 @@ Changed
 
     *   Updated the ordering of the ``ROUTE`` and ``METHOD`` arguments.
     *   New order: ``willdelete print-target <METHOD> <ROUTE>``
+
+
+Removed
+-------
+
+*   Removed ``TargetSpecifier`` wildcard matching of routes.

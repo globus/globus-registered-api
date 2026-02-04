@@ -28,20 +28,18 @@ class TargetSpecifier:
     Combines HTTP method, path, and optional content-type into a single
     immutable identifier. Methods are stored uppercase (canonical form).
 
-    Both ``path`` and ``content_type`` support fnmatch-style pattern matching:
+    ``content_type`` support fnmatch-style pattern matching:
 
     - ``*`` matches everything
     - ``?`` matches any single character
     - ``[seq]`` matches any character in seq
     - ``[!seq]`` matches any character not in seq
 
-    Examples:
-        - ``/items/*`` matches ``/items/{id}``
-        - ``/item?`` matches ``/items``
+    Example:
         - ``application/*`` matches ``application/json`` or ``application/xml``
 
     :param method: HTTP method (stored uppercase).
-    :param path: Path to match. Supports fnmatch patterns.
+    :param path: Route Path.
     :param content_type: Content-type for request body. Supports fnmatch patterns.
         Defaults to ``"*"`` which matches any content-type.
     """

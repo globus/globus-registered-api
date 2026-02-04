@@ -47,8 +47,7 @@ def find_target(
     method = target.method.lower()
 
     # Find matching path
-    matched_path = _find_matching_path(spec, target.path)
-    if matched_path is None or spec.paths is None:
+    if spec.paths is None or target.path not in spec.paths:
         msg = f"Route not found: '{target.path}'."
         if spec.paths:
             available_routes = "\n  ".join(sorted(spec.paths.keys()))
@@ -56,12 +55,12 @@ def find_target(
 
         raise TargetNotFoundError(msg)
 
-    path_item = spec.paths[matched_path]
+    path_item = spec.paths[target.path]
 
     # Get operation for method
     method_map = _operation_method_map(path_item)
     if (operation := method_map.get(method, None)) is None:
-        msg = f"Method '{target.method}' not found for route '{matched_path}'."
+        msg = f"Method '{target.method}' not found for route '{target.path}'."
         if method_map:
             available_methods = ", ".join(
                 m.upper() for m, op in method_map.items() if op is not None
@@ -76,7 +75,7 @@ def find_target(
     # Build resolved specifier with actual matched path and content-type
     resolved_specifier = TargetSpecifier(
         method=target.method,
-        path=matched_path,
+        path=target.path,
         content_type=resolved_content_type,
     )
 
@@ -84,23 +83,6 @@ def find_target(
         matched_target=resolved_specifier,
         operation=operation,
     )
-
-
-def _find_matching_path(spec: oa.OpenAPI, route: str) -> str | None:
-    """Find a path in the spec that matches the route pattern."""
-    if spec.paths is None:
-        return None
-
-    # Try exact match first
-    if route in spec.paths:
-        return route
-
-    # Try fnmatch wildcard matching
-    for path in spec.paths:
-        if fnmatch.fnmatch(path, route):
-            return path
-
-    return None
 
 
 def _operation_method_map(path_item: oa.PathItem) -> dict[str, oa.Operation | None]:

@@ -56,33 +56,6 @@ def test_find_target_with_path_parameter_returns_target(spec_path):
     assert result.operation.summary == "Get item by ID"
 
 
-# --- Wildcard route matching ---
-
-
-def test_find_target_with_wildcard_route_matches(spec_path):
-    # Arrange
-    spec = load_openapi_spec(spec_path("with_refs.json"))
-    target = TargetSpecifier.create("get", "/items/*")
-
-    # Act
-    result = find_target(spec, target)
-
-    # Assert
-    assert result.matched_target.path == "/items/{id}"
-
-
-def test_find_target_with_question_mark_wildcard_matches(spec_path):
-    # Arrange
-    spec = load_openapi_spec(spec_path("with_refs.json"))
-    target = TargetSpecifier.create("get", "/item?")
-
-    # Act
-    result = find_target(spec, target)
-
-    # Assert
-    assert result.matched_target.path == "/items"
-
-
 # --- Error cases ---
 
 

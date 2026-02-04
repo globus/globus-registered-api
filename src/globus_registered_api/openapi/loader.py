@@ -62,7 +62,6 @@ def _load_local_schema(path: str | Path) -> dict[str, t.Any]:
     return _load_schema_content(content)
 
 
-
 def _load_schema_content(content: str) -> dict[str, t.Any]:
     """
     Load schema from a content string.
@@ -78,7 +77,7 @@ def _load_schema_content(content: str) -> dict[str, t.Any]:
 
     try:
         return yaml.safe_load(content)  # type: ignore[no-any-return]
-    except yaml.YAMLError as e:
+    except yaml.YAMLError:
         pass
 
     raise OpenAPILoadError("Failed to parse OpenAPI content as JSON or YAML")

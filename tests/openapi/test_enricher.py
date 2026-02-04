@@ -136,8 +136,7 @@ def test_enrichment_inserts_the_proper_environment_auth_url(
 
 
 def test_enrichment_is_unaffected_by_sdk_environment_variable(
-    monkeypatch,
-    basic_openapi_schema
+    monkeypatch, basic_openapi_schema
 ):
     """Ensure that the Enricher ignores the conventional Globus SDK environment var."""
     monkeypatch.setenv("GLOBUS_SDK_ENVIRONMENT", "sandbox")
