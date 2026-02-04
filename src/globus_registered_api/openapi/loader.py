@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import typing as t
 from pathlib import Path
+from urllib.parse import urlparse
 
 import openapi_pydantic as oa
 import requests
@@ -30,7 +31,7 @@ def load_openapi_spec(path: str | Path) -> oa.OpenAPI:
     :return: Parsed OpenAPI specification object
     :raises OpenAPILoadError: If the file cannot be found, parsed, or validated
     """
-    if isinstance(path, str) and path.startswith("http"):
+    if isinstance(path, str) and urlparse(path).scheme in {"http", "https"}:
         data = _load_http_schema(path)
     else:
         data = _load_local_schema(path)
@@ -48,8 +49,7 @@ def _load_http_schema(uri: str) -> dict[str, t.Any]:
     except requests.RequestException as e:
         raise OpenAPILoadError(f"Failed to fetch schema from URL: {uri}") from e
 
-    suffix = uri[uri.rfind(".") :].lower()
-    return _load_schema_content(resp.text, suffix)
+    return _load_schema_content(resp.text)
 
 
 def _load_local_schema(path: str | Path) -> dict[str, t.Any]:
@@ -59,20 +59,26 @@ def _load_local_schema(path: str | Path) -> dict[str, t.Any]:
     except OSError as e:
         raise OpenAPILoadError(f"Failed to read file: {path}") from e
 
-    return _load_schema_content(content, path.suffix)
+    return _load_schema_content(content)
 
 
-def _load_schema_content(content: str, suffix: str) -> dict[str, t.Any]:
-    match suffix.lower():
-        case ".json":
-            try:
-                return json.loads(content)  # type: ignore[no-any-return]
-            except json.JSONDecodeError as e:
-                raise OpenAPILoadError(f"Failed to parse JSON: {e}") from e
-        case ".yaml" | ".yml":
-            try:
-                return yaml.safe_load(content)  # type: ignore[no-any-return]
-            except yaml.YAMLError as e:
-                raise OpenAPILoadError(f"Failed to parse YAML: {e}") from e
-        case _:
-            raise OpenAPILoadError(f"Unsupported file extension: {suffix}")
+
+def _load_schema_content(content: str) -> dict[str, t.Any]:
+    """
+    Load schema from a content string.
+    Loading is first attempted as JSON, then as YAML.
+
+    :raises OpenAPILoadError: if content cannot be parsed as either JSON or YAML.
+    """
+
+    try:
+        return json.loads(content)  # type: ignore[no-any-return]
+    except json.JSONDecodeError:
+        pass
+
+    try:
+        return yaml.safe_load(content)  # type: ignore[no-any-return]
+    except yaml.YAMLError as e:
+        pass
+
+    raise OpenAPILoadError("Failed to parse OpenAPI content as JSON or YAML")

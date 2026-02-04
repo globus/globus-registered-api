@@ -65,7 +65,8 @@ def test_load_openapi_spec_with_invalid_json_raises_error(temp_spec_file):
     path = temp_spec_file("invalid.json", "{invalid json content")
 
     # Act & Assert
-    with pytest.raises(OpenAPILoadError, match="^Failed to parse JSON:"):
+    msg = "^Failed to parse OpenAPI content as JSON or YAML$"
+    with pytest.raises(OpenAPILoadError, match=msg):
         load_openapi_spec(path)
 
 
@@ -74,7 +75,8 @@ def test_load_openapi_spec_with_invalid_yaml_raises_error(temp_spec_file):
     path = temp_spec_file("invalid.yaml", "invalid: yaml: content: [")
 
     # Act & Assert
-    with pytest.raises(OpenAPILoadError, match="^Failed to parse YAML:"):
+    msg = "^Failed to parse OpenAPI content as JSON or YAML$"
+    with pytest.raises(OpenAPILoadError, match=msg):
         load_openapi_spec(path)
 
 
