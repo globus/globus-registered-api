@@ -103,12 +103,13 @@ class ExtendedFlowsClient(FlowsClient):
         :param target: Target definition dict
         :return: Response containing the updated registered API
         """
-        body: dict[str, t.Any] = {}
-
-        if name is not None:
-            body["name"] = name
-        if description is not None:
-            body["description"] = description
+        body: dict[str, t.Any] = _filter_nones(
+            {
+                "name": name,
+                "description": description,
+                "target": target,
+            }
+        )
 
         roles = _filter_nones(
             {
@@ -119,8 +120,5 @@ class ExtendedFlowsClient(FlowsClient):
         )
         if roles:
             body["roles"] = roles
-
-        if target is not None:
-            body["target"] = target
 
         return self.patch(f"/registered_apis/{registered_api_id}", data=body)

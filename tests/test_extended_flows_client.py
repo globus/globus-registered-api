@@ -3,6 +3,7 @@
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import uuid
 
 import pytest
@@ -290,3 +291,32 @@ def test_update_registered_api_with_target(client):
     response = client.update_registered_api(api_id, target=target)
 
     assert response["target"] == target
+
+
+def test_update_registered_api_omitted_params_not_in_request(client):
+    api_id = uuid.uuid4()
+    responses.add(
+        responses.PATCH,
+        UPDATE_REGISTERED_API_URL,
+        json={
+            "id": str(api_id),
+            "name": "Updated Name",
+            "description": "Original description",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+        },
+    )
+
+    client.update_registered_api(api_id, name="Updated Name")
+
+    request_body = json.loads(responses.calls[0].request.body)
+    # Only 'name' should be in the request, not None values for omitted params
+    assert "name" in request_body
+    assert "description" not in request_body
+    assert "target" not in request_body
+    assert "roles" not in request_body

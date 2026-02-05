@@ -21,7 +21,7 @@ def test_update_registered_api_text_format(mock_create_client, cli_runner):
         responses.PATCH,
         UPDATE_REGISTERED_API_URL,
         json={
-            "id": "abc-123-def-456",
+            "id": "12345678-1234-1234-1234-123456789abc",
             "name": "Updated API",
             "description": "Updated description",
             "roles": {
@@ -36,12 +36,12 @@ def test_update_registered_api_text_format(mock_create_client, cli_runner):
 
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
-        ["update", "abc-123-def-456", "--name", "Updated API"],
+        ["update", "12345678-1234-1234-1234-123456789abc", "--name", "Updated API"],
     )
 
     assert result.exit_code == 0
     assert "ID:" in result.output
-    assert "abc-123-def-456" in result.output
+    assert "12345678-1234-1234-1234-123456789abc" in result.output
     assert "Name:" in result.output
     assert "Updated API" in result.output
 
@@ -53,7 +53,7 @@ def test_update_registered_api_json_format(mock_create_client, cli_runner):
         responses.PATCH,
         UPDATE_REGISTERED_API_URL,
         json={
-            "id": "abc-123-def-456",
+            "id": "12345678-1234-1234-1234-123456789abc",
             "name": "Updated API",
             "description": "Updated description",
             "roles": {
@@ -68,11 +68,11 @@ def test_update_registered_api_json_format(mock_create_client, cli_runner):
 
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
-        ["update", "abc-123-def-456", "--name", "Updated API", "--format", "json"],
+        ["update", "12345678-1234-1234-1234-123456789abc", "--name", "Updated API", "--format", "json"],
     )
 
     assert result.exit_code == 0
-    assert '"id": "abc-123-def-456"' in result.output
+    assert '"id": "12345678-1234-1234-1234-123456789abc"' in result.output
     assert '"name": "Updated API"' in result.output
 
 
@@ -136,7 +136,7 @@ def test_update_registered_api_with_description(mock_create_client, cli_runner):
         responses.PATCH,
         UPDATE_REGISTERED_API_URL,
         json={
-            "id": "abc-123",
+            "id": "abcdef12-1234-1234-1234-123456789abc",
             "name": "Test API",
             "description": "New description",
             "roles": {
@@ -151,7 +151,7 @@ def test_update_registered_api_with_description(mock_create_client, cli_runner):
 
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
-        ["update", "abc-123", "--description", "New description"],
+        ["update", "abcdef12-1234-1234-1234-123456789abc", "--description", "New description"],
     )
 
     assert result.exit_code == 0
@@ -165,7 +165,7 @@ def test_update_registered_api_with_owner(mock_create_client, cli_runner):
         responses.PATCH,
         UPDATE_REGISTERED_API_URL,
         json={
-            "id": "abc-123",
+            "id": "abcdef12-1234-1234-1234-123456789abc",
             "name": "Test API",
             "description": "Test",
             "roles": {
@@ -180,7 +180,7 @@ def test_update_registered_api_with_owner(mock_create_client, cli_runner):
 
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
-        ["update", "abc-123", "--owner", "urn:globus:auth:identity:new-owner"],
+        ["update", "abcdef12-1234-1234-1234-123456789abc", "--owner", "urn:globus:auth:identity:new-owner"],
     )
 
     assert result.exit_code == 0
@@ -198,7 +198,7 @@ def test_update_registered_api_with_multiple_owners(
         responses.PATCH,
         UPDATE_REGISTERED_API_URL,
         json={
-            "id": "abc-123",
+            "id": "abcdef12-1234-1234-1234-123456789abc",
             "name": "Test API",
             "description": "Test",
             "roles": {
@@ -218,7 +218,7 @@ def test_update_registered_api_with_multiple_owners(
         globus_registered_api.cli.cli,
         [
             "update",
-            "abc-123",
+            "abcdef12-1234-1234-1234-123456789abc",
             "--owner",
             "urn:globus:auth:identity:user2",
             "--owner",
@@ -245,7 +245,7 @@ def test_update_registered_api_no_viewers_clears_viewers(mock_create_client, cli
         responses.PATCH,
         UPDATE_REGISTERED_API_URL,
         json={
-            "id": "abc-123",
+            "id": "abcdef12-1234-1234-1234-123456789abc",
             "name": "Test API",
             "description": "Test",
             "roles": {
@@ -260,7 +260,7 @@ def test_update_registered_api_no_viewers_clears_viewers(mock_create_client, cli
 
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
-        ["update", "abc-123", "--no-viewers"],
+        ["update", "abcdef12-1234-1234-1234-123456789abc", "--no-viewers"],
     )
 
     assert result.exit_code == 0
@@ -278,7 +278,7 @@ def test_update_registered_api_no_administrators_clears_administrators(
         responses.PATCH,
         UPDATE_REGISTERED_API_URL,
         json={
-            "id": "abc-123",
+            "id": "abcdef12-1234-1234-1234-123456789abc",
             "name": "Test API",
             "description": "Test",
             "roles": {
@@ -293,7 +293,7 @@ def test_update_registered_api_no_administrators_clears_administrators(
 
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
-        ["update", "abc-123", "--no-administrators"],
+        ["update", "abcdef12-1234-1234-1234-123456789abc", "--no-administrators"],
     )
 
     assert result.exit_code == 0
@@ -306,7 +306,7 @@ def test_update_registered_api_viewer_and_no_viewers_mutually_exclusive(cli_runn
         globus_registered_api.cli.cli,
         [
             "update",
-            "abc-123",
+            "abcdef12-1234-1234-1234-123456789abc",
             "--viewer",
             "urn:globus:auth:identity:user1",
             "--no-viewers",
@@ -314,7 +314,7 @@ def test_update_registered_api_viewer_and_no_viewers_mutually_exclusive(cli_runn
     )
 
     assert result.exit_code != 0
-    assert "mutually exclusive" in result.output
+    assert "cannot be used together" in result.output
 
 
 def test_update_registered_api_administrator_and_no_administrators_mutually_exclusive(
@@ -324,7 +324,7 @@ def test_update_registered_api_administrator_and_no_administrators_mutually_excl
         globus_registered_api.cli.cli,
         [
             "update",
-            "abc-123",
+            "abcdef12-1234-1234-1234-123456789abc",
             "--administrator",
             "urn:globus:auth:identity:user1",
             "--no-administrators",
@@ -332,4 +332,4 @@ def test_update_registered_api_administrator_and_no_administrators_mutually_excl
     )
 
     assert result.exit_code != 0
-    assert "mutually exclusive" in result.output
+    assert "cannot be used together" in result.output

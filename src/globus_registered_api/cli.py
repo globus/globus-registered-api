@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import sys
 from collections.abc import Iterable
 from typing import Any
+from uuid import UUID
 
 import click
 from globus_sdk import AuthClient
@@ -238,14 +240,14 @@ def get_registered_api(ctx: click.Context, registered_api_id: str, format: str) 
 
 
 @cli.command("update")
-@click.argument("registered_api_id")
+@click.argument("registered_api_id", type=click.UUID)
 @click.option("--name", help="Update the name of the registered API")
 @click.option("--description", help="Update the description of the registered API")
 @click.option(
     "--owner",
     "owners",
     multiple=True,
-    help="Set owner URN (can specify multiple, caller always preserved, can only be set by owners)",
+    help="Set owner URN (can specify multiple, can only be set by owners)",
 )
 @click.option(
     "--administrator",
@@ -271,14 +273,14 @@ def get_registered_api(ctx: click.Context, registered_api_id: str, format: str) 
 )
 @click.option(
     "--target-file",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
     help="Path to JSON file containing target definition",
 )
 @click.option("--format", type=click.Choice(["json", "text"]), default="text")
 @click.pass_context
 def update_registered_api(
     ctx: click.Context,
-    registered_api_id: str,
+    registered_api_id: UUID,
     name: str | None,
     description: str | None,
     owners: tuple[str, ...],
@@ -286,7 +288,7 @@ def update_registered_api(
     viewers: tuple[str, ...],
     no_administrators: bool,
     no_viewers: bool,
-    target_file: str | None,
+    target_file: pathlib.Path | None,
     format: str,
 ) -> None:
     """
@@ -301,10 +303,12 @@ def update_registered_api(
     # Validate mutually exclusive options
     if administrators and no_administrators:
         raise click.UsageError(
-            "--administrator and --no-administrators are mutually exclusive"
+            "--administrator and --no-administrators cannot be used together"
         )
     if viewers and no_viewers:
-        raise click.UsageError("--viewer and --no-viewers are mutually exclusive")
+        raise click.UsageError(
+            "--viewer and --no-viewers cannot be used together"
+        )
 
     request: dict[str, Any] = {}
     if name is not None:
@@ -323,10 +327,11 @@ def update_registered_api(
         request["viewers"] = list(set(viewers))
     if target_file is not None:
         try:
-            with open(target_file) as f:
-                request["target"] = json.load(f)
+            request["target"] = json.loads(target_file.read_text())
         except json.JSONDecodeError as e:
             raise click.UsageError(f"Invalid JSON in target file: {e}")
+        except UnicodeDecodeError as e:
+            raise click.UsageError(f"Unable to read target file: {e}")
 
     res = flows_client.update_registered_api(registered_api_id, **request)
 
