@@ -3,15 +3,20 @@
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import uuid
 
 import pytest
 import responses
-from conftest import GET_REGISTERED_API_URL
-from conftest import LIST_REGISTERED_APIS_URL
+from conftest import (
+    GET_REGISTERED_API_URL,
+    LIST_REGISTERED_APIS_URL,
+    UPDATE_REGISTERED_API_URL,
+)
 from globus_sdk import GlobusHTTPResponse
 
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
+
 
 
 @pytest.fixture
@@ -179,3 +184,139 @@ def test_get_registered_api(client):
     assert response["name"] == "Test API"
     assert response["description"] == "A test API"
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
+
+
+def test_update_registered_api_basic(client):
+    api_id = uuid.uuid4()
+    responses.add(
+        responses.PATCH,
+        UPDATE_REGISTERED_API_URL,
+        json={
+            "id": str(api_id),
+            "name": "Updated API",
+            "description": "Updated description",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+        },
+    )
+
+    response = client.update_registered_api(api_id, name="Updated API")
+
+    assert isinstance(response, GlobusHTTPResponse)
+    assert response["name"] == "Updated API"
+    assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
+    assert responses.calls[0].request.method == "PATCH"
+
+
+def test_update_registered_api_with_description(client):
+    api_id = uuid.uuid4()
+    responses.add(
+        responses.PATCH,
+        UPDATE_REGISTERED_API_URL,
+        json={
+            "id": str(api_id),
+            "name": "Test API",
+            "description": "New description",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+        },
+    )
+
+    response = client.update_registered_api(api_id, description="New description")
+
+    assert response["description"] == "New description"
+
+
+def test_update_registered_api_with_roles(client):
+    api_id = uuid.uuid4()
+    new_owners = ["urn:globus:auth:identity:user1", "urn:globus:auth:identity:user2"]
+    responses.add(
+        responses.PATCH,
+        UPDATE_REGISTERED_API_URL,
+        json={
+            "id": str(api_id),
+            "name": "Test API",
+            "description": "Test",
+            "roles": {
+                "owners": new_owners,
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+        },
+    )
+
+    response = client.update_registered_api(api_id, owners=new_owners)
+
+    assert response["roles"]["owners"] == new_owners
+
+
+def test_update_registered_api_with_target(client):
+    api_id = uuid.uuid4()
+    target = {
+        "type": "openapi",
+        "openapi_version": "3.1",
+        "destination": {"method": "get", "url": "https://example.com/api"},
+        "specification": {"operationId": "test-op", "responses": {}},
+    }
+    responses.add(
+        responses.PATCH,
+        UPDATE_REGISTERED_API_URL,
+        json={
+            "id": str(api_id),
+            "name": "Test API",
+            "description": "Test",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "target": target,
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": "2025-01-02T00:00:00+00:00",
+        },
+    )
+
+    response = client.update_registered_api(api_id, target=target)
+
+    assert response["target"] == target
+
+
+def test_update_registered_api_omitted_params_not_in_request(client):
+    api_id = uuid.uuid4()
+    responses.add(
+        responses.PATCH,
+        UPDATE_REGISTERED_API_URL,
+        json={
+            "id": str(api_id),
+            "name": "Updated Name",
+            "description": "Original description",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+        },
+    )
+
+    client.update_registered_api(api_id, name="Updated Name")
+
+    request_body = json.loads(responses.calls[0].request.body)
+    # Only 'name' should be in the request, not None values for omitted params
+    assert "name" in request_body
+    assert "description" not in request_body
+    assert "target" not in request_body
+    assert "roles" not in request_body
