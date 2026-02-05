@@ -3,14 +3,11 @@
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-
-from globus_registered_api.openapi import TargetSpecifier
+from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi.loader import load_openapi_spec
-from globus_registered_api.openapi.selector import find_target
-from globus_registered_api.openapi.reducer import reduce_to_target
 from globus_registered_api.openapi.reducer import OpenAPITarget
-
+from globus_registered_api.openapi.reducer import reduce_to_target
+from globus_registered_api.openapi.selector import find_target
 
 # --- Basic reduction ---
 
@@ -209,6 +206,7 @@ def test_reduce_to_target_handles_server_url_with_trailing_slash(temp_spec_file)
   }
 }
 """
+
     path = temp_spec_file("trailing_slash.json", content)
     spec = load_openapi_spec(path)
     target = TargetSpecifier.create("get", "/items")

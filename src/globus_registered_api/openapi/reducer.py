@@ -6,8 +6,8 @@
 from __future__ import annotations
 
 import re
+import typing as t
 from dataclasses import dataclass
-from typing import Any
 
 import openapi_pydantic as oa
 
@@ -20,16 +20,18 @@ class OpenAPITarget:
 
     operation: oa.Operation
     destination: dict[str, str]
-    components: dict[str, Any] | None = None
-    transforms: dict[str, Any] | None = None
+    components: dict[str, t.Any] | None = None
+    transforms: dict[str, t.Any] | None = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, t.Any]:
         """Convert to the format expected by POST /registered_api."""
-        result: dict[str, Any] = {
+        result: dict[str, t.Any] = {
             "type": "openapi",
             "openapi_version": "3.1",
             "destination": self.destination,
-            "specification": self.operation.model_dump(exclude_none=True),
+            "specification": self.operation.model_dump(
+                by_alias=True, exclude_none=True
+            ),
             "transforms": self.transforms,
         }
 
@@ -67,17 +69,17 @@ def _build_destination(spec: oa.OpenAPI, target: TargetInfo) -> dict[str, str]:
     if spec.servers and len(spec.servers) > 0:
         base_url = spec.servers[0].url.rstrip("/")
 
-    url = f"{base_url}{target.specifier.path}"
+    url = f"{base_url}{target.matched_target.path}"
 
     return {
-        "method": target.specifier.method.lower(),
+        "method": target.matched_target.method.lower(),
         "url": url,
     }
 
 
 def _collect_components(
     spec: oa.OpenAPI, operation: oa.Operation
-) -> dict[str, Any] | None:
+) -> dict[str, t.Any] | None:
     """
     Collect all components referenced by an operation.
 
@@ -88,14 +90,14 @@ def _collect_components(
         return None
 
     # Find all $ref strings in the operation
-    operation_dict = operation.model_dump(exclude_none=True)
+    operation_dict = operation.model_dump(by_alias=True, exclude_none=True)
     refs = _find_all_refs(operation_dict)
 
     if not refs:
         return None
 
     # Collect schemas for each ref
-    collected_schemas: dict[str, Any] = {}
+    collected_schemas: dict[str, t.Any] = {}
     schemas_to_process = set(refs)
     processed_refs: set[str] = set()
 
@@ -113,7 +115,7 @@ def _collect_components(
             continue
 
         schema = spec.components.schemas[schema_name]
-        schema_dict = schema.model_dump(exclude_none=True)
+        schema_dict = schema.model_dump(by_alias=True, exclude_none=True)
         collected_schemas[schema_name] = schema_dict
 
         # Find transitive refs in this schema
@@ -128,7 +130,7 @@ def _collect_components(
     return {"schemas": collected_schemas}
 
 
-def _find_all_refs(obj: Any) -> set[str]:
+def _find_all_refs(obj: t.Any) -> set[str]:
     """Recursively find all $ref strings in a nested dict/list structure."""
     refs: set[str] = set()
 

@@ -6,11 +6,10 @@
 from unittest.mock import patch
 
 import responses
+from conftest import GET_REGISTERED_API_URL
 
 import globus_registered_api.cli
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
-
-from conftest import GET_REGISTERED_API_URL
 
 
 @patch("globus_registered_api.cli._create_flows_client")

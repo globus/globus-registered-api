@@ -15,7 +15,7 @@ install:
 
 # Run the full test suite locally.
 test:
-	tox run -m testsuite
+    tox run --color=yes
 
 # Type check the project with mypy.
 mypy:
@@ -27,10 +27,10 @@ docs:
 
 # Delete known build artifacts.
 clean:
-	rm -rf .mypy_cache
-	rm -rf .pytest_cache
-	rm -rf .tox
-	rm -rf .venv
-	rm -rf build
-	rm -f .coverage.*
-	find . \( -type d -name __pycache__ -or -name \*.py[oc] \) -delete
+    rm -rf .mypy_cache
+    rm -rf .pytest_cache
+    rm -rf .tox
+    rm -rf .venv
+    rm -rf build
+    rm -f .coverage.*
+    find . \( -type d -name __pycache__ -or -name \*.py[oc] \) -delete

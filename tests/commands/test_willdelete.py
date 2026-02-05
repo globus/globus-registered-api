@@ -10,7 +10,10 @@ from globus_registered_api.cli import cli
 
 def test_willdelete_print_includes_required_fields(cli_runner, spec_path):
     # Act
-    result = cli_runner.invoke(cli, ["willdelete", "print", str(spec_path("minimal.json")), "/items", "get"])
+    result = cli_runner.invoke(
+        cli,
+        ["willdelete", "print-target", str(spec_path("minimal.json")), "get", "/items"],
+    )
 
     # Assert
     assert result.exit_code == 0
@@ -24,7 +27,10 @@ def test_willdelete_print_includes_required_fields(cli_runner, spec_path):
 
 def test_willdelete_print_destination_has_method_and_url(cli_runner, spec_path):
     # Act
-    result = cli_runner.invoke(cli, ["willdelete", "print", str(spec_path("minimal.json")), "/items", "get"])
+    result = cli_runner.invoke(
+        cli,
+        ["willdelete", "print-target", str(spec_path("minimal.json")), "get", "/items"],
+    )
 
     # Assert
     assert result.exit_code == 0
@@ -35,7 +41,16 @@ def test_willdelete_print_destination_has_method_and_url(cli_runner, spec_path):
 
 def test_willdelete_print_with_refs_includes_components(cli_runner, spec_path):
     # Act
-    result = cli_runner.invoke(cli, ["willdelete", "print", str(spec_path("with_refs.json")), "/items", "get"])
+    result = cli_runner.invoke(
+        cli,
+        [
+            "willdelete",
+            "print-target",
+            str(spec_path("with_refs.json")),
+            "get",
+            "/items",
+        ],
+    )
 
     # Assert
     assert result.exit_code == 0
@@ -48,7 +63,15 @@ def test_willdelete_print_with_content_type_option(cli_runner, spec_path):
     # Act
     result = cli_runner.invoke(
         cli,
-        ["willdelete", "print", str(spec_path("multiple_content_types.json")), "/upload", "post", "--content-type", "application/json"],
+        [
+            "willdelete",
+            "print-target",
+            str(spec_path("multiple_content_types.json")),
+            "post",
+            "/upload",
+            "--content-type",
+            "application/json",
+        ],
     )
 
     # Assert
@@ -61,35 +84,66 @@ def test_willdelete_print_with_content_type_option(cli_runner, spec_path):
 
 def test_willdelete_print_with_nonexistent_file_shows_error(cli_runner):
     # Act
-    result = cli_runner.invoke(cli, ["willdelete", "print", "/nonexistent.json", "/items", "get"])
+    result = cli_runner.invoke(
+        cli, ["willdelete", "print-target", "/nonexistent.json", "get", "/items"]
+    )
 
     # Assert
     assert result.exit_code != 0
-    assert "File not found:" in result.output
+    assert "Failed to read file:" in result.output
     assert "nonexistent.json" in result.output
 
 
 def test_willdelete_print_with_invalid_route_shows_error(cli_runner, spec_path):
     # Act
-    result = cli_runner.invoke(cli, ["willdelete", "print", str(spec_path("minimal.json")), "/nonexistent", "get"])
+    result = cli_runner.invoke(
+        cli,
+        [
+            "willdelete",
+            "print-target",
+            str(spec_path("minimal.json")),
+            "get",
+            "/nonexistent",
+        ],
+    )
 
     # Assert
     assert result.exit_code != 0
-    assert "Route not found: /nonexistent" in result.output
+    assert "Route not found: '/nonexistent'" in result.output
 
 
 def test_willdelete_print_with_invalid_method_shows_error(cli_runner, spec_path):
     # Act
-    result = cli_runner.invoke(cli, ["willdelete", "print", str(spec_path("minimal.json")), "/items", "delete"])
+    result = cli_runner.invoke(
+        cli,
+        [
+            "willdelete",
+            "print-target",
+            str(spec_path("minimal.json")),
+            "delete",
+            "/items",
+        ],
+    )
 
     # Assert
     assert result.exit_code != 0
     assert "Method 'DELETE' not found for route '/items'" in result.output
 
 
-def test_willdelete_print_with_ambiguous_content_type_shows_error(cli_runner, spec_path):
+def test_willdelete_print_with_ambiguous_content_type_shows_error(
+    cli_runner, spec_path
+):
     # Act
-    result = cli_runner.invoke(cli, ["willdelete", "print", str(spec_path("multiple_content_types.json")), "/upload", "post"])
+    result = cli_runner.invoke(
+        cli,
+        [
+            "willdelete",
+            "print-target",
+            str(spec_path("multiple_content_types.json")),
+            "post",
+            "/upload",
+        ],
+    )
 
     # Assert
     assert result.exit_code != 0

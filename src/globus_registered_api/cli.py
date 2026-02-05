@@ -2,7 +2,6 @@
 # https://github.com/globusonline/globus-registered-api
 # Copyright 2025 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
-
 from __future__ import annotations
 
 import json
@@ -19,12 +18,17 @@ from globus_sdk import GlobusAppConfig
 from globus_sdk import Scope
 from globus_sdk import UserApp
 
+from globus_registered_api.domain import HTTP_METHODS
+from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
 from globus_registered_api.openapi import AmbiguousContentTypeError
 from globus_registered_api.openapi import OpenAPILoadError
 from globus_registered_api.openapi import TargetNotFoundError
-from globus_registered_api.openapi import TargetSpecifier
 from globus_registered_api.openapi import process_target
+from globus_registered_api.openapi.enchricher import OpenAPIEnricher
+from globus_registered_api.openapi.loader import load_openapi_spec
+from globus_registered_api.schema_diff import diff_schema
+from globus_registered_api.services import SERVICE_CONFIGS
 
 # Constants
 RAPI_NATIVE_CLIENT_ID = "9dc7dfff-cfe8-4339-927b-28d29e1b2f42"
@@ -213,9 +217,7 @@ def list_registered_apis(
 @click.argument("registered_api_id")
 @click.option("--format", type=click.Choice(["json", "text"]), default="text")
 @click.pass_context
-def get_registered_api(
-    ctx: click.Context, registered_api_id: str, format: str
-) -> None:
+def get_registered_api(ctx: click.Context, registered_api_id: str, format: str) -> None:
     """
     Get a registered API by ID.
     """
@@ -242,24 +244,28 @@ def willdelete() -> None:
     """Temporary commands for OpenAPI processing development."""
 
 
-@willdelete.command("print")
+@willdelete.command("print-target")
 @click.argument("openapi_spec", type=click.Path(exists=False))
+@click.argument("method", type=click.Choice(HTTP_METHODS, case_sensitive=False))
 @click.argument("route")
-@click.argument("method")
 @click.option(
     "--content-type",
     default="*",
-    help="Content-type for request body (required if multiple exist)",
+    help="Target content-type for request body (required if multiple exist)",
 )
-def willdelete_print(
-    openapi_spec: str, route: str, method: str, content_type: str
+def willdelete_print_target(
+    openapi_spec: str,
+    method: str,
+    route: str,
+    content_type: str,
 ) -> None:
     """
-    Print a reduced OpenAPI spec for a target endpoint.
+    Print a target api, narrowed from a supplied full OpenAPI spec.
 
-    OPENAPI_SPEC is the path to an OpenAPI specification (JSON or YAML).
-    ROUTE is the path to match (e.g., /items or /items/{id}).
-    METHOD is the HTTP method (e.g., get, post, put, delete).
+    OPENAPI_SPEC - A filepath or URL to a OpenAPI specification containing the target
+        (JSON or YAML).
+    ROUTE - Target API's route path (e.g., /items or /items/{item_id}).
+    METHOD - Target API's HTTP method (e.g., get, post, put, delete).
     """
     try:
         target = TargetSpecifier.create(method, route, content_type)
@@ -272,3 +278,71 @@ def willdelete_print(
         raise click.ClickException(str(e))
 
     click.echo(json.dumps(result.to_dict(), indent=2))
+
+
+@willdelete.command("print-service-target")
+@click.argument(
+    "service_name",
+    metavar="SERVICE_NAME",
+    type=click.Choice(SERVICE_CONFIGS.keys()),
+)
+@click.argument(
+    "method",
+    metavar="METHOD",
+    type=click.Choice(HTTP_METHODS, case_sensitive=False),
+)
+@click.argument("route")
+@click.option(
+    "--content-type",
+    default="*",
+    help="Target content-type for request body (required if multiple exist)",
+)
+@click.option(
+    "--environment",
+    type=click.Choice(
+        ["sandbox", "integration", "test", "preview", "staging", "production"]
+    ),
+    default="production",
+)
+@click.option(
+    "--diff-only",
+    is_flag=True,
+    default=False,
+    help="Print only the enrichments performed on the target.",
+)
+def willdelete_print_service_target(
+    service_name: str,
+    method: str,
+    route: str,
+    content_type: str,
+    environment: str,
+    diff_only: bool,
+) -> None:
+    """
+    Print a uniquely matched api target from a registered service's OpenAPI spec.
+
+    SERVICE_NAME - A known service with a registered config.
+    ROUTE - Target API's route path (e.g., /items or /items/{item_id}).
+    METHOD - Target API's HTTP method (e.g., get, post, put, delete).
+    """
+    config = SERVICE_CONFIGS[service_name]
+
+    try:
+        target = TargetSpecifier.create(method, route, content_type)
+    except ValueError as e:
+        raise click.ClickException(str(e))
+
+    try:
+        orig_schema = load_openapi_spec(config["openapi_uri"])
+        enriched_schema = OpenAPIEnricher(config, environment).enrich(orig_schema)
+
+        enriched_target = process_target(enriched_schema, target)
+
+        if diff_only:
+            orig_target = process_target(orig_schema, target)
+            click.echo(diff_schema(orig_target.to_dict(), enriched_target.to_dict()))
+        else:
+            click.echo(json.dumps(enriched_target.to_dict(), indent=2))
+
+    except (OpenAPILoadError, TargetNotFoundError, AmbiguousContentTypeError) as e:
+        raise click.ClickException(str(e))

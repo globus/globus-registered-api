@@ -6,8 +6,8 @@
 import openapi_pydantic as oa
 import pytest
 
-from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.openapi.loader import OpenAPILoadError
+from globus_registered_api.openapi.loader import load_openapi_spec
 
 
 def test_load_openapi_spec_from_json_file_returns_openapi_object(spec_path):
@@ -56,7 +56,7 @@ def test_load_openapi_spec_with_components_returns_parsed_components(spec_path):
 
 def test_load_openapi_spec_with_nonexistent_file_raises_error(spec_path):
     # Act & Assert
-    with pytest.raises(OpenAPILoadError, match="^File not found:"):
+    with pytest.raises(OpenAPILoadError, match="^Failed to read file:"):
         load_openapi_spec(spec_path("nonexistent.json"))
 
 
@@ -65,7 +65,8 @@ def test_load_openapi_spec_with_invalid_json_raises_error(temp_spec_file):
     path = temp_spec_file("invalid.json", "{invalid json content")
 
     # Act & Assert
-    with pytest.raises(OpenAPILoadError, match="^Failed to parse JSON:"):
+    msg = "^Failed to parse OpenAPI content as JSON or YAML$"
+    with pytest.raises(OpenAPILoadError, match=msg):
         load_openapi_spec(path)
 
 
@@ -74,7 +75,8 @@ def test_load_openapi_spec_with_invalid_yaml_raises_error(temp_spec_file):
     path = temp_spec_file("invalid.yaml", "invalid: yaml: content: [")
 
     # Act & Assert
-    with pytest.raises(OpenAPILoadError, match="^Failed to parse YAML:"):
+    msg = "^Failed to parse OpenAPI content as JSON or YAML$"
+    with pytest.raises(OpenAPILoadError, match=msg):
         load_openapi_spec(path)
 
 
@@ -83,7 +85,7 @@ def test_load_openapi_spec_with_invalid_openapi_structure_raises_error(temp_spec
     path = temp_spec_file("invalid_structure.json", '{"not": "a valid openapi spec"}')
 
     # Act & Assert
-    with pytest.raises(OpenAPILoadError, match="^Invalid OpenAPI specification:"):
+    with pytest.raises(OpenAPILoadError, match="^Malformed OpenAPI specification"):
         load_openapi_spec(path)
 
 

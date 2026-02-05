@@ -20,6 +20,8 @@ classifiers = [
 dependencies = [
     "click >=8,<9",
     "globus-sdk >=4",
+    "requests",
+    "types-requests (>=2.32.4.20260107,<3.0.0.0)",
     "openapi-pydantic >=0.5.1,<0.6.0",
     "pyyaml >=6.0",
 ]
