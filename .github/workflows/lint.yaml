@@ -1,0 +1,37 @@
+name: "Lint"
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  lint:
+    name: "Lint"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout source code"
+        uses: "actions/checkout@v4"
+
+      - name: "Setup Python"
+        id: "setup-python"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.13"
+
+      - name: "Restore cache"
+        id: "restore-cache"
+        uses: "actions/cache@v4"
+        with:
+          path: |
+            .pre-commit-home/
+          key: "lint-python-${{ steps.setup-python.outputs.python-version }}-hash-${{ hashFiles('.pre-commit-config.yaml') }}"
+
+      - name: "Install pre-commit"
+        run: "pip install pre-commit"
+
+      - name: "Run pre-commit hooks"
+        run: "pre-commit run --all-files"
+        env:
+          PRE_COMMIT_HOME: ".pre-commit-home"
