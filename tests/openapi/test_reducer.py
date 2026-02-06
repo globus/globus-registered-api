@@ -193,20 +193,19 @@ def test_reduce_to_target_handles_server_url_with_trailing_slash(temp_spec_file)
     # Arrange
     content = """
 {
-  "openapi": "3.1.0",
-  "info": {"title": "Test", "version": "1.0.0"},
-  "servers": [{"url": "https://api.example.com/"}],
-  "paths": {
-    "/items": {
-      "get": {
-        "summary": "List",
-        "responses": {"200": {"description": "OK"}}
-      }
+    "openapi": "3.1.0",
+    "info": {"title": "Test", "version": "1.0.0"},
+    "servers": [{"url": "https://api.example.com/"}],
+    "paths": {
+        "/items": {
+            "get": {
+                "summary": "List",
+                "responses": {"200": {"description": "OK"}}
+            }
+        }
     }
-  }
 }
 """
-
     path = temp_spec_file("trailing_slash.json", content)
     spec = load_openapi_spec(path)
     target = TargetSpecifier.create("get", "/items")
@@ -226,39 +225,39 @@ def test_reduce_to_target_handles_circular_references(temp_spec_file):
     # Arrange
     content = """
 {
-  "openapi": "3.1.0",
-  "info": {"title": "Circular", "version": "1.0.0"},
-  "servers": [{"url": "https://api.example.com"}],
-  "paths": {
-    "/nodes": {
-      "get": {
-        "summary": "Get nodes",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {"$ref": "#/components/schemas/Node"}
-              }
+    "openapi": "3.1.0",
+    "info": {"title": "Circular", "version": "1.0.0"},
+    "servers": [{"url": "https://api.example.com"}],
+    "paths": {
+        "/nodes": {
+            "get": {
+                "summary": "Get nodes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/Node"}
+                            }
+                        }
+                    }
+                }
             }
-          }
         }
-      }
-    }
-  },
-  "components": {
-    "schemas": {
-      "Node": {
-        "type": "object",
-        "properties": {
-          "children": {
-            "type": "array",
-            "items": {"$ref": "#/components/schemas/Node"}
-          }
+    },
+    "components": {
+        "schemas": {
+            "Node": {
+                "type": "object",
+                "properties": {
+                    "children": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/Node"}
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }
 """
     path = temp_spec_file("circular.json", content)

@@ -8,8 +8,8 @@ import json
 import os
 import pathlib
 import sys
+import typing as t
 from collections.abc import Iterable
-from typing import Any
 from uuid import UUID
 
 import click
@@ -259,7 +259,10 @@ def get_registered_api(ctx: click.Context, registered_api_id: str, format: str) 
     "--viewer",
     "viewers",
     multiple=True,
-    help="Set viewer URN (can specify multiple, can only be set by owners and administrators)",
+    help=(
+        "Set viewer URN (can specify multiple, can only be set by owners "
+        "and administrators)"
+    ),
 )
 @click.option(
     "--no-administrators",
@@ -306,11 +309,9 @@ def update_registered_api(
             "--administrator and --no-administrators cannot be used together"
         )
     if viewers and no_viewers:
-        raise click.UsageError(
-            "--viewer and --no-viewers cannot be used together"
-        )
+        raise click.UsageError("--viewer and --no-viewers cannot be used together")
 
-    request: dict[str, Any] = {}
+    request: dict[str, t.Any] = {}
     if name is not None:
         request["name"] = name
     if description is not None:

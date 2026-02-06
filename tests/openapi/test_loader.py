@@ -102,8 +102,8 @@ def test_load_openapi_spec_with_yml_extension_works(temp_spec_file):
     content = """
 openapi: "3.1.0"
 info:
-  title: YML Test
-  version: "1.0.0"
+    title: YML Test
+    version: "1.0.0"
 paths: {}
 """
     path = temp_spec_file("test.yml", content)

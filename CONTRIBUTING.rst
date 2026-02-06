@@ -1,5 +1,3 @@
-
-
 Dependency Installation
 =======================
 
@@ -12,11 +10,14 @@ in which you can interactively write and test changes.
 
         git clone https://github.com/globusonline/globus-registered-api.git && cd globus-registered-api
 
-2.  Install dependencies in a local virtualenv (found at `./.venv`) for development.
+2.  Install dependencies in a local virtualenv (at ``./.venv``) and pre-commit hooks.
 
     .. code-block::
 
         just install
+
+    This will create a local virtualenv, install dependencies, and configure
+    pre-commit hooks to run automatically before each commit.
 
     .. note::
 
@@ -24,3 +25,9 @@ in which you can interactively write and test changes.
         of a traditional ``Makefile``.
 
         To learn more about ``just``, visit https://just.systems/man/en/.
+
+    To manually run all pre-commit checks:
+
+    .. code-block::
+
+        just lint
