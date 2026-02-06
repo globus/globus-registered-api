@@ -8,15 +8,12 @@ import uuid
 
 import pytest
 import responses
-from conftest import (
-    GET_REGISTERED_API_URL,
-    LIST_REGISTERED_APIS_URL,
-    UPDATE_REGISTERED_API_URL,
-)
+from conftest import GET_REGISTERED_API_URL
+from conftest import LIST_REGISTERED_APIS_URL
+from conftest import UPDATE_REGISTERED_API_URL
 from globus_sdk import GlobusHTTPResponse
 
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
-
 
 
 @pytest.fixture

@@ -1,9 +1,8 @@
-
 # Print this help message.
 help:
     @just --list
 
-# Install a development virtual environment (at `./.venv`).
+# Install a development virtual environment (at `./.venv`) and pre-commit hooks.
 install:
     #!/usr/bin/env bash
     if [ ! -d .venv ]; then
@@ -12,6 +11,11 @@ install:
     .venv/bin/pip install --upgrade pip setuptools wheel
     .venv/bin/pip install -e.
     .venv/bin/pip install -r requirements/test/requirements.txt
+    pre-commit install
+
+# Run pre-commit checks on all files.
+lint:
+    pre-commit run --all-files
 
 # Run the full test suite locally.
 test:

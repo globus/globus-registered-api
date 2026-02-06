@@ -7,11 +7,10 @@ import json
 from unittest.mock import patch
 
 import responses
+from conftest import UPDATE_REGISTERED_API_URL
 
 import globus_registered_api.cli
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
-
-from conftest import UPDATE_REGISTERED_API_URL
 
 
 @patch("globus_registered_api.cli._create_flows_client")
@@ -68,7 +67,14 @@ def test_update_registered_api_json_format(mock_create_client, cli_runner):
 
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
-        ["update", "12345678-1234-1234-1234-123456789abc", "--name", "Updated API", "--format", "json"],
+        [
+            "update",
+            "12345678-1234-1234-1234-123456789abc",
+            "--name",
+            "Updated API",
+            "--format",
+            "json",
+        ],
     )
 
     assert result.exit_code == 0
@@ -151,7 +157,12 @@ def test_update_registered_api_with_description(mock_create_client, cli_runner):
 
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
-        ["update", "abcdef12-1234-1234-1234-123456789abc", "--description", "New description"],
+        [
+            "update",
+            "abcdef12-1234-1234-1234-123456789abc",
+            "--description",
+            "New description",
+        ],
     )
 
     assert result.exit_code == 0
@@ -180,7 +191,12 @@ def test_update_registered_api_with_owner(mock_create_client, cli_runner):
 
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
-        ["update", "abcdef12-1234-1234-1234-123456789abc", "--owner", "urn:globus:auth:identity:new-owner"],
+        [
+            "update",
+            "abcdef12-1234-1234-1234-123456789abc",
+            "--owner",
+            "urn:globus:auth:identity:new-owner",
+        ],
     )
 
     assert result.exit_code == 0
@@ -189,9 +205,7 @@ def test_update_registered_api_with_owner(mock_create_client, cli_runner):
 
 
 @patch("globus_registered_api.cli._create_flows_client")
-def test_update_registered_api_with_multiple_owners(
-    mock_create_client, cli_runner
-):
+def test_update_registered_api_with_multiple_owners(mock_create_client, cli_runner):
 
     mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
@@ -238,7 +252,9 @@ def test_update_registered_api_with_multiple_owners(
 
 
 @patch("globus_registered_api.cli._create_flows_client")
-def test_update_registered_api_no_viewers_clears_viewers(mock_create_client, cli_runner):
+def test_update_registered_api_no_viewers_clears_viewers(
+    mock_create_client, cli_runner
+):
 
     mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
