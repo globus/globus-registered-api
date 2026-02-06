@@ -1,0 +1,5 @@
+
+Added
+-----
+
+*   Add ``create`` CLI command to create a registered API from an OpenAPI spec.

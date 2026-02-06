@@ -122,3 +122,25 @@ class ExtendedFlowsClient(FlowsClient):
             body["roles"] = roles
 
         return self.patch(f"/registered_apis/{registered_api_id}", data=body)
+
+    def create_registered_api(
+        self,
+        name: str,
+        description: str,
+        target: dict[str, t.Any],
+    ) -> GlobusHTTPResponse:
+        """
+        Create a new registered API.
+
+        :param name: Name for the registered API
+        :param description: Description for the registered API
+        :param target: Target definition dict (from OpenAPITarget.to_dict())
+        :return: Response containing the created registered API
+        """
+        body: dict[str, t.Any] = {
+            "name": name,
+            "description": description,
+            "target": target,
+        }
+
+        return self.post("/registered_apis", data=body)
