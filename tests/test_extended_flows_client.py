@@ -8,6 +8,7 @@ import uuid
 
 import pytest
 import responses
+from conftest import CREATE_REGISTERED_API_URL
 from conftest import GET_REGISTERED_API_URL
 from conftest import LIST_REGISTERED_APIS_URL
 from conftest import UPDATE_REGISTERED_API_URL
@@ -317,3 +318,51 @@ def test_update_registered_api_omitted_params_not_in_request(client):
     assert "description" not in request_body
     assert "target" not in request_body
     assert "roles" not in request_body
+
+
+def test_create_registered_api(client):
+    # Arrange
+    api_id = str(uuid.uuid4())
+    target = {
+        "type": "openapi",
+        "openapi_version": "3.1",
+        "destination": {"method": "get", "url": "https://example.com/items"},
+        "specification": {"operationId": "getItems", "responses": {}},
+    }
+    responses.add(
+        responses.POST,
+        CREATE_REGISTERED_API_URL,
+        json={
+            "id": api_id,
+            "name": "My New API",
+            "description": "A test description",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "target": target,
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+        },
+        status=201,
+    )
+
+    # Act
+    response = client.create_registered_api(
+        name="My New API", description="A test description", target=target
+    )
+
+    # Assert
+    assert isinstance(response, GlobusHTTPResponse)
+    assert response["id"] == api_id
+    assert response["name"] == "My New API"
+    assert response["description"] == "A test description"
+    assert response["target"] == target
+    assert "/registered_apis" in responses.calls[0].request.url
+    assert responses.calls[0].request.method == "POST"
+
+    request_body = json.loads(responses.calls[0].request.body)
+    assert request_body["name"] == "My New API"
+    assert request_body["target"] == target
+    assert request_body["description"] == "A test description"

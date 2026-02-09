@@ -19,6 +19,9 @@ GET_REGISTERED_API_URL = re.compile(
 UPDATE_REGISTERED_API_URL = re.compile(
     r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"
 )
+CREATE_REGISTERED_API_URL = re.compile(
+    r"https://.*flows.*\.globus\.org/registered_apis$"
+)
 
 
 @pytest.fixture(autouse=True)

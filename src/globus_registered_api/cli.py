@@ -350,6 +350,80 @@ def update_registered_api(
             click.echo(f"Edited:         {res['edited_timestamp']}")
 
 
+@cli.command("create")
+@click.argument("openapi_spec")
+@click.argument("method", type=click.Choice(HTTP_METHODS, case_sensitive=False))
+@click.argument("route")
+@click.argument("name")
+@click.option(
+    "--content-type",
+    default="*",
+    help="Target content-type for request body (required if multiple exist)",
+)
+@click.option(
+    "--description",
+    required=True,
+    help="Description for the registered API",
+)
+@click.option("--format", type=click.Choice(["json", "text"]), default="text")
+@click.pass_context
+def create_registered_api(
+    ctx: click.Context,
+    openapi_spec: str,
+    method: str,
+    route: str,
+    name: str,
+    content_type: str,
+    description: str,
+    format: str,
+) -> None:
+    """
+    Create a new registered API from an OpenAPI specification.
+
+    Extracts a target endpoint from an OpenAPI spec and registers it with
+    the Flows service.
+
+    OPENAPI_SPEC - A filepath or URL to an OpenAPI specification (JSON or YAML).
+
+    METHOD - Target API's HTTP method (e.g., get, post, put, delete).
+
+    ROUTE - Target API's route path (e.g., /items or /items/{item_id}).
+
+    NAME - Name for the registered API.
+
+    Example:
+
+        globus-registered-api create ./spec.json get /items "My API"
+            --description "My API"
+    """
+    try:
+        target = TargetSpecifier.create(method, route, content_type)
+    except ValueError as e:
+        raise click.ClickException(str(e))
+
+    try:
+        result = process_target(openapi_spec, target)
+    except (OpenAPILoadError, TargetNotFoundError, AmbiguousContentTypeError) as e:
+        raise click.ClickException(str(e))
+
+    app: UserApp | ClientApp = ctx.obj
+    flows_client = _create_flows_client(app)
+
+    res = flows_client.create_registered_api(
+        name=name,
+        description=description,
+        target=result.to_dict(),
+    )
+
+    if format == "json":
+        click.echo(json.dumps(res.data, indent=2))
+    else:
+        click.echo(f"ID:          {res['id']}")
+        click.echo(f"Name:        {res['name']}")
+        click.echo(f"Description: {res['description']}")
+        click.echo(f"Created:     {res['created_timestamp']}")
+
+
 # --- willdelete command group ---
 
 
