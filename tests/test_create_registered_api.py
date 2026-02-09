@@ -431,3 +431,51 @@ def test_create_registered_api_missing_required_param_shows_error(
     # Assert
     assert result.exit_code != 0
     assert expected_error in result.output
+
+
+@patch("globus_registered_api.cli._create_flows_client")
+def test_create_registered_api_with_url_containing_query_params(
+    mock_create_client, cli_runner, spec_path
+):
+    # Arrange
+    mock_create_client.return_value = ExtendedFlowsClient()
+    spec_url = "https://domain.example/spec?format=json&download=true"
+    spec_content = spec_path("minimal.json").read_text()
+
+    responses.add(responses.GET, spec_url, body=spec_content, status=200)
+    responses.add(
+        responses.POST,
+        CREATE_REGISTERED_API_URL,
+        json={
+            "id": "12345678-1234-1234-1234-123456789abc",
+            "name": "My API",
+            "description": "Test",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+        },
+        status=201,
+    )
+
+    # Act
+    result = cli_runner.invoke(
+        globus_registered_api.cli.cli,
+        [
+            "create",
+            spec_url,
+            "get",
+            "/items",
+            "My API",
+            "--description",
+            "Test",
+        ],
+    )
+
+    # Assert
+    assert result.exit_code == 0
+    assert "12345678-1234-1234-1234-123456789abc" in result.output
+    assert responses.calls[0].request.url == spec_url

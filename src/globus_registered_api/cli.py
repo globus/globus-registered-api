@@ -351,7 +351,7 @@ def update_registered_api(
 
 
 @cli.command("create")
-@click.argument("openapi_spec", type=click.Path(exists=False))
+@click.argument("openapi_spec")
 @click.argument("method", type=click.Choice(HTTP_METHODS, case_sensitive=False))
 @click.argument("route")
 @click.argument("name")
