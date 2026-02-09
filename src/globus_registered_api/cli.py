@@ -384,9 +384,17 @@ def create_registered_api(
     the Flows service.
 
     OPENAPI_SPEC - A filepath or URL to an OpenAPI specification (JSON or YAML).
+
     METHOD - Target API's HTTP method (e.g., get, post, put, delete).
+
     ROUTE - Target API's route path (e.g., /items or /items/{item_id}).
+
     NAME - Name for the registered API.
+
+    Example:
+
+        globus-registered-api create ./spec.json get /items "My API"
+            --description "My API"
     """
     try:
         target = TargetSpecifier.create(method, route, content_type)
