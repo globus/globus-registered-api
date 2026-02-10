@@ -34,7 +34,7 @@ from globus_registered_api.schema_diff import diff_schema
 from globus_registered_api.services import SERVICE_CONFIGS
 
 # Constants
-RAPI_NATIVE_CLIENT_ID = "9dc7dfff-cfe8-4339-927b-28d29e1b2f42"
+NATIVE_CLIENT_ID = "5fde3f3e-78b3-4459-aea2-a91dfd9ace1a"
 
 SCOPE_REQUIREMENTS: dict[str, str | Scope | Iterable[str | Scope]] = {
     AuthClient.scopes.resource_server: [AuthClient.scopes.openid],
@@ -110,7 +110,7 @@ def _create_globus_app() -> UserApp | ClientApp:
     else:
         return UserApp(
             app_name=app_name,
-            client_id=RAPI_NATIVE_CLIENT_ID,
+            client_id=NATIVE_CLIENT_ID,
             scope_requirements=SCOPE_REQUIREMENTS,
             config=_APP_CONFIG,
         )
