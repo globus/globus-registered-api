@@ -20,6 +20,8 @@ from globus_sdk import GlobusAPIError
 from globus_sdk import GlobusAppConfig
 from globus_sdk import Scope
 from globus_sdk import UserApp
+from globus_sdk.token_storage import JSONTokenStorage
+from globus_sdk.token_storage import TokenStorage
 
 from globus_registered_api.domain import HTTP_METHODS
 from globus_registered_api.domain import TargetSpecifier
@@ -33,15 +35,80 @@ from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.schema_diff import diff_schema
 from globus_registered_api.services import SERVICE_CONFIGS
 
+if t.TYPE_CHECKING:
+    from globus_sdk.globus_app.config import GlobusAppConfig as SDKGlobusAppConfig
+
 # Constants
 NATIVE_CLIENT_ID = "5fde3f3e-78b3-4459-aea2-a91dfd9ace1a"
+GLOBUS_PROFILE_ENV_VAR = "GLOBUS_PROFILE"
+
+
+def _get_profile() -> str | None:
+    """Get the current profile from GLOBUS_PROFILE environment variable."""
+    profile = os.getenv(GLOBUS_PROFILE_ENV_VAR)
+    return profile.strip() if profile else None
+
+
+def _resolve_namespace(environment: str = "production") -> str:
+    """
+    Resolve token storage namespace based on GLOBUS_PROFILE.
+
+    :param environment: The Globus environment (e.g., "production", "sandbox")
+    :return: A namespace string for token storage partitioning
+    """
+    profile = _get_profile()
+    if profile:
+        return f"userprofile/{environment}/{profile}"
+    return "DEFAULT"
+
+
+class ProfileAwareJSONTokenStorage:
+    """
+    TokenStorageProvider that creates JSONTokenStorage with profile-aware namespaces.
+
+    This class implements the SDK's TokenStorageProvider protocol, allowing it to be
+    passed to GlobusAppConfig's token_storage parameter. When for_globus_app is called,
+    it computes the namespace based on the GLOBUS_PROFILE environment variable and
+    delegates to JSONTokenStorage.for_globus_app with the computed namespace.
+
+    This enables switching between multiple authenticated user profiles without
+    logout/login cycles, matching the behavior of globus-cli.
+    """
+
+    @classmethod
+    def for_globus_app(
+        cls,
+        *,
+        app_name: str,
+        config: SDKGlobusAppConfig,
+        client_id: UUID | str,
+        namespace: str,
+    ) -> TokenStorage:
+        """
+        Create a JSONTokenStorage with a profile-aware namespace.
+
+        The namespace parameter is ignored; instead, the namespace is computed
+        from the GLOBUS_PROFILE environment variable.
+
+        :param app_name: The name supplied to the GlobusApp
+        :param config: The GlobusAppConfig for the GlobusApp
+        :param client_id: The client_id of the GlobusApp
+        :param namespace: Ignored; computed from GLOBUS_PROFILE
+        :return: A JSONTokenStorage instance with profile-aware namespace
+        """
+        resolved_namespace = _resolve_namespace(config.environment)
+        return JSONTokenStorage.for_globus_app(
+            app_name=app_name,
+            config=config,
+            client_id=client_id,
+            namespace=resolved_namespace,
+        )
+
 
 SCOPE_REQUIREMENTS: dict[str, str | Scope | Iterable[str | Scope]] = {
     AuthClient.scopes.resource_server: [AuthClient.scopes.openid],
     FlowsClient.scopes.resource_server: [FlowsClient.scopes.all],
 }
-
-_APP_CONFIG = GlobusAppConfig(auto_redrive_gares=True)
 
 
 # Error handling
@@ -82,9 +149,13 @@ def _create_globus_app() -> UserApp | ClientApp:
     """
     Create and return a Globus app based on environment variables.
 
-    Checks for GLOBUS_CLIENT_ID and GLOBUS_CLIENT_SECRET environment variables.
+    Checks for GLOBUS_REGISTERED_API_CLIENT_ID and GLOBUS_REGISTERED_API_CLIENT_SECRET.
     If both are present, creates a ClientApp for client credentials authentication.
     Otherwise, creates a UserApp with a registered native client.
+
+    For UserApp, the token storage is profile-aware: if GLOBUS_PROFILE is set,
+    tokens are stored in a separate namespace for that profile, enabling
+    switching between multiple authenticated users without logout/login cycles.
 
     :return: A ClientApp if both environment variables are set, otherwise a UserApp
     :raises ValueError: If only one of the required environment variables is set
@@ -96,7 +167,8 @@ def _create_globus_app() -> UserApp | ClientApp:
     # Validate: both or neither
     if bool(client_id) ^ bool(client_secret):
         raise ValueError(
-            "Both GLOBUS_CLIENT_ID and GLOBUS_CLIENT_SECRET must be set, or neither."
+            "Both GLOBUS_REGISTERED_API_CLIENT_ID and "
+            "GLOBUS_REGISTERED_API_CLIENT_SECRET must be set, or neither."
         )
 
     if client_id and client_secret:
@@ -105,14 +177,18 @@ def _create_globus_app() -> UserApp | ClientApp:
             client_id=client_id,
             client_secret=client_secret,
             scope_requirements=SCOPE_REQUIREMENTS,
-            config=_APP_CONFIG,
+            config=GlobusAppConfig(auto_redrive_gares=True),
         )
     else:
+        # UserApp uses profile-aware token storage
         return UserApp(
             app_name=app_name,
             client_id=NATIVE_CLIENT_ID,
             scope_requirements=SCOPE_REQUIREMENTS,
-            config=_APP_CONFIG,
+            config=GlobusAppConfig(
+                auto_redrive_gares=True,
+                token_storage=ProfileAwareJSONTokenStorage,
+            ),
         )
 
 
@@ -150,15 +226,25 @@ def cli(ctx: click.Context) -> None:
 def whoami(ctx: click.Context, format: str) -> None:
     """
     Display information about the authenticated user.
+
+    When GLOBUS_PROFILE is set, shows the active profile name.
     """
     app: UserApp | ClientApp = ctx.obj
     auth_client = _create_auth_client(app)
     res = auth_client.userinfo()
+    profile = _get_profile()
 
     if format == "text":
-        click.echo(res["preferred_username"])
+        username = res["preferred_username"]
+        if profile:
+            click.echo(f"{username} (profile: {profile})")
+        else:
+            click.echo(username)
     else:
-        click.echo(json.dumps(res.data, indent=2))
+        output = dict(res.data)
+        if profile:
+            output["profile"] = profile
+        click.echo(json.dumps(output, indent=2))
 
 
 @cli.command()
@@ -166,10 +252,16 @@ def whoami(ctx: click.Context, format: str) -> None:
 def logout(ctx: click.Context) -> None:
     """
     Log out the current user by revoking all tokens.
+
+    When GLOBUS_PROFILE is set, only logs out from the active profile.
     """
     app: UserApp | ClientApp = ctx.obj
     app.logout()
-    click.echo("Logged out successfully.")
+    profile = _get_profile()
+    if profile:
+        click.echo(f"Logged out successfully from profile '{profile}'.")
+    else:
+        click.echo("Logged out successfully.")
 
 
 @cli.command("list")

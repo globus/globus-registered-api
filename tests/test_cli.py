@@ -29,8 +29,8 @@ def test_create_globus_app_without_required_env_vars_failure(
 
     # Assert
     assert (
-        "Both GLOBUS_CLIENT_ID and GLOBUS_CLIENT_SECRET must be set, or neither."
-        in str(excinfo.value)
+        "Both GLOBUS_REGISTERED_API_CLIENT_ID and GLOBUS_REGISTERED_API_CLIENT_SECRET "
+        "must be set, or neither." in str(excinfo.value)
     )
 
 
@@ -46,8 +46,8 @@ def test_create_globus_app_returns_client_app_when_env_vars_set(
 
 def test_create_globus_app_returns_user_app_when_env_vars_not_set(monkeypatch):
     # Arrange
-    monkeypatch.delenv("GLOBUS_CLIENT_ID", raising=False)
-    monkeypatch.delenv("GLOBUS_CLIENT_SECRET", raising=False)
+    monkeypatch.delenv("GLOBUS_REGISTERED_API_CLIENT_ID", raising=False)
+    monkeypatch.delenv("GLOBUS_REGISTERED_API_CLIENT_SECRET", raising=False)
 
     # Act
     app = _create_globus_app()

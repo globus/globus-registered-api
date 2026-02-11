@@ -6,6 +6,7 @@
 import re
 import typing as t
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 import responses
@@ -79,3 +80,33 @@ def temp_spec_file(tmp_path):
         return file_path
 
     return _create_file
+
+
+class MockResponse:
+    """Mock response object that mimics Globus SDK response behavior."""
+
+    def __init__(self, data: dict) -> None:
+        self.data = data
+
+    def __getitem__(self, key: str) -> t.Any:
+        return self.data[key]
+
+
+@pytest.fixture
+def mock_auth_client(monkeypatch):
+    """
+    Fixture that patches _create_auth_client and returns a configured mock.
+
+    Usage:
+        def test_something(mock_auth_client):
+            # _create_auth_client is already patched and returns a mock
+            # with userinfo() returning {"preferred_username": "testuser", ...}
+    """
+    mock_auth = MagicMock()
+    mock_auth.userinfo.return_value = MockResponse(
+        {"preferred_username": "testuser", "email": "test@example.com"}
+    )
+    monkeypatch.setattr(
+        "globus_registered_api.cli._create_auth_client", lambda app: mock_auth
+    )
+    return mock_auth
