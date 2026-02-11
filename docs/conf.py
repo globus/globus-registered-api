@@ -17,7 +17,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Globus Registered API"
-copyright = "2025 Globus"
+copyright = "2025-2026 Globus"
 
 # Extract the project version.
 pyproject_ = pathlib.Path(__file__).parent.parent / "pyproject.toml"
