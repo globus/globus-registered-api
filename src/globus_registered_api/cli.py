@@ -149,7 +149,7 @@ def _create_globus_app() -> UserApp | ClientApp:
     """
     Create and return a Globus app based on environment variables.
 
-    Checks for GLOBUS_CLIENT_ID and GLOBUS_CLIENT_SECRET environment variables.
+    Checks for GLOBUS_REGISTERED_API_CLIENT_ID and GLOBUS_REGISTERED_API_CLIENT_SECRET.
     If both are present, creates a ClientApp for client credentials authentication.
     Otherwise, creates a UserApp with a registered native client.
 
@@ -167,7 +167,8 @@ def _create_globus_app() -> UserApp | ClientApp:
     # Validate: both or neither
     if bool(client_id) ^ bool(client_secret):
         raise ValueError(
-            "Both GLOBUS_CLIENT_ID and GLOBUS_CLIENT_SECRET must be set, or neither."
+            "Both GLOBUS_REGISTERED_API_CLIENT_ID and "
+            "GLOBUS_REGISTERED_API_CLIENT_SECRET must be set, or neither."
         )
 
     if client_id and client_secret:
