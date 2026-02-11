@@ -1,7 +1,7 @@
 ..
     This file is a part of globus-registered-api.
-    https://github.com/globusonline/globus-registered-api
-    Copyright 2025 Globus <support@globus.org>
+    https://github.com/globus/globus-registered-api
+    Copyright 2025-2026 Globus <support@globus.org>
     SPDX-License-Identifier: Apache-2.0
 
 ..
@@ -21,7 +21,7 @@ Unreleased changes
 
 Please see the fragment files in the `changelog.d directory`_.
 
-..  _changelog.d directory: https://github.com/globusonline/globus-registered-api/tree/main/changelog.d
+..  _changelog.d directory: https://github.com/globus/globus-registered-api/tree/main/changelog.d
 
 
 ..  scriv-insert-here
