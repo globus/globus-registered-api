@@ -7,4 +7,10 @@
 Globus Registered API
 #####################
 
+    ⚠️ **NOTE** ⚠️
+
+    This software, and the feature it interacts with, is in a closed preview.
+
+    It is not generally available for use yet.
+
 This is the Globus Registered API CLI.
