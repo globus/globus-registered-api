@@ -1,7 +1,10 @@
 /build/
 /dist/
+/htmlcov/
 /.coverage*
+/.mypy_cache/
+/.slyp_cache/
+/.tox/
 poetry.lock
 __pycache__/
-.tox/
 .venv/

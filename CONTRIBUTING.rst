@@ -8,7 +8,7 @@ in which you can interactively write and test changes.
 
     .. code-block::
 
-        git clone https://github.com/globusonline/globus-registered-api.git && cd globus-registered-api
+        git clone https://github.com/globus/globus-registered-api.git && cd globus-registered-api
 
 2.  Install dependencies in a local virtualenv (at ``./.venv``) and pre-commit hooks.
 
