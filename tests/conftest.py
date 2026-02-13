@@ -12,6 +12,8 @@ import pytest
 import responses
 from click.testing import CliRunner
 
+from globus_registered_api import ExtendedFlowsClient
+
 # URL patterns for mocking Flows service responses
 LIST_REGISTERED_APIS_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis")
 GET_REGISTERED_API_URL = re.compile(
@@ -107,6 +109,15 @@ def mock_auth_client(monkeypatch):
         {"preferred_username": "testuser", "email": "test@example.com"}
     )
     monkeypatch.setattr(
-        "globus_registered_api.cli._create_auth_client", lambda app: mock_auth
+        "globus_registered_api.clients.create_auth_client", lambda app: mock_auth
     )
     return mock_auth
+
+
+@pytest.fixture
+def mock_flows_client(monkeypatch):
+    client = ExtendedFlowsClient()
+    monkeypatch.setattr(
+        "globus_registered_api.clients.create_flows_client", lambda app: client
+    )
+    return client
