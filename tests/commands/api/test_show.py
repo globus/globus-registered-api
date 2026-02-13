@@ -3,18 +3,13 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-from unittest.mock import patch
-
 import responses
 from conftest import GET_REGISTERED_API_URL
 
 import globus_registered_api.cli
-from globus_registered_api.extended_flows_client import ExtendedFlowsClient
 
 
-@patch("globus_registered_api.cli._create_flows_client")
-def test_get_registered_api_text_format(mock_create_client, cli_runner):
-    mock_create_client.return_value = ExtendedFlowsClient()
+def test_show_registered_api_text_format(mock_flows_client, cli_runner):
     responses.add(
         responses.GET,
         GET_REGISTERED_API_URL,
@@ -28,7 +23,7 @@ def test_get_registered_api_text_format(mock_create_client, cli_runner):
     )
 
     result = cli_runner.invoke(
-        globus_registered_api.cli.cli, ["get", "abc-123-def-456"]
+        globus_registered_api.cli.cli, ["api", "show", "abc-123-def-456"]
     )
 
     assert result.exit_code == 0
@@ -42,9 +37,7 @@ def test_get_registered_api_text_format(mock_create_client, cli_runner):
     assert "Updated:" in result.output
 
 
-@patch("globus_registered_api.cli._create_flows_client")
-def test_get_registered_api_json_format(mock_create_client, cli_runner):
-    mock_create_client.return_value = ExtendedFlowsClient()
+def test_show_registered_api_json_format(mock_flows_client, cli_runner):
     responses.add(
         responses.GET,
         GET_REGISTERED_API_URL,
@@ -58,7 +51,8 @@ def test_get_registered_api_json_format(mock_create_client, cli_runner):
     )
 
     result = cli_runner.invoke(
-        globus_registered_api.cli.cli, ["get", "abc-123-def-456", "--format", "json"]
+        globus_registered_api.cli.cli,
+        ["api", "show", "abc-123-def-456", "--format", "json"],
     )
 
     assert result.exit_code == 0
@@ -67,9 +61,7 @@ def test_get_registered_api_json_format(mock_create_client, cli_runner):
     assert '"description": "A test description"' in result.output
 
 
-@patch("globus_registered_api.cli._create_flows_client")
-def test_get_registered_api_empty_description(mock_create_client, cli_runner):
-    mock_create_client.return_value = ExtendedFlowsClient()
+def test_show_registered_api_empty_description(mock_flows_client, cli_runner):
     responses.add(
         responses.GET,
         GET_REGISTERED_API_URL,
@@ -83,7 +75,7 @@ def test_get_registered_api_empty_description(mock_create_client, cli_runner):
     )
 
     result = cli_runner.invoke(
-        globus_registered_api.cli.cli, ["get", "abc-123-def-456"]
+        globus_registered_api.cli.cli, ["api", "show", "abc-123-def-456"]
     )
 
     assert result.exit_code == 0
@@ -91,9 +83,7 @@ def test_get_registered_api_empty_description(mock_create_client, cli_runner):
     assert "Description:" in result.output
 
 
-@patch("globus_registered_api.cli._create_flows_client")
-def test_get_registered_api_calls_correct_endpoint(mock_create_client, cli_runner):
-    mock_create_client.return_value = ExtendedFlowsClient()
+def test_show_registered_api_calls_correct_endpoint(mock_flows_client, cli_runner):
     api_id = "12345678-1234-1234-1234-123456789abc"
     responses.add(
         responses.GET,
@@ -107,14 +97,12 @@ def test_get_registered_api_calls_correct_endpoint(mock_create_client, cli_runne
         },
     )
 
-    cli_runner.invoke(globus_registered_api.cli.cli, ["get", api_id])
+    cli_runner.invoke(globus_registered_api.cli.cli, ["api", "show", api_id])
 
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
 
 
-@patch("globus_registered_api.cli._create_flows_client")
-def test_get_registered_api_not_found(mock_create_client, cli_runner):
-    mock_create_client.return_value = ExtendedFlowsClient()
+def test_get_registered_api_not_found(mock_flows_client, cli_runner):
     api_id = "12345678-1234-1234-1234-123456789abc"
     responses.add(
         responses.GET,
@@ -128,7 +116,7 @@ def test_get_registered_api_not_found(mock_create_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(globus_registered_api.cli.cli, ["get", api_id])
+    result = cli_runner.invoke(globus_registered_api.cli.cli, ["api", "show", api_id])
 
     assert result.exit_code != 0
     assert "No Registered API exists" in str(result.exception)
