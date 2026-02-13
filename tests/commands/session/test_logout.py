@@ -16,7 +16,7 @@ def test_logout(mock_create_app, cli_runner):
     mock_create_app.return_value = mock_app
 
     # Act
-    result = cli_runner.invoke(globus_registered_api.cli.cli, ["logout"])
+    result = cli_runner.invoke(globus_registered_api.cli.cli, ["session", "logout"])
 
     # Assert
     assert result.exit_code == 0
