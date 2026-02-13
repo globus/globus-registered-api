@@ -43,4 +43,3 @@ def with_cli_context(
         return func(cli_context, *args, **kwargs)
 
     return functools.wraps(func)(click.pass_context(wrapper))
-    # return click.pass_context(wrapper)
