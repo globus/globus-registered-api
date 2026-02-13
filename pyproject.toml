@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.urls]
-Source = "https://github.com/globusonline/globus-registered-api"
+Source = "https://github.com/globus/globus-registered-api"
 
 [project.scripts]
 globus-registered-api = "globus_registered_api.cli:cli"
@@ -44,8 +44,8 @@ build-backend = "poetry.core.masonry.api"
 [tool.chipshot]
 template = """
 This file is a part of globus-registered-api.
-https://github.com/globusonline/globus-registered-api
-Copyright 2025 Globus <support@globus.org>
+https://github.com/globus/globus-registered-api
+Copyright 2025-2026 Globus <support@globus.org>
 SPDX-License-Identifier: Apache-2.0
 """
 exclusions = [
