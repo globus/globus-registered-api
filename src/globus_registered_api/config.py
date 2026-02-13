@@ -42,7 +42,7 @@ class RegisteredAPIConfig(BaseModel):
             f.write(self.model_dump_json(indent=4))
 
     @classmethod
-    def load(cls):
+    def load(cls) -> RegisteredAPIConfig:
         """
         Read the config from disk, loading it into a RegisteredAPIConfig instance.
 
