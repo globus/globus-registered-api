@@ -21,7 +21,9 @@ P = t.ParamSpec("P")
 R = t.TypeVar("R")
 
 
-def with_cli_context(func: t.Callable[[CLIContext, P], R]) -> t.Callable[P, R]:
+def with_cli_context(
+    func: t.Callable[t.Concatenate[CLIContext, P], R],
+) -> t.Callable[P, R]:
     """
     Decorator to inject CLIContext into Click command functions.
 
@@ -33,12 +35,12 @@ def with_cli_context(func: t.Callable[[CLIContext, P], R]) -> t.Callable[P, R]:
             ...
     """
 
-    @functools.wraps(func)
-    def wrapper(ctx: click.Context, *args: P.args, **kwargs: P.kwargs) -> R:
+    def wrapper(ctx: click.Context, /, *args: P.args, **kwargs: P.kwargs) -> R:
         cli_context = CLIContext(
             globus_app=ctx.obj.globus_app,
             profile=ctx.obj.profile,
         )
-        return func(cli_context, *args[1:], **kwargs)
+        return func(cli_context, *args, **kwargs)
 
-    return click.pass_context(wrapper)
+    return functools.wraps(func)(click.pass_context(wrapper))
+    # return click.pass_context(wrapper)

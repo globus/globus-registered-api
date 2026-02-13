@@ -3,7 +3,6 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-from ._context import CLIContext
 from .api import api_group
 from .init import init_command
 from .manage import manage_command
@@ -18,7 +17,4 @@ ROOT_COMMANDS = (
     publish_command,
 )
 
-__all__ = (
-    "ROOT_COMMANDS",
-    "CLIContext",
-)
+__all__ = ("ROOT_COMMANDS",)

@@ -7,9 +7,9 @@ import json
 
 import click
 
-from globus_registered_api import ExtendedFlowsClient
-from globus_registered_api.commands._context import CLIContext
-from globus_registered_api.commands._context import with_cli_context
+from globus_registered_api.clients import create_flows_client
+from globus_registered_api.context import CLIContext
+from globus_registered_api.context import with_cli_context
 from globus_registered_api.domain import HTTP_METHODS
 from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi import AmbiguousContentTypeError
@@ -74,7 +74,7 @@ def create_command(
     except (OpenAPILoadError, TargetNotFoundError, AmbiguousContentTypeError) as e:
         raise click.ClickException(str(e))
 
-    flows_client = ExtendedFlowsClient(app=ctx.globus_app)
+    flows_client = create_flows_client(ctx.globus_app)
 
     res = flows_client.create_registered_api(
         name=name,

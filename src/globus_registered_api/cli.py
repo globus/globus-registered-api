@@ -23,7 +23,7 @@ from globus_sdk.token_storage import JSONTokenStorage
 from globus_sdk.token_storage import TokenStorage
 
 from globus_registered_api.commands import ROOT_COMMANDS
-from globus_registered_api.commands import CLIContext
+from globus_registered_api.context import CLIContext
 
 if t.TYPE_CHECKING:
     from globus_sdk.globus_app.config import GlobusAppConfig as SDKGlobusAppConfig

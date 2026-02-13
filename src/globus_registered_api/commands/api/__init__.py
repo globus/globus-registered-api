@@ -13,7 +13,7 @@ from .update import update_command
 
 
 @click.group(name="api")
-def api_group():
+def api_group() -> None:
     """
     Call Flows APIs directly.
     """

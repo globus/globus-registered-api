@@ -5,8 +5,8 @@
 
 import click
 
-from globus_registered_api.commands._context import CLIContext
-from globus_registered_api.commands._context import with_cli_context
+from globus_registered_api.context import CLIContext
+from globus_registered_api.context import with_cli_context
 
 
 @click.command
