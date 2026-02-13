@@ -9,20 +9,23 @@ import os
 import pathlib
 import sys
 import typing as t
-from collections.abc import Iterable
 from uuid import UUID
 
 import click
 from globus_sdk import AuthClient
 from globus_sdk import ClientApp
-from globus_sdk import FlowsClient
 from globus_sdk import GlobusAPIError
 from globus_sdk import GlobusAppConfig
-from globus_sdk import Scope
 from globus_sdk import UserApp
+from globus_sdk.scopes import AuthScopes
+from globus_sdk.scopes import FlowsScopes
+from globus_sdk.scopes import GroupsScopes
+from globus_sdk.scopes import SearchScopes
 from globus_sdk.token_storage import JSONTokenStorage
 from globus_sdk.token_storage import TokenStorage
 
+from globus_registered_api.commands import init_command
+from globus_registered_api.commands import manage_command
 from globus_registered_api.domain import HTTP_METHODS
 from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
@@ -30,7 +33,7 @@ from globus_registered_api.openapi import AmbiguousContentTypeError
 from globus_registered_api.openapi import OpenAPILoadError
 from globus_registered_api.openapi import TargetNotFoundError
 from globus_registered_api.openapi import process_target
-from globus_registered_api.openapi.enchricher import OpenAPIEnricher
+from globus_registered_api.openapi.enricher import OpenAPIEnricher
 from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.schema_diff import diff_schema
 from globus_registered_api.services import SERVICE_CONFIGS
@@ -41,6 +44,17 @@ if t.TYPE_CHECKING:
 # Constants
 NATIVE_CLIENT_ID = "5fde3f3e-78b3-4459-aea2-a91dfd9ace1a"
 GLOBUS_PROFILE_ENV_VAR = "GLOBUS_PROFILE"
+
+SCOPE_REQUIREMENTS = {
+    AuthScopes.resource_server: [
+        AuthScopes.openid,
+        AuthScopes.profile,
+        AuthScopes.email,
+    ],
+    GroupsScopes.resource_server: [GroupsScopes.view_my_groups_and_memberships],
+    SearchScopes.resource_server: [SearchScopes.search],
+    FlowsScopes.resource_server: [FlowsScopes.all],
+}
 
 
 def _get_profile() -> str | None:
@@ -103,12 +117,6 @@ class ProfileAwareJSONTokenStorage:
             client_id=client_id,
             namespace=resolved_namespace,
         )
-
-
-SCOPE_REQUIREMENTS: dict[str, str | Scope | Iterable[str | Scope]] = {
-    AuthClient.scopes.resource_server: [AuthClient.scopes.openid],
-    FlowsClient.scopes.resource_server: [FlowsClient.scopes.all],
-}
 
 
 # Error handling
@@ -218,6 +226,10 @@ def _create_flows_client(app: UserApp | ClientApp) -> ExtendedFlowsClient:
 def cli(ctx: click.Context) -> None:
     """Globus Registered API Command Line Interface."""
     ctx.obj = _create_globus_app()
+
+
+cli.add_command(init_command)
+cli.add_command(manage_command)
 
 
 @cli.command()
@@ -595,7 +607,6 @@ def willdelete_print_service_target(
     method: str,
     route: str,
     content_type: str,
-    environment: str,
     diff_only: bool,
 ) -> None:
     """
@@ -613,8 +624,13 @@ def willdelete_print_service_target(
         raise click.ClickException(str(e))
 
     try:
-        orig_schema = load_openapi_spec(config["openapi_uri"])
-        enriched_schema = OpenAPIEnricher(config, environment).enrich(orig_schema)
+        configured_spec = config.core.specification
+        if isinstance(configured_spec, str):
+            orig_schema = load_openapi_spec(configured_spec)
+        else:
+            orig_schema = configured_spec
+
+        enriched_schema = OpenAPIEnricher(config).enrich(orig_schema)
 
         enriched_target = process_target(enriched_schema, target)
 

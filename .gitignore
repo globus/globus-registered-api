@@ -5,3 +5,4 @@ poetry.lock
 __pycache__/
 .tox/
 .venv/
+.registered_api/
