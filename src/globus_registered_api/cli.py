@@ -30,7 +30,7 @@ from globus_registered_api.openapi import AmbiguousContentTypeError
 from globus_registered_api.openapi import OpenAPILoadError
 from globus_registered_api.openapi import TargetNotFoundError
 from globus_registered_api.openapi import process_target
-from globus_registered_api.openapi.enchricher import OpenAPIEnricher
+from globus_registered_api.openapi.enricher import OpenAPIEnricher
 from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.schema_diff import diff_schema
 from globus_registered_api.services import SERVICE_CONFIGS
@@ -578,13 +578,6 @@ def willdelete_print_target(
     help="Target content-type for request body (required if multiple exist)",
 )
 @click.option(
-    "--environment",
-    type=click.Choice(
-        ["sandbox", "integration", "test", "preview", "staging", "production"]
-    ),
-    default="production",
-)
-@click.option(
     "--diff-only",
     is_flag=True,
     default=False,
@@ -595,7 +588,6 @@ def willdelete_print_service_target(
     method: str,
     route: str,
     content_type: str,
-    environment: str,
     diff_only: bool,
 ) -> None:
     """
@@ -613,8 +605,13 @@ def willdelete_print_service_target(
         raise click.ClickException(str(e))
 
     try:
-        orig_schema = load_openapi_spec(config["openapi_uri"])
-        enriched_schema = OpenAPIEnricher(config, environment).enrich(orig_schema)
+        configured_spec = config.core.specification
+        if isinstance(configured_spec, str):
+            orig_schema = load_openapi_spec(configured_spec)
+        else:
+            orig_schema = configured_spec
+
+        enriched_schema = OpenAPIEnricher(config).enrich(orig_schema)
 
         enriched_target = process_target(enriched_schema, target)
 
