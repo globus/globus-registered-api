@@ -5,7 +5,10 @@
 
 import uuid
 
+import pytest
+
 import globus_registered_api.cli
+from globus_registered_api.cli import GLOBUS_PROFILE_ENV_VAR
 
 
 class MockResponse:
@@ -59,3 +62,46 @@ def test_whoami_with_client_app(mock_auth_client, cli_runner):
         f'"preferred_username": "{client_id}@clients.auth.globus.org"'
         in result_json.output
     )
+
+
+@pytest.mark.parametrize(
+    "profile, format, expected_output, check_profile_absent",
+    [
+        pytest.param(None, "text", "testuser", True, id="text-no-profile"),
+        pytest.param(
+            "work", "text", "testuser (profile: work)", False, id="text-with-profile"
+        ),
+        pytest.param(
+            None, "json", '"preferred_username": "testuser"', True, id="json-no-profile"
+        ),
+        pytest.param(
+            "work", "json", '"profile": "work"', False, id="json-with-profile"
+        ),
+    ],
+)
+def test_whoami_with_profile(
+    cli_runner,
+    monkeypatch,
+    mock_auth_client,
+    profile,
+    format,
+    expected_output,
+    check_profile_absent,
+):
+    # Arrange
+    if profile is None:
+        monkeypatch.delenv(GLOBUS_PROFILE_ENV_VAR, raising=False)
+    else:
+        monkeypatch.setenv(GLOBUS_PROFILE_ENV_VAR, profile)
+
+    # Act
+    args = ["session", "whoami"]
+    if format == "json":
+        args += ["--format", "json"]
+    result = cli_runner.invoke(globus_registered_api.cli.cli, args)
+
+    # Assert
+    assert result.exit_code == 0
+    assert expected_output in result.output
+    if check_profile_absent:
+        assert "profile" not in result.output
