@@ -13,6 +13,8 @@ def create_auth_client(app: GlobusApp) -> AuthClient:
     """
     Create an AuthClient for the given app.
 
+    This function mostly exists for unified testing fixtures.
+
     :param app: A Globus app instance to use for authentication
     :return: An AuthClient configured with the provided app
     """
@@ -22,6 +24,8 @@ def create_auth_client(app: GlobusApp) -> AuthClient:
 def create_flows_client(app: GlobusApp) -> ExtendedFlowsClient:
     """
     Create an ExtendedFlowsClient for the given app.
+
+    This function mostly exists for unified testing fixtures.
 
     :param app: A Globus app instance to use for authentication
     :return: An ExtendedFlowsClient configured with the provided app

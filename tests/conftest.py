@@ -12,6 +12,7 @@ import pytest
 import responses
 from click.testing import CliRunner
 
+import globus_registered_api.clients
 from globus_registered_api import ExtendedFlowsClient
 
 # URL patterns for mocking Flows service responses
@@ -104,20 +105,27 @@ def mock_auth_client(monkeypatch):
             # _create_auth_client is already patched and returns a mock
             # with userinfo() returning {"preferred_username": "testuser", ...}
     """
-    mock_auth = MagicMock()
-    mock_auth.userinfo.return_value = MockResponse(
+    client = MagicMock()
+    client.userinfo.return_value = MockResponse(
         {"preferred_username": "testuser", "email": "test@example.com"}
     )
     monkeypatch.setattr(
-        "globus_registered_api.clients.create_auth_client", lambda app: mock_auth
+        globus_registered_api.clients,
+        "AuthClient",
+        lambda *args, **kwargs: client,
     )
-    return mock_auth
+    return client
 
 
 @pytest.fixture
 def mock_flows_client(monkeypatch):
+    """
+    Fixture that patches ExtendedFlowsClient and returns a mock instance.
+    """
     client = ExtendedFlowsClient()
     monkeypatch.setattr(
-        "globus_registered_api.clients.create_flows_client", lambda app: client
+        globus_registered_api.clients,
+        "ExtendedFlowsClient",
+        lambda *args, **kwargs: client,
     )
     return client
