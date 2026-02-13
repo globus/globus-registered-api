@@ -72,3 +72,12 @@ repos:
     rev: "v1.0.0"
     hooks:
       - id: "verify-consistent-pyproject-toml-python-requirements"
+
+  - repo: "local"
+    hooks:
+      - id: "update-file-copyright-headers"
+        name: "Update File Copyright Headers"
+        entry: "tox -e update-headers"
+        language: "system"
+        pass_filenames: false
+        always_run: true
