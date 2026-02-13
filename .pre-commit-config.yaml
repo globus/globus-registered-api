@@ -38,8 +38,10 @@ repos:
     hooks:
       - id: "update-file-copyright-headers"
         name: "Update File Copyright Headers"
-        entry: "tox -e update-headers -- "
-        language: "system"
+        entry: "chipshot --update"
+        language: "python"
+        additional_dependencies:
+          - "chipshot"
         types:
           - "python"
 
