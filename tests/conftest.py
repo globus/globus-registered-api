@@ -12,6 +12,8 @@ import pytest
 import responses
 from click.testing import CliRunner
 
+import globus_registered_api.config
+
 # URL patterns for mocking Flows service responses
 LIST_REGISTERED_APIS_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis")
 GET_REGISTERED_API_URL = re.compile(
@@ -110,3 +112,16 @@ def mock_auth_client(monkeypatch):
         "globus_registered_api.cli._create_auth_client", lambda app: mock_auth
     )
     return mock_auth
+
+
+@pytest.fixture(autouse=True)
+def config_path(monkeypatch, tmp_path):
+    """
+    Fixture that patches the config path to a temporary directory for all tests.
+
+    Ensure that tests don't write to the runners invocation directory.
+    """
+    config_path = tmp_path / ".registered_api/config.json"
+    monkeypatch.setattr(globus_registered_api.config, "_CONFIG_PATH", config_path)
+
+    yield config_path

@@ -106,3 +106,8 @@ class TargetSpecifier:
             path=match.group("path"),
             content_type=match.group("content_type") or "*",
         )
+
+    def __str__(self) -> str:
+        if self.content_type == "*":
+            return f"{self.method} {self.path}"
+        return f"{self.method} {self.path} {self.content_type}"

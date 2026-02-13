@@ -1,0 +1,5 @@
+
+Changed
+-------
+
+*   Reshape ``RegisteredAPIConfig`` to better align with isolated repository structures.
