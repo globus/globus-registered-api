@@ -28,7 +28,7 @@ Changed
         * ``gra api list``
         * ``gra api create``
         * ``gra api update``
-        *  ``gra api delete`` (stubbed)
+        * ``gra api delete`` (stubbed)
 
     *   Globus Auth session management commands are now under ``gra session``:
 
