@@ -1,28 +1,22 @@
 ..
 
-    Please select the correct category for the change you are making.
+Changelog Writing Instructions:
 
-    1.  Remove all lines before and after the chosen category
-        including these instructions and the divider lines that
-        use tildes ("~").
+1.  Select the category that best fits your change.
 
-    2.  Remove the four spaces in front of the remaining text.
+2.  Delete all text from your file outside your category's section (including this
+    instruction block).
 
-    3.  Describe your change using active verbs and full sentences.
-        For example, write "Support a new feature" instead of
-        "Supports a new feature" or "A new feature is supported".
+3.  Edit the remaining bullet point to describe your change.
 
-    4.  If your change is associated with an issue on GitHub,
-        list the issue number(s) in parentheses, separated by
-        commas. For example:
-
-            Support a new feature. (#10, #20)
+    *   For changelog consistency, use present-tense, active verbs:
+        ✅ "Add support for a new feature."
+        ❌ "Added support for a new feature."
+        ❌ "A new feature is supported."
 
 {% for category in config.categories %}
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+{{ category }}
+{{ config.rst_header_chars[1] * (category|length) }}
 
-    {{ category }}
-    {{ config.rst_header_chars[1] * (category|length) }}
-
-    *   Describe your "{{ category }}" change here. EDIT ME!
+*   Describe your "{{ category }}" change here. EDIT ME!
 {% endfor -%}
