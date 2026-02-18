@@ -25,3 +25,54 @@ Please see the fragment files in the `changelog.d directory`_.
 
 
 ..  scriv-insert-here
+
+.. _changelog-0.1.0:
+
+0.1.0 - 2026-02-12
+==================
+
+Added
+-----
+
+*   Add a ``whoami`` command to display authenticated user information
+    with a ``--format`` option for text or JSON output.
+*   Add a ``logout`` command to revoke tokens for sessions.
+*   Add a ``create`` CLI command to create a registered API from an OpenAPI spec.
+*   Add a ``get`` CLI command to retrieve a single registered API by ID.
+*   Add a ``list`` command to list registered APIs
+    with ``--filter-roles``, ``--per-page``, and ``--format`` options.
+*   Add an ``update`` CLI command to modify a registered API by ID.
+*   Add a ``willdelete print`` CLI command for OpenAPI target extraction.
+    This temporary development command extracts a targeted endpoint
+    from an OpenAPI spec and outputs it in the format expected by
+    ``POST /registered_apis``.
+*   Add a new command, ``willdelete print-service-target``,
+    which prints a target from a registered service's config
+    whose schema has been "enriched".
+*   Add an ``ExtendedFlowsClient`` class that extends the ``FlowsClient`` class
+    with a ``list_registered_apis`` method to list registered APIs
+    for which the caller has a role.
+*   Add service config registration for Globus Search and Globus Groups.
+*   Add ``GLOBUS_PROFILE`` support for profile-aware token storage.
+*   Add support for ``ClientApp`` and ``UserApp`` authentication.
+    Use ``ClientApp`` when ``GLOBUS_REGISTERED_API_CLIENT_ID``
+    and ``GLOBUS_REGISTERED_API_CLIENT_SECRET`` environment variables are set,
+    otherwise use ``UserApp`` with a registered native client.
+
+Development
+-----------
+
+*   Add a ``justfile`` with basic developer assistance commands:
+
+    ..  code-block:: text
+
+        > just
+        Available recipes:
+            clean   # Delete known build artifacts.
+            docs    # Rebuild the project's documentation locally (at ./`build`).
+            help    # Print this help message.
+            install # Install a development virtual environment (at `./.venv`).
+            test    # Run the full test suite locally.
+
+*   Add an OpenAPI Mutator framework to enrich schemas.
+*   Add a basic service-config format.
