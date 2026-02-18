@@ -3,20 +3,26 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
+import functools
 import json
+import typing as t
 
 import pytest
 import responses
-from conftest import CREATE_REGISTERED_API_URL
-
-import globus_registered_api.cli
 
 
-def test_create_registered_api_text_format(mock_flows_client, cli_runner, spec_path):
+@pytest.fixture
+def patch_create(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+    yield functools.partial(
+        responses.add,
+        method=responses.POST,
+        url=api_url_patterns.CREATE,
+    )
+
+
+def test_create_registered_api_text_format(gra, patch_create, spec_path):
     # Arrange
-    responses.add(
-        responses.POST,
-        CREATE_REGISTERED_API_URL,
+    patch_create(
         json={
             "id": "12345678-1234-1234-1234-123456789abc",
             "name": "My API",
@@ -33,8 +39,7 @@ def test_create_registered_api_text_format(mock_flows_client, cli_runner, spec_p
     )
 
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",
@@ -55,11 +60,9 @@ def test_create_registered_api_text_format(mock_flows_client, cli_runner, spec_p
     assert "My API" in result.output
 
 
-def test_create_registered_api_json_format(mock_flows_client, cli_runner, spec_path):
+def test_create_registered_api_json_format(gra, patch_create, spec_path):
     # Arrange
-    responses.add(
-        responses.POST,
-        CREATE_REGISTERED_API_URL,
+    patch_create(
         json={
             "id": "12345678-1234-1234-1234-123456789abc",
             "name": "My API",
@@ -76,8 +79,7 @@ def test_create_registered_api_json_format(mock_flows_client, cli_runner, spec_p
     )
 
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",
@@ -99,13 +101,9 @@ def test_create_registered_api_json_format(mock_flows_client, cli_runner, spec_p
     assert output["name"] == "My API"
 
 
-def test_create_registered_api_with_description(
-    mock_flows_client, cli_runner, spec_path
-):
+def test_create_registered_api_with_description(gra, patch_create, spec_path):
     # Arrange
-    responses.add(
-        responses.POST,
-        CREATE_REGISTERED_API_URL,
+    patch_create(
         json={
             "id": "12345678-1234-1234-1234-123456789abc",
             "name": "My API",
@@ -122,8 +120,7 @@ def test_create_registered_api_with_description(
     )
 
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",
@@ -143,13 +140,9 @@ def test_create_registered_api_with_description(
     assert request_body["description"] == "A detailed description"
 
 
-def test_create_registered_api_sends_correct_target(
-    mock_flows_client, cli_runner, spec_path
-):
+def test_create_registered_api_sends_correct_target(gra, patch_create, spec_path):
     # Arrange
-    responses.add(
-        responses.POST,
-        CREATE_REGISTERED_API_URL,
+    patch_create(
         json={
             "id": "12345678-1234-1234-1234-123456789abc",
             "name": "My API",
@@ -166,8 +159,7 @@ def test_create_registered_api_sends_correct_target(
     )
 
     # Act
-    cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    gra(
         [
             "api",
             "create",
@@ -191,13 +183,9 @@ def test_create_registered_api_sends_correct_target(
     assert target["destination"]["url"] == "https://api.example.com/items"
 
 
-def test_create_registered_api_with_content_type(
-    mock_flows_client, cli_runner, spec_path
-):
+def test_create_registered_api_with_content_type(gra, patch_create, spec_path):
     # Arrange
-    responses.add(
-        responses.POST,
-        CREATE_REGISTERED_API_URL,
+    patch_create(
         json={
             "id": "12345678-1234-1234-1234-123456789abc",
             "name": "Upload API",
@@ -214,8 +202,7 @@ def test_create_registered_api_with_content_type(
     )
 
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",
@@ -237,10 +224,9 @@ def test_create_registered_api_with_content_type(
     assert target["destination"]["method"] == "post"
 
 
-def test_create_registered_api_with_nonexistent_file_shows_error(cli_runner):
+def test_create_registered_api_with_nonexistent_file_shows_error(gra):
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",
@@ -258,10 +244,9 @@ def test_create_registered_api_with_nonexistent_file_shows_error(cli_runner):
     assert "Failed to read file:" in result.output
 
 
-def test_create_registered_api_with_invalid_route_shows_error(cli_runner, spec_path):
+def test_create_registered_api_with_invalid_route_shows_error(gra, spec_path):
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",
@@ -279,10 +264,9 @@ def test_create_registered_api_with_invalid_route_shows_error(cli_runner, spec_p
     assert "Route not found: '/nonexistent'" in result.output
 
 
-def test_create_registered_api_with_invalid_method_shows_error(cli_runner, spec_path):
+def test_create_registered_api_with_invalid_method_shows_error(gra, spec_path):
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",
@@ -300,12 +284,9 @@ def test_create_registered_api_with_invalid_method_shows_error(cli_runner, spec_
     assert "Method 'DELETE' not found for route '/items'" in result.output
 
 
-def test_create_registered_api_with_ambiguous_content_type_shows_error(
-    cli_runner, spec_path
-):
+def test_create_registered_api_with_ambiguous_content_type_shows_error(gra, spec_path):
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",
@@ -323,13 +304,9 @@ def test_create_registered_api_with_ambiguous_content_type_shows_error(
     assert "Multiple content-types match" in result.output
 
 
-def test_create_registered_api_calls_post_endpoint(
-    mock_flows_client, cli_runner, spec_path
-):
+def test_create_registered_api_calls_post_endpoint(gra, patch_create, spec_path):
     # Arrange
-    responses.add(
-        responses.POST,
-        CREATE_REGISTERED_API_URL,
+    patch_create(
         json={
             "id": "12345678-1234-1234-1234-123456789abc",
             "name": "My API",
@@ -346,8 +323,7 @@ def test_create_registered_api_calls_post_endpoint(
     )
 
     # Act
-    cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    gra(
         [
             "api",
             "create",
@@ -365,11 +341,9 @@ def test_create_registered_api_calls_post_endpoint(
     assert responses.calls[0].request.method == "POST"
 
 
-def test_create_registered_api_api_error(mock_flows_client, cli_runner, spec_path):
+def test_create_registered_api_api_error(gra, patch_create, spec_path):
     # Arrange
-    responses.add(
-        responses.POST,
-        CREATE_REGISTERED_API_URL,
+    patch_create(
         status=400,
         json={
             "error": {
@@ -380,8 +354,7 @@ def test_create_registered_api_api_error(mock_flows_client, cli_runner, spec_pat
     )
 
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",
@@ -415,13 +388,13 @@ def test_create_registered_api_api_error(mock_flows_client, cli_runner, spec_pat
     ],
 )
 def test_create_registered_api_missing_required_param_shows_error(
-    cli_runner, spec_path, args, expected_error
+    gra, spec_path, args, expected_error
 ):
     # Arrange
     args = [str(spec_path("minimal.json")) if arg == "SPEC" else arg for arg in args]
 
     # Act
-    result = cli_runner.invoke(globus_registered_api.cli.cli, args)
+    result = gra(args)
 
     # Assert
     assert result.exit_code != 0
@@ -429,16 +402,14 @@ def test_create_registered_api_missing_required_param_shows_error(
 
 
 def test_create_registered_api_with_url_containing_query_params(
-    mock_flows_client, cli_runner, spec_path
+    gra, patch_create, spec_path
 ):
     # Arrange
     spec_url = "https://domain.example/spec?format=json&download=true"
     spec_content = spec_path("minimal.json").read_text()
 
     responses.add(responses.GET, spec_url, body=spec_content, status=200)
-    responses.add(
-        responses.POST,
-        CREATE_REGISTERED_API_URL,
+    patch_create(
         json={
             "id": "12345678-1234-1234-1234-123456789abc",
             "name": "My API",
@@ -455,8 +426,7 @@ def test_create_registered_api_with_url_containing_query_params(
     )
 
     # Act
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "create",

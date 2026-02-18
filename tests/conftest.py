@@ -6,26 +6,24 @@
 import re
 import typing as t
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 import responses
-from click.testing import CliRunner
 
 import globus_registered_api.clients
 from globus_registered_api import ExtendedFlowsClient
 
-# URL patterns for mocking Flows service responses
-LIST_REGISTERED_APIS_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis")
-GET_REGISTERED_API_URL = re.compile(
-    r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"
-)
-UPDATE_REGISTERED_API_URL = re.compile(
-    r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"
-)
-CREATE_REGISTERED_API_URL = re.compile(
-    r"https://.*flows.*\.globus\.org/registered_apis$"
-)
+
+@pytest.fixture(scope="session")
+def api_url_patterns():
+    return SimpleNamespace(
+        LIST=re.compile(r"https://.*flows.*\.globus\.org/registered_apis"),
+        SHOW=re.compile(r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"),
+        UPDATE=re.compile(r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"),
+        CREATE=re.compile(r"https://.*flows.*\.globus\.org/registered_apis$"),
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -44,11 +42,6 @@ def mocked_responses():
 def mock_client_env(monkeypatch):
     monkeypatch.setenv("GLOBUS_REGISTERED_API_CLIENT_ID", "test-id")
     monkeypatch.setenv("GLOBUS_REGISTERED_API_CLIENT_SECRET", "test-secret")
-
-
-@pytest.fixture
-def cli_runner() -> t.Generator[CliRunner, None, None]:
-    return CliRunner()
 
 
 @pytest.fixture
@@ -95,7 +88,7 @@ class MockResponse:
         return self.data[key]
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_auth_client(monkeypatch):
     """
     Fixture that patches _create_auth_client and returns a configured mock.
@@ -117,7 +110,7 @@ def mock_auth_client(monkeypatch):
     return client
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_flows_client(monkeypatch):
     """
     Fixture that patches ExtendedFlowsClient and returns a mock instance.
