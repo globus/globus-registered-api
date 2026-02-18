@@ -95,9 +95,9 @@ class TargetConfig(BaseModel):
     scope_strings: list[str] = Field(default_factory=list)
 
     @property
-    def sort_key(self) -> str:
-        # Sort by alias, then method and path for consistent ordering.
-        return f"{self.path}:{self.method}:{self.alias}"
+    def sort_key(self) -> tuple[str, ...]:
+        # Sort by path then method, disambiguating duplicate targets by alias.
+        return self.path, self.method, self.alias
 
     @property
     def specifier(self) -> TargetSpecifier:
@@ -124,6 +124,6 @@ class RoleConfig(BaseModel):
     access_level: t.Literal["owner", "admin", "viewer"]
 
     @property
-    def sort_key(self) -> str:
+    def sort_key(self) -> tuple[str, ...]:
         # Sort by type, then id for consistent ordering.
-        return f"{self.type}:{self.id}"
+        return self.type, str(self.id)
