@@ -8,18 +8,17 @@ from unittest.mock import patch
 
 import pytest
 
-import globus_registered_api.cli
 from globus_registered_api.cli import GLOBUS_PROFILE_ENV_VAR
 
 
 @patch("globus_registered_api.cli._create_globus_app")
-def test_logout(mock_create_app, cli_runner):
+def test_logout(mock_create_app, gra):
     # Arrange
     mock_app = MagicMock()
     mock_create_app.return_value = mock_app
 
     # Act
-    result = cli_runner.invoke(globus_registered_api.cli.cli, ["session", "logout"])
+    result = gra(["session", "logout"])
 
     # Assert
     assert result.exit_code == 0
@@ -38,7 +37,7 @@ def test_logout(mock_create_app, cli_runner):
 )
 @patch("globus_registered_api.cli._create_globus_app")
 def test_logout_with_profile(
-    mock_create_app, cli_runner, monkeypatch, profile, expected_message
+    mock_create_app, gra, monkeypatch, profile, expected_message
 ):
     # Arrange
     if profile is None:
@@ -49,7 +48,7 @@ def test_logout_with_profile(
     mock_create_app.return_value = mock_app
 
     # Act
-    result = cli_runner.invoke(globus_registered_api.cli.cli, ["session", "logout"])
+    result = gra(["session", "logout"])
 
     # Assert
     assert result.exit_code == 0

@@ -2,16 +2,13 @@
 # https://github.com/globus/globus-registered-api
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
-
+import functools
 import json
+import typing as t
 import uuid
 
 import pytest
 import responses
-from conftest import CREATE_REGISTERED_API_URL
-from conftest import GET_REGISTERED_API_URL
-from conftest import LIST_REGISTERED_APIS_URL
-from conftest import UPDATE_REGISTERED_API_URL
 from globus_sdk import GlobusHTTPResponse
 
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
@@ -22,11 +19,47 @@ def client():
     return ExtendedFlowsClient()
 
 
-def test_list_registered_apis_basic(client):
+@pytest.fixture
+def patch_create(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+    yield functools.partial(
+        responses.add,
+        method=responses.POST,
+        url=api_url_patterns.CREATE,
+    )
+
+
+@pytest.fixture
+def patch_show(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+    yield functools.partial(
+        responses.add,
+        method=responses.GET,
+        url=api_url_patterns.SHOW,
+    )
+
+
+@pytest.fixture
+def patch_list(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+    yield functools.partial(
+        responses.add,
+        method=responses.GET,
+        url=api_url_patterns.LIST,
+    )
+
+
+@pytest.fixture
+def patch_update(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+    yield functools.partial(
+        responses.add,
+        method=responses.PATCH,
+        url=api_url_patterns.UPDATE,
+    )
+
+
+def test_list_registered_apis_basic(client, api_url_patterns):
     api_id = str(uuid.uuid4())
     responses.add(
         responses.GET,
-        LIST_REGISTERED_APIS_URL,
+        api_url_patterns.LIST,
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Test API"},
@@ -45,11 +78,9 @@ def test_list_registered_apis_basic(client):
     assert response["registered_apis"][0]["name"] == "Test API"
 
 
-def test_list_registered_apis_with_filter_roles(client):
+def test_list_registered_apis_with_filter_roles(client, patch_list):
     api_id = str(uuid.uuid4())
-    responses.add(
-        responses.GET,
-        LIST_REGISTERED_APIS_URL,
+    patch_list(
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Owned API"},
@@ -67,11 +98,9 @@ def test_list_registered_apis_with_filter_roles(client):
     assert response["registered_apis"][0]["id"] == api_id
 
 
-def test_list_registered_apis_with_filter_roles_string(client):
+def test_list_registered_apis_with_filter_roles_string(client, patch_list):
     api_id = str(uuid.uuid4())
-    responses.add(
-        responses.GET,
-        LIST_REGISTERED_APIS_URL,
+    patch_list(
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Viewable API"},
@@ -89,11 +118,9 @@ def test_list_registered_apis_with_filter_roles_string(client):
     assert response["registered_apis"][0]["name"] == "Viewable API"
 
 
-def test_list_registered_apis_with_per_page(client):
+def test_list_registered_apis_with_per_page(client, patch_list):
     api_ids = [str(uuid.uuid4()) for _ in range(3)]
-    responses.add(
-        responses.GET,
-        LIST_REGISTERED_APIS_URL,
+    patch_list(
         json={
             "registered_apis": [
                 {"id": api_ids[0], "name": "API One"},
@@ -113,12 +140,10 @@ def test_list_registered_apis_with_per_page(client):
     assert response["registered_apis"][0]["id"] == api_ids[0]
 
 
-def test_list_registered_apis_with_marker(client):
+def test_list_registered_apis_with_marker(client, patch_list):
     marker = str(uuid.uuid4())
     api_id = str(uuid.uuid4())
-    responses.add(
-        responses.GET,
-        LIST_REGISTERED_APIS_URL,
+    patch_list(
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Next Page API"},
@@ -137,11 +162,9 @@ def test_list_registered_apis_with_marker(client):
     assert response["registered_apis"][0]["name"] == "Next Page API"
 
 
-def test_list_registered_apis_with_orderby_string(client):
+def test_list_registered_apis_with_orderby_string(client, patch_list):
     api_ids = [str(uuid.uuid4()) for _ in range(2)]
-    responses.add(
-        responses.GET,
-        LIST_REGISTERED_APIS_URL,
+    patch_list(
         json={
             "registered_apis": [
                 {"id": api_ids[0], "name": "Alpha API"},
@@ -161,11 +184,9 @@ def test_list_registered_apis_with_orderby_string(client):
     assert response["registered_apis"][1]["name"] == "Beta API"
 
 
-def test_get_registered_api(client):
+def test_get_registered_api(client, patch_show):
     api_id = uuid.uuid4()
-    responses.add(
-        responses.GET,
-        GET_REGISTERED_API_URL,
+    patch_show(
         json={
             "id": str(api_id),
             "name": "Test API",
@@ -184,11 +205,9 @@ def test_get_registered_api(client):
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
 
 
-def test_update_registered_api_basic(client):
+def test_update_registered_api_basic(client, patch_update):
     api_id = uuid.uuid4()
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+    patch_update(
         json={
             "id": str(api_id),
             "name": "Updated API",
@@ -211,11 +230,9 @@ def test_update_registered_api_basic(client):
     assert responses.calls[0].request.method == "PATCH"
 
 
-def test_update_registered_api_with_description(client):
+def test_update_registered_api_with_description(client, patch_update):
     api_id = uuid.uuid4()
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+    patch_update(
         json={
             "id": str(api_id),
             "name": "Test API",
@@ -235,12 +252,10 @@ def test_update_registered_api_with_description(client):
     assert response["description"] == "New description"
 
 
-def test_update_registered_api_with_roles(client):
+def test_update_registered_api_with_roles(client, patch_update):
     api_id = uuid.uuid4()
     new_owners = ["urn:globus:auth:identity:user1", "urn:globus:auth:identity:user2"]
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+    patch_update(
         json={
             "id": str(api_id),
             "name": "Test API",
@@ -260,7 +275,7 @@ def test_update_registered_api_with_roles(client):
     assert response["roles"]["owners"] == new_owners
 
 
-def test_update_registered_api_with_target(client):
+def test_update_registered_api_with_target(client, patch_update):
     api_id = uuid.uuid4()
     target = {
         "type": "openapi",
@@ -268,9 +283,7 @@ def test_update_registered_api_with_target(client):
         "destination": {"method": "get", "url": "https://example.com/api"},
         "specification": {"operationId": "test-op", "responses": {}},
     }
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+    patch_update(
         json={
             "id": str(api_id),
             "name": "Test API",
@@ -291,13 +304,11 @@ def test_update_registered_api_with_target(client):
     assert response["target"] == target
 
 
-def test_update_registered_api_omitted_params_not_in_request(client):
-    api_id = uuid.uuid4()
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+def test_update_registered_api_omitted_params_not_in_request(client, patch_update):
+    api_id = str(uuid.uuid4())
+    patch_update(
         json={
-            "id": str(api_id),
+            "id": api_id,
             "name": "Updated Name",
             "description": "Original description",
             "roles": {
@@ -320,7 +331,7 @@ def test_update_registered_api_omitted_params_not_in_request(client):
     assert "roles" not in request_body
 
 
-def test_create_registered_api(client):
+def test_create_registered_api(client, patch_create):
     # Arrange
     api_id = str(uuid.uuid4())
     target = {
@@ -329,9 +340,7 @@ def test_create_registered_api(client):
         "destination": {"method": "get", "url": "https://example.com/items"},
         "specification": {"operationId": "getItems", "responses": {}},
     }
-    responses.add(
-        responses.POST,
-        CREATE_REGISTERED_API_URL,
+    patch_create(
         json={
             "id": api_id,
             "name": "My New API",

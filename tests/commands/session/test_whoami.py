@@ -7,7 +7,6 @@ import uuid
 
 import pytest
 
-import globus_registered_api.cli
 from globus_registered_api.cli import GLOBUS_PROFILE_ENV_VAR
 
 
@@ -19,25 +18,23 @@ class MockResponse:
         return self.data[key]
 
 
-def test_whoami_with_user_app(mock_auth_client, cli_runner):
+def test_whoami_with_user_app(gra):
     # Act
-    result = cli_runner.invoke(globus_registered_api.cli.cli, ["session", "whoami"])
+    result = gra(["session", "whoami"])
 
     # Assert
     assert result.exit_code == 0
     assert "testuser" in result.output
 
     # Act (json format)
-    result_json = cli_runner.invoke(
-        globus_registered_api.cli.cli, ["session", "whoami", "--format", "json"]
-    )
+    result_json = gra(["session", "whoami", "--format", "json"])
 
     # Assert
     assert result_json.exit_code == 0
     assert '"preferred_username": "testuser"' in result_json.output
 
 
-def test_whoami_with_client_app(mock_auth_client, cli_runner):
+def test_whoami_with_client_app(mock_auth_client, gra):
     # Arrange
     client_id = str(uuid.uuid4())
     mock_auth_client.userinfo.return_value = MockResponse(
@@ -45,23 +42,19 @@ def test_whoami_with_client_app(mock_auth_client, cli_runner):
     )
 
     # Act
-    result = cli_runner.invoke(globus_registered_api.cli.cli, ["session", "whoami"])
+    result = gra(["session", "whoami"])
 
     # Assert
     assert result.exit_code == 0
     assert client_id in result.output
 
     # Act (json format)
-    result_json = cli_runner.invoke(
-        globus_registered_api.cli.cli, ["session", "whoami", "--format", "json"]
-    )
+    result_json = gra(["session", "whoami", "--format", "json"])
 
     # Assert
     assert result_json.exit_code == 0
-    assert (
-        f'"preferred_username": "{client_id}@clients.auth.globus.org"'
-        in result_json.output
-    )
+    username = f"{client_id}@clients.auth.globus.org"
+    assert f'"preferred_username": "{username}"' in result_json.output
 
 
 @pytest.mark.parametrize(
@@ -80,9 +73,8 @@ def test_whoami_with_client_app(mock_auth_client, cli_runner):
     ],
 )
 def test_whoami_with_profile(
-    cli_runner,
+    gra,
     monkeypatch,
-    mock_auth_client,
     profile,
     format,
     expected_output,
@@ -98,7 +90,7 @@ def test_whoami_with_profile(
     args = ["session", "whoami"]
     if format == "json":
         args += ["--format", "json"]
-    result = cli_runner.invoke(globus_registered_api.cli.cli, args)
+    result = gra(args)
 
     # Assert
     assert result.exit_code == 0
