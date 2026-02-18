@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import os
 import typing as t
 from pathlib import Path
 from uuid import UUID
@@ -18,7 +17,7 @@ from pydantic import Field
 from globus_registered_api.domain import HTTPMethod
 from globus_registered_api.domain import TargetSpecifier
 
-_CONFIG_PATH = Path(".registered_api/config.json")
+_CONFIG_PATH = Path(".globus_registered_api/config.json")
 
 
 class RegisteredAPIConfig(BaseModel):
@@ -38,8 +37,7 @@ class RegisteredAPIConfig(BaseModel):
         Write the current config state to disk.
         """
         _CONFIG_PATH.parent.mkdir(exist_ok=True)
-        with open(_CONFIG_PATH, "w") as f:
-            f.write(self.model_dump_json(indent=4))
+        _CONFIG_PATH.write_text(self.model_dump_json(indent=4))
 
     @classmethod
     def load(cls) -> RegisteredAPIConfig:
@@ -54,15 +52,14 @@ class RegisteredAPIConfig(BaseModel):
             click.echo("Run 'globus-registered-api init' first to create a repository.")
             raise click.Abort()
 
-        with open(_CONFIG_PATH) as f:
-            return cls.model_validate_json(f.read())
+        return cls.model_validate_json(_CONFIG_PATH.read_text())
 
     @classmethod
     def exists(cls) -> bool:
         """
         :return: True if a config file exists on disk, False otherwise.
         """
-        return os.path.exists(_CONFIG_PATH)
+        return _CONFIG_PATH.is_file()
 
 
 class CoreConfig(BaseModel):
@@ -98,9 +95,9 @@ class TargetConfig(BaseModel):
     scope_strings: list[str] = Field(default_factory=list)
 
     @property
-    def sort_key(self) -> str:
-        # Sort by alias, then method and path for consistent ordering.
-        return f"{self.path}:{self.method}:{self.alias}"
+    def sort_key(self) -> tuple[str, ...]:
+        # Sort by path then method, disambiguating duplicate targets by alias.
+        return self.path, self.method, self.alias
 
     @property
     def specifier(self) -> TargetSpecifier:
@@ -127,6 +124,6 @@ class RoleConfig(BaseModel):
     access_level: t.Literal["owner", "admin", "viewer"]
 
     @property
-    def sort_key(self) -> str:
+    def sort_key(self) -> tuple[str, ...]:
         # Sort by type, then id for consistent ordering.
-        return f"{self.type}:{self.id}"
+        return self.type, str(self.id)
