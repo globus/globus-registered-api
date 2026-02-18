@@ -4,20 +4,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from unittest.mock import patch
 
 import pytest
 import responses
 from conftest import CREATE_REGISTERED_API_URL
 
 import globus_registered_api.cli
-from globus_registered_api.extended_flows_client import ExtendedFlowsClient
 
 
-@patch("globus_registered_api.cli._create_flows_client")
-def test_create_registered_api_text_format(mock_create_client, cli_runner, spec_path):
+def test_create_registered_api_text_format(mock_flows_client, cli_runner, spec_path):
     # Arrange
-    mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.POST,
         CREATE_REGISTERED_API_URL,
@@ -40,6 +36,7 @@ def test_create_registered_api_text_format(mock_create_client, cli_runner, spec_
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("minimal.json")),
             "get",
@@ -58,10 +55,8 @@ def test_create_registered_api_text_format(mock_create_client, cli_runner, spec_
     assert "My API" in result.output
 
 
-@patch("globus_registered_api.cli._create_flows_client")
-def test_create_registered_api_json_format(mock_create_client, cli_runner, spec_path):
+def test_create_registered_api_json_format(mock_flows_client, cli_runner, spec_path):
     # Arrange
-    mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.POST,
         CREATE_REGISTERED_API_URL,
@@ -84,6 +79,7 @@ def test_create_registered_api_json_format(mock_create_client, cli_runner, spec_
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("minimal.json")),
             "get",
@@ -103,12 +99,10 @@ def test_create_registered_api_json_format(mock_create_client, cli_runner, spec_
     assert output["name"] == "My API"
 
 
-@patch("globus_registered_api.cli._create_flows_client")
 def test_create_registered_api_with_description(
-    mock_create_client, cli_runner, spec_path
+    mock_flows_client, cli_runner, spec_path
 ):
     # Arrange
-    mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.POST,
         CREATE_REGISTERED_API_URL,
@@ -131,6 +125,7 @@ def test_create_registered_api_with_description(
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("minimal.json")),
             "get",
@@ -148,12 +143,10 @@ def test_create_registered_api_with_description(
     assert request_body["description"] == "A detailed description"
 
 
-@patch("globus_registered_api.cli._create_flows_client")
 def test_create_registered_api_sends_correct_target(
-    mock_create_client, cli_runner, spec_path
+    mock_flows_client, cli_runner, spec_path
 ):
     # Arrange
-    mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.POST,
         CREATE_REGISTERED_API_URL,
@@ -176,6 +169,7 @@ def test_create_registered_api_sends_correct_target(
     cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("minimal.json")),
             "get",
@@ -197,12 +191,10 @@ def test_create_registered_api_sends_correct_target(
     assert target["destination"]["url"] == "https://api.example.com/items"
 
 
-@patch("globus_registered_api.cli._create_flows_client")
 def test_create_registered_api_with_content_type(
-    mock_create_client, cli_runner, spec_path
+    mock_flows_client, cli_runner, spec_path
 ):
     # Arrange
-    mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.POST,
         CREATE_REGISTERED_API_URL,
@@ -225,6 +217,7 @@ def test_create_registered_api_with_content_type(
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("multiple_content_types.json")),
             "post",
@@ -249,6 +242,7 @@ def test_create_registered_api_with_nonexistent_file_shows_error(cli_runner):
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             "/nonexistent.json",
             "get",
@@ -269,6 +263,7 @@ def test_create_registered_api_with_invalid_route_shows_error(cli_runner, spec_p
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("minimal.json")),
             "get",
@@ -289,6 +284,7 @@ def test_create_registered_api_with_invalid_method_shows_error(cli_runner, spec_
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("minimal.json")),
             "delete",
@@ -311,6 +307,7 @@ def test_create_registered_api_with_ambiguous_content_type_shows_error(
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("multiple_content_types.json")),
             "post",
@@ -326,12 +323,10 @@ def test_create_registered_api_with_ambiguous_content_type_shows_error(
     assert "Multiple content-types match" in result.output
 
 
-@patch("globus_registered_api.cli._create_flows_client")
 def test_create_registered_api_calls_post_endpoint(
-    mock_create_client, cli_runner, spec_path
+    mock_flows_client, cli_runner, spec_path
 ):
     # Arrange
-    mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.POST,
         CREATE_REGISTERED_API_URL,
@@ -354,6 +349,7 @@ def test_create_registered_api_calls_post_endpoint(
     cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("minimal.json")),
             "get",
@@ -369,10 +365,8 @@ def test_create_registered_api_calls_post_endpoint(
     assert responses.calls[0].request.method == "POST"
 
 
-@patch("globus_registered_api.cli._create_flows_client")
-def test_create_registered_api_api_error(mock_create_client, cli_runner, spec_path):
+def test_create_registered_api_api_error(mock_flows_client, cli_runner, spec_path):
     # Arrange
-    mock_create_client.return_value = ExtendedFlowsClient()
     responses.add(
         responses.POST,
         CREATE_REGISTERED_API_URL,
@@ -389,6 +383,7 @@ def test_create_registered_api_api_error(mock_create_client, cli_runner, spec_pa
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             str(spec_path("minimal.json")),
             "get",
@@ -408,12 +403,12 @@ def test_create_registered_api_api_error(mock_create_client, cli_runner, spec_pa
     "args,expected_error",
     [
         pytest.param(
-            ["create", "SPEC", "get", "/items", "My API"],
+            ["api", "create", "SPEC", "get", "/items", "My API"],
             "Missing option '--description'",
             id="missing-description",
         ),
         pytest.param(
-            ["create", "SPEC", "get", "/items", "--description", "Test"],
+            ["api", "create", "SPEC", "get", "/items", "--description", "Test"],
             "Missing argument 'NAME'",
             id="missing-name",
         ),
@@ -433,12 +428,10 @@ def test_create_registered_api_missing_required_param_shows_error(
     assert expected_error in result.output
 
 
-@patch("globus_registered_api.cli._create_flows_client")
 def test_create_registered_api_with_url_containing_query_params(
-    mock_create_client, cli_runner, spec_path
+    mock_flows_client, cli_runner, spec_path
 ):
     # Arrange
-    mock_create_client.return_value = ExtendedFlowsClient()
     spec_url = "https://domain.example/spec?format=json&download=true"
     spec_content = spec_path("minimal.json").read_text()
 
@@ -465,6 +458,7 @@ def test_create_registered_api_with_url_containing_query_params(
     result = cli_runner.invoke(
         globus_registered_api.cli.cli,
         [
+            "api",
             "create",
             spec_url,
             "get",
