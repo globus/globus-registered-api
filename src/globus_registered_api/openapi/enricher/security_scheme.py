@@ -41,7 +41,7 @@ class InjectSecuritySchemes(SchemaMutation):
         paths = schema.paths or oa.Paths()
         schema.paths = paths
 
-        # Ensure that the specific path exists on in that 'paths' dict.
+        # Ensure that the specific path exists in the 'paths' dict.
         path_item = paths.setdefault(specifier.path, oa.PathItem())
 
         # Ensure that the method exists for that path.
