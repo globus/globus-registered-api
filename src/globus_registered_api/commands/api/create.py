@@ -61,8 +61,8 @@ def create_command(
 
     Example:
 
-        globus-registered-api create ./spec.json get /items "My API"
-            --description "My API"
+    \b
+        gra api create ./spec.json get /items "My API" --description "My API"
     """
     try:
         target = TargetSpecifier.create(method, route, content_type)
