@@ -7,4 +7,5 @@
 /.tox/
 poetry.lock
 __pycache__/
+.globus_registered_api/
 .venv/

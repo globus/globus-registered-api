@@ -13,6 +13,7 @@ import pytest
 import responses
 
 import globus_registered_api.clients
+import globus_registered_api.config
 from globus_registered_api import ExtendedFlowsClient
 
 
@@ -108,6 +109,19 @@ def mock_auth_client(monkeypatch):
         lambda *args, **kwargs: client,
     )
     return client
+
+
+@pytest.fixture(autouse=True)
+def config_path(monkeypatch, tmp_path):
+    """
+    Fixture that patches the config path to a temporary directory for all tests.
+
+    Ensure that tests don't write to the runners invocation directory.
+    """
+    config_path = tmp_path / ".globus_registered_api/config.json"
+    monkeypatch.setattr(globus_registered_api.config, "_CONFIG_PATH", config_path)
+
+    yield config_path
 
 
 @pytest.fixture(autouse=True)
