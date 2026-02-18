@@ -144,3 +144,18 @@ class ExtendedFlowsClient(FlowsClient):
         }
 
         return self.post("/registered_apis", data=body)
+
+    def delete_registered_api(
+        self,
+        registered_api_id: str | uuid.UUID,
+    ) -> GlobusHTTPResponse:
+        """
+        Delete a registered API by ID.
+
+        This marks the API as DELETE_PENDING with a grace period.
+        After the grace period, the API will be marked DELETED.
+
+        :param registered_api_id: The ID of the registered API to delete
+        :return: Response containing the delete-pending registered API
+        """
+        return self.delete(f"/registered_apis/{registered_api_id}")
