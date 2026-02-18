@@ -3,7 +3,7 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-from .selector import prompt_multiselection
+from .multiselector import prompt_multiselection
 from .selector import prompt_selection
 
 __all__ = (
