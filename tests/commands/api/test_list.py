@@ -2,12 +2,24 @@
 # https://github.com/globus/globus-registered-api
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
+import functools
+import typing as t
 
+import pytest
 import responses
 
 
-def test_list_registered_apis_text_format(gra, crud_patcher):
-    crud_patcher.patch_list(
+@pytest.fixture
+def patch_list(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+    yield functools.partial(
+        responses.add,
+        method=responses.GET,
+        url=api_url_patterns.LIST,
+    )
+
+
+def test_list_registered_apis_text_format(gra, patch_list):
+    patch_list(
         json={
             "registered_apis": [
                 {"id": "abc-123", "name": "Test API 1"},
@@ -29,8 +41,8 @@ def test_list_registered_apis_text_format(gra, crud_patcher):
     assert "Test API 2" in result.output
 
 
-def test_list_registered_apis_json_format(gra, crud_patcher):
-    crud_patcher.patch_list(
+def test_list_registered_apis_json_format(gra, patch_list):
+    patch_list(
         json={
             "registered_apis": [
                 {"id": "abc-123", "name": "Test API 1"},
@@ -47,8 +59,8 @@ def test_list_registered_apis_json_format(gra, crud_patcher):
     assert '"name": "Test API 1"' in result.output
 
 
-def test_list_registered_apis_empty_result(gra, crud_patcher):
-    crud_patcher.patch_list(
+def test_list_registered_apis_empty_result(gra, patch_list):
+    patch_list(
         json={
             "registered_apis": [],
             "has_next_page": False,
@@ -62,8 +74,8 @@ def test_list_registered_apis_empty_result(gra, crud_patcher):
     assert "ID" not in result.output
 
 
-def test_list_registered_apis_with_filter_roles(gra, crud_patcher):
-    crud_patcher.patch_list(
+def test_list_registered_apis_with_filter_roles(gra, patch_list):
+    patch_list(
         json={
             "registered_apis": [],
             "has_next_page": False,
@@ -76,8 +88,8 @@ def test_list_registered_apis_with_filter_roles(gra, crud_patcher):
     assert "filter_roles=owner%2Cadministrator" in responses.calls[0].request.url
 
 
-def test_list_registered_apis_with_per_page(gra, crud_patcher):
-    crud_patcher.patch_list(
+def test_list_registered_apis_with_per_page(gra, patch_list):
+    patch_list(
         json={
             "registered_apis": [],
             "has_next_page": False,
