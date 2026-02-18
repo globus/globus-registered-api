@@ -60,7 +60,7 @@ class RegisteredAPIConfig(BaseModel):
         """
         :return: True if a config file exists on disk, False otherwise.
         """
-        return os.path.exists(_CONFIG_PATH)
+        return _CONFIG_PATH.is_file()
 
 
 class CoreConfig(BaseModel):
