@@ -53,8 +53,7 @@ class RegisteredAPIConfig(BaseModel):
             click.echo("Run 'globus-registered-api init' first to create a repository.")
             raise click.Abort()
 
-        with open(_CONFIG_PATH) as f:
-            return cls.model_validate_json(f.read())
+        return cls.model_validate_json(_CONFIG_PATH.read_text())
 
     @classmethod
     def exists(cls) -> bool:
