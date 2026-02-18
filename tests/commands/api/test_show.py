@@ -3,16 +3,24 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
+import functools
+import typing as t
+
+import pytest
 import responses
-from conftest import GET_REGISTERED_API_URL
-
-import globus_registered_api.cli
 
 
-def test_show_registered_api_text_format(mock_flows_client, cli_runner):
-    responses.add(
-        responses.GET,
-        GET_REGISTERED_API_URL,
+@pytest.fixture
+def patch_show(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+    yield functools.partial(
+        responses.add,
+        method=responses.GET,
+        url=api_url_patterns.SHOW,
+    )
+
+
+def test_show_registered_api_text_format(gra, patch_show):
+    patch_show(
         json={
             "id": "abc-123-def-456",
             "name": "Test API",
@@ -22,9 +30,7 @@ def test_show_registered_api_text_format(mock_flows_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli, ["api", "show", "abc-123-def-456"]
-    )
+    result = gra(["api", "show", "abc-123-def-456"])
 
     assert result.exit_code == 0
     assert "ID:" in result.output
@@ -37,10 +43,8 @@ def test_show_registered_api_text_format(mock_flows_client, cli_runner):
     assert "Updated:" in result.output
 
 
-def test_show_registered_api_json_format(mock_flows_client, cli_runner):
-    responses.add(
-        responses.GET,
-        GET_REGISTERED_API_URL,
+def test_show_registered_api_json_format(gra, patch_show):
+    patch_show(
         json={
             "id": "abc-123-def-456",
             "name": "Test API",
@@ -50,10 +54,7 @@ def test_show_registered_api_json_format(mock_flows_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
-        ["api", "show", "abc-123-def-456", "--format", "json"],
-    )
+    result = gra(["api", "show", "abc-123-def-456", "--format", "json"])
 
     assert result.exit_code == 0
     assert '"id": "abc-123-def-456"' in result.output
@@ -61,10 +62,8 @@ def test_show_registered_api_json_format(mock_flows_client, cli_runner):
     assert '"description": "A test description"' in result.output
 
 
-def test_show_registered_api_empty_description(mock_flows_client, cli_runner):
-    responses.add(
-        responses.GET,
-        GET_REGISTERED_API_URL,
+def test_show_registered_api_empty_description(gra, patch_show):
+    patch_show(
         json={
             "id": "abc-123-def-456",
             "name": "Minimal API",
@@ -74,20 +73,16 @@ def test_show_registered_api_empty_description(mock_flows_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli, ["api", "show", "abc-123-def-456"]
-    )
+    result = gra(["api", "show", "abc-123-def-456"])
 
     assert result.exit_code == 0
     assert "Minimal API" in result.output
     assert "Description:" in result.output
 
 
-def test_show_registered_api_calls_correct_endpoint(mock_flows_client, cli_runner):
+def test_show_registered_api_calls_correct_endpoint(gra, patch_show):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    responses.add(
-        responses.GET,
-        GET_REGISTERED_API_URL,
+    patch_show(
         json={
             "id": api_id,
             "name": "Test",
@@ -97,16 +92,14 @@ def test_show_registered_api_calls_correct_endpoint(mock_flows_client, cli_runne
         },
     )
 
-    cli_runner.invoke(globus_registered_api.cli.cli, ["api", "show", api_id])
+    gra(["api", "show", api_id])
 
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
 
 
-def test_get_registered_api_not_found(mock_flows_client, cli_runner):
+def test_get_registered_api_not_found(gra, patch_show):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    responses.add(
-        responses.GET,
-        GET_REGISTERED_API_URL,
+    patch_show(
         status=404,
         json={
             "error": {
@@ -116,7 +109,7 @@ def test_get_registered_api_not_found(mock_flows_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(globus_registered_api.cli.cli, ["api", "show", api_id])
+    result = gra(["api", "show", api_id])
 
     assert result.exit_code != 0
     assert "No Registered API exists" in str(result.exception)

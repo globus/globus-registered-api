@@ -3,20 +3,28 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
+import functools
 import json
+import typing as t
 
+import pytest
 import responses
-from conftest import UPDATE_REGISTERED_API_URL
-
-import globus_registered_api.cli
 
 
-def test_update_registered_api_text_format(mock_flows_client, cli_runner):
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+@pytest.fixture
+def patch_update(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+    yield functools.partial(
+        responses.add,
+        method=responses.PATCH,
+        url=api_url_patterns.UPDATE,
+    )
+
+
+def test_update_registered_api_text_format(gra, patch_update):
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    patch_update(
         json={
-            "id": "12345678-1234-1234-1234-123456789abc",
+            "id": api_id,
             "name": "Updated API",
             "description": "Updated description",
             "roles": {
@@ -29,16 +37,7 @@ def test_update_registered_api_text_format(mock_flows_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
-        [
-            "api",
-            "update",
-            "12345678-1234-1234-1234-123456789abc",
-            "--name",
-            "Updated API",
-        ],
-    )
+    result = gra(["api", "update", api_id, "--name", "Updated API"])
 
     assert result.exit_code == 0
     assert "ID:" in result.output
@@ -47,12 +46,11 @@ def test_update_registered_api_text_format(mock_flows_client, cli_runner):
     assert "Updated API" in result.output
 
 
-def test_update_registered_api_json_format(mock_flows_client, cli_runner):
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+def test_update_registered_api_json_format(gra, patch_update):
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    patch_update(
         json={
-            "id": "12345678-1234-1234-1234-123456789abc",
+            "id": api_id,
             "name": "Updated API",
             "description": "Updated description",
             "roles": {
@@ -65,29 +63,16 @@ def test_update_registered_api_json_format(mock_flows_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
-        [
-            "api",
-            "update",
-            "12345678-1234-1234-1234-123456789abc",
-            "--name",
-            "Updated API",
-            "--format",
-            "json",
-        ],
-    )
+    result = gra(["api", "update", api_id, "--name", "Updated API", "--format", "json"])
 
     assert result.exit_code == 0
     assert '"id": "12345678-1234-1234-1234-123456789abc"' in result.output
     assert '"name": "Updated API"' in result.output
 
 
-def test_update_registered_api_calls_correct_endpoint(mock_flows_client, cli_runner):
+def test_update_registered_api_calls_correct_endpoint(gra, patch_update):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+    patch_update(
         json={
             "id": api_id,
             "name": "Test",
@@ -102,19 +87,15 @@ def test_update_registered_api_calls_correct_endpoint(mock_flows_client, cli_run
         },
     )
 
-    cli_runner.invoke(
-        globus_registered_api.cli.cli, ["api", "update", api_id, "--name", "Test"]
-    )
+    gra(["api", "update", api_id, "--name", "Test"])
 
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
     assert responses.calls[0].request.method == "PATCH"
 
 
-def test_update_registered_api_not_found(mock_flows_client, cli_runner):
+def test_update_registered_api_not_found(gra, patch_update):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+    patch_update(
         status=404,
         json={
             "error": {
@@ -124,20 +105,17 @@ def test_update_registered_api_not_found(mock_flows_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli, ["api", "update", api_id, "--name", "Test"]
-    )
+    result = gra(["api", "update", api_id, "--name", "Test"])
 
     assert result.exit_code != 0
     assert "No Registered API exists" in str(result.exception)
 
 
-def test_update_registered_api_with_description(mock_flows_client, cli_runner):
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+def test_update_registered_api_with_description(gra, patch_update):
+    api_id = "abcdef12-1234-1234-1234-123456789abc"
+    patch_update(
         json={
-            "id": "abcdef12-1234-1234-1234-123456789abc",
+            "id": api_id,
             "name": "Test API",
             "description": "New description",
             "roles": {
@@ -150,31 +128,22 @@ def test_update_registered_api_with_description(mock_flows_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
-        [
-            "api",
-            "update",
-            "abcdef12-1234-1234-1234-123456789abc",
-            "--description",
-            "New description",
-        ],
-    )
+    result = gra(["api", "update", api_id, "--description", "New description"])
 
     assert result.exit_code == 0
     assert "New description" in result.output
 
 
-def test_update_registered_api_with_owner(mock_flows_client, cli_runner):
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+def test_update_registered_api_with_owner(gra, patch_update):
+    api_id = "abcdef12-1234-1234-1234-123456789abc"
+    owner_urn = "urn:globus:auth:identity:new-owner"
+    patch_update(
         json={
             "id": "abcdef12-1234-1234-1234-123456789abc",
             "name": "Test API",
             "description": "Test",
             "roles": {
-                "owners": ["urn:globus:auth:identity:new-owner"],
+                "owners": [owner_urn],
                 "administrators": [],
                 "viewers": [],
             },
@@ -183,35 +152,24 @@ def test_update_registered_api_with_owner(mock_flows_client, cli_runner):
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
-        [
-            "api",
-            "update",
-            "abcdef12-1234-1234-1234-123456789abc",
-            "--owner",
-            "urn:globus:auth:identity:new-owner",
-        ],
-    )
+    result = gra(["api", "update", api_id, "--owner", owner_urn])
 
     assert result.exit_code == 0
     assert "Owners:" in result.output
-    assert "urn:globus:auth:identity:new-owner" in result.output
+    assert owner_urn in result.output
 
 
-def test_update_registered_api_with_multiple_owners(mock_flows_client, cli_runner):
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+def test_update_registered_api_with_multiple_owners(gra, patch_update):
+    api_id = "abcdef12-1234-1234-1234-123456789abc"
+    user1_urn = "urn:globus:auth:identity:user1"
+    user2_urn = "urn:globus:auth:identity:user2"
+    patch_update(
         json={
-            "id": "abcdef12-1234-1234-1234-123456789abc",
+            "id": api_id,
             "name": "Test API",
             "description": "Test",
             "roles": {
-                "owners": [
-                    "urn:globus:auth:identity:user1",
-                    "urn:globus:auth:identity:user2",
-                ],
+                "owners": [user1_urn, user2_urn],
                 "administrators": [],
                 "viewers": [],
             },
@@ -220,36 +178,31 @@ def test_update_registered_api_with_multiple_owners(mock_flows_client, cli_runne
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    result = gra(
         [
             "api",
             "update",
-            "abcdef12-1234-1234-1234-123456789abc",
+            api_id,
             "--owner",
-            "urn:globus:auth:identity:user2",
+            user2_urn,
             "--owner",
-            "urn:globus:auth:identity:user1",
+            user1_urn,
             "--owner",
-            "urn:globus:auth:identity:user2",  # duplicate
+            user2_urn,  # duplicate
         ],
     )
 
     assert result.exit_code == 0
     request_body = json.loads(responses.calls[0].request.body)
     # Duplicate should be removed
-    assert set(request_body["roles"]["owners"]) == {
-        "urn:globus:auth:identity:user1",
-        "urn:globus:auth:identity:user2",
-    }
+    assert set(request_body["roles"]["owners"]) == {user1_urn, user2_urn}
 
 
-def test_update_registered_api_no_viewers_clears_viewers(mock_flows_client, cli_runner):
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+def test_update_registered_api_no_viewers_clears_viewers(gra, patch_update):
+    api_id = "abcdef12-1234-1234-1234-123456789abc"
+    patch_update(
         json={
-            "id": "abcdef12-1234-1234-1234-123456789abc",
+            "id": api_id,
             "name": "Test API",
             "description": "Test",
             "roles": {
@@ -262,10 +215,7 @@ def test_update_registered_api_no_viewers_clears_viewers(mock_flows_client, cli_
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
-        ["api", "update", "abcdef12-1234-1234-1234-123456789abc", "--no-viewers"],
-    )
+    result = gra(["api", "update", api_id, "--no-viewers"])
 
     assert result.exit_code == 0
     request_body = json.loads(responses.calls[0].request.body)
@@ -273,13 +223,12 @@ def test_update_registered_api_no_viewers_clears_viewers(mock_flows_client, cli_
 
 
 def test_update_registered_api_no_administrators_clears_administrators(
-    mock_flows_client, cli_runner
+    gra, patch_update
 ):
-    responses.add(
-        responses.PATCH,
-        UPDATE_REGISTERED_API_URL,
+    api_id = "abcdef12-1234-1234-1234-123456789abc"
+    patch_update(
         json={
-            "id": "abcdef12-1234-1234-1234-123456789abc",
+            "id": api_id,
             "name": "Test API",
             "description": "Test",
             "roles": {
@@ -292,49 +241,36 @@ def test_update_registered_api_no_administrators_clears_administrators(
         },
     )
 
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
-        [
-            "api",
-            "update",
-            "abcdef12-1234-1234-1234-123456789abc",
-            "--no-administrators",
-        ],
-    )
+    result = gra(["api", "update", api_id, "--no-administrators"])
 
     assert result.exit_code == 0
     request_body = json.loads(responses.calls[0].request.body)
     assert request_body["roles"]["administrators"] == []
 
 
-def test_update_registered_api_viewer_and_no_viewers_mutually_exclusive(cli_runner):
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
-        [
-            "api",
-            "update",
-            "abcdef12-1234-1234-1234-123456789abc",
-            "--viewer",
-            "urn:globus:auth:identity:user1",
-            "--no-viewers",
-        ],
-    )
+def test_update_registered_api_viewer_and_no_viewers_mutually_exclusive(gra):
+    api_id = "abcdef12-1234-1234-1234-123456789abc"
+    user1_urn = "urn:globus:auth:identity:user1"
+
+    result = gra(["api", "update", api_id, "--viewer", user1_urn, "--no-viewers"])
 
     assert result.exit_code != 0
     assert "cannot be used together" in result.output
 
 
 def test_update_registered_api_administrator_and_no_administrators_mutually_exclusive(
-    cli_runner,
+    gra,
 ):
-    result = cli_runner.invoke(
-        globus_registered_api.cli.cli,
+    api_id = "abcdef12-1234-1234-1234-123456789abc"
+    user1_urn = "urn:globus:auth:identity:user1"
+
+    result = gra(
         [
             "api",
             "update",
-            "abcdef12-1234-1234-1234-123456789abc",
+            api_id,
             "--administrator",
-            "urn:globus:auth:identity:user1",
+            user1_urn,
             "--no-administrators",
         ],
     )
