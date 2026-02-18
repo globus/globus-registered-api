@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import os
 import typing as t
 from pathlib import Path
 from uuid import UUID
@@ -18,7 +17,7 @@ from pydantic import Field
 from globus_registered_api.domain import HTTPMethod
 from globus_registered_api.domain import TargetSpecifier
 
-_CONFIG_PATH = Path(".registered_api/config.json")
+_CONFIG_PATH = Path(".globus_registered_api/config.json")
 
 
 class RegisteredAPIConfig(BaseModel):

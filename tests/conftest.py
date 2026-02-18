@@ -125,7 +125,7 @@ def config_path(monkeypatch, tmp_path):
 
     Ensure that tests don't write to the runners invocation directory.
     """
-    config_path = tmp_path / ".registered_api/config.json"
+    config_path = tmp_path / ".globus_registered_api/config.json"
     monkeypatch.setattr(globus_registered_api.config, "_CONFIG_PATH", config_path)
 
     yield config_path
