@@ -88,7 +88,7 @@ class MockResponse:
         return self.data[key]
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_auth_client(monkeypatch):
     """
     Fixture that patches _create_auth_client and returns a configured mock.
