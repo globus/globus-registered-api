@@ -19,7 +19,7 @@ def gra() -> t.Iterator[t.Callable[..., t.Any]]:
 
     Usage:
         def test_something(invoke_gra):
-            result = gra("some", "args")
+            result = gra(["some", "args"])
             result2 = gra("some other args")
     """
     runner = CliRunner()
