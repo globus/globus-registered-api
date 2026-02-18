@@ -3,24 +3,11 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-import functools
-import typing as t
-
-import pytest
 import responses
 
 
-@pytest.fixture
-def patch_show(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
-    yield functools.partial(
-        responses.add,
-        method=responses.GET,
-        url=api_url_patterns.SHOW,
-    )
-
-
-def test_show_registered_api_text_format(gra, patch_show):
-    patch_show(
+def test_show_registered_api_text_format(gra, crud_patcher):
+    crud_patcher.patch_show(
         json={
             "id": "abc-123-def-456",
             "name": "Test API",
@@ -43,8 +30,8 @@ def test_show_registered_api_text_format(gra, patch_show):
     assert "Updated:" in result.output
 
 
-def test_show_registered_api_json_format(gra, patch_show):
-    patch_show(
+def test_show_registered_api_json_format(gra, crud_patcher):
+    crud_patcher.patch_show(
         json={
             "id": "abc-123-def-456",
             "name": "Test API",
@@ -62,8 +49,8 @@ def test_show_registered_api_json_format(gra, patch_show):
     assert '"description": "A test description"' in result.output
 
 
-def test_show_registered_api_empty_description(gra, patch_show):
-    patch_show(
+def test_show_registered_api_empty_description(gra, crud_patcher):
+    crud_patcher.patch_show(
         json={
             "id": "abc-123-def-456",
             "name": "Minimal API",
@@ -80,9 +67,9 @@ def test_show_registered_api_empty_description(gra, patch_show):
     assert "Description:" in result.output
 
 
-def test_show_registered_api_calls_correct_endpoint(gra, patch_show):
+def test_show_registered_api_calls_correct_endpoint(gra, crud_patcher):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    patch_show(
+    crud_patcher.patch_show(
         json={
             "id": api_id,
             "name": "Test",
@@ -97,9 +84,9 @@ def test_show_registered_api_calls_correct_endpoint(gra, patch_show):
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
 
 
-def test_get_registered_api_not_found(gra, patch_show):
+def test_get_registered_api_not_found(gra, crud_patcher):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    patch_show(
+    crud_patcher.patch_show(
         status=404,
         json={
             "error": {

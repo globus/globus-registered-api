@@ -2,11 +2,12 @@
 # https://github.com/globus/globus-registered-api
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
+import functools
 import re
 import typing as t
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,16 +15,6 @@ import responses
 
 import globus_registered_api.clients
 from globus_registered_api import ExtendedFlowsClient
-
-
-@pytest.fixture(scope="session")
-def api_url_patterns():
-    return SimpleNamespace(
-        LIST=re.compile(r"https://.*flows.*\.globus\.org/registered_apis"),
-        SHOW=re.compile(r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"),
-        UPDATE=re.compile(r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"),
-        CREATE=re.compile(r"https://.*flows.*\.globus\.org/registered_apis$"),
-    )
 
 
 @pytest.fixture(autouse=True)
@@ -122,3 +113,36 @@ def mock_flows_client(monkeypatch):
         lambda *args, **kwargs: client,
     )
     return client
+
+
+@pytest.fixture
+def crud_patcher() -> RegisteredAPICRUDPatcher:
+    """
+    Fixture to aid in patching the Registered API CRUD endpoints in the flows service.
+
+    Usage:
+    def test_something(crud_patcher):
+        crud_patcher.patch_list(json={"registered_apis": []})
+        crud_patcher.patch_show(json={"id": "1234", "name": "Test API"})
+        ....
+
+    """
+    return RegisteredAPICRUDPatcher()
+
+
+_LIST_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis")
+_SHOW_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+")
+_UPDATE_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+")
+_CREATE_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis$")
+
+
+class RegisteredAPICRUDPatcher:
+    def __init__(self) -> None:
+        self.patch_list = functools.partial(responses.add, responses.GET, _LIST_URL)
+        self.patch_show = functools.partial(responses.add, responses.GET, _SHOW_URL)
+        self.patch_update = functools.partial(
+            responses.add, responses.PATCH, _UPDATE_URL
+        )
+        self.patch_create = functools.partial(
+            responses.add, responses.POST, _CREATE_URL
+        )

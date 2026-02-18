@@ -3,26 +3,14 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-import functools
 import json
-import typing as t
 
-import pytest
 import responses
 
 
-@pytest.fixture
-def patch_update(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
-    yield functools.partial(
-        responses.add,
-        method=responses.PATCH,
-        url=api_url_patterns.UPDATE,
-    )
-
-
-def test_update_registered_api_text_format(gra, patch_update):
+def test_update_registered_api_text_format(gra, crud_patcher):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": api_id,
             "name": "Updated API",
@@ -46,9 +34,9 @@ def test_update_registered_api_text_format(gra, patch_update):
     assert "Updated API" in result.output
 
 
-def test_update_registered_api_json_format(gra, patch_update):
+def test_update_registered_api_json_format(gra, crud_patcher):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": api_id,
             "name": "Updated API",
@@ -70,9 +58,9 @@ def test_update_registered_api_json_format(gra, patch_update):
     assert '"name": "Updated API"' in result.output
 
 
-def test_update_registered_api_calls_correct_endpoint(gra, patch_update):
+def test_update_registered_api_calls_correct_endpoint(gra, crud_patcher):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": api_id,
             "name": "Test",
@@ -93,9 +81,9 @@ def test_update_registered_api_calls_correct_endpoint(gra, patch_update):
     assert responses.calls[0].request.method == "PATCH"
 
 
-def test_update_registered_api_not_found(gra, patch_update):
+def test_update_registered_api_not_found(gra, crud_patcher):
     api_id = "12345678-1234-1234-1234-123456789abc"
-    patch_update(
+    crud_patcher.patch_update(
         status=404,
         json={
             "error": {
@@ -111,9 +99,9 @@ def test_update_registered_api_not_found(gra, patch_update):
     assert "No Registered API exists" in str(result.exception)
 
 
-def test_update_registered_api_with_description(gra, patch_update):
+def test_update_registered_api_with_description(gra, crud_patcher):
     api_id = "abcdef12-1234-1234-1234-123456789abc"
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": api_id,
             "name": "Test API",
@@ -134,10 +122,10 @@ def test_update_registered_api_with_description(gra, patch_update):
     assert "New description" in result.output
 
 
-def test_update_registered_api_with_owner(gra, patch_update):
+def test_update_registered_api_with_owner(gra, crud_patcher):
     api_id = "abcdef12-1234-1234-1234-123456789abc"
     owner_urn = "urn:globus:auth:identity:new-owner"
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": "abcdef12-1234-1234-1234-123456789abc",
             "name": "Test API",
@@ -159,11 +147,11 @@ def test_update_registered_api_with_owner(gra, patch_update):
     assert owner_urn in result.output
 
 
-def test_update_registered_api_with_multiple_owners(gra, patch_update):
+def test_update_registered_api_with_multiple_owners(gra, crud_patcher):
     api_id = "abcdef12-1234-1234-1234-123456789abc"
     user1_urn = "urn:globus:auth:identity:user1"
     user2_urn = "urn:globus:auth:identity:user2"
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": api_id,
             "name": "Test API",
@@ -198,9 +186,9 @@ def test_update_registered_api_with_multiple_owners(gra, patch_update):
     assert set(request_body["roles"]["owners"]) == {user1_urn, user2_urn}
 
 
-def test_update_registered_api_no_viewers_clears_viewers(gra, patch_update):
+def test_update_registered_api_no_viewers_clears_viewers(gra, crud_patcher):
     api_id = "abcdef12-1234-1234-1234-123456789abc"
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": api_id,
             "name": "Test API",
@@ -223,10 +211,10 @@ def test_update_registered_api_no_viewers_clears_viewers(gra, patch_update):
 
 
 def test_update_registered_api_no_administrators_clears_administrators(
-    gra, patch_update
+    gra, crud_patcher
 ):
     api_id = "abcdef12-1234-1234-1234-123456789abc"
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": api_id,
             "name": "Test API",

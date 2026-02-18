@@ -2,9 +2,7 @@
 # https://github.com/globus/globus-registered-api
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
-import functools
 import json
-import typing as t
 import uuid
 
 import pytest
@@ -19,47 +17,9 @@ def client():
     return ExtendedFlowsClient()
 
 
-@pytest.fixture
-def patch_create(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
-    yield functools.partial(
-        responses.add,
-        method=responses.POST,
-        url=api_url_patterns.CREATE,
-    )
-
-
-@pytest.fixture
-def patch_show(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
-    yield functools.partial(
-        responses.add,
-        method=responses.GET,
-        url=api_url_patterns.SHOW,
-    )
-
-
-@pytest.fixture
-def patch_list(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
-    yield functools.partial(
-        responses.add,
-        method=responses.GET,
-        url=api_url_patterns.LIST,
-    )
-
-
-@pytest.fixture
-def patch_update(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
-    yield functools.partial(
-        responses.add,
-        method=responses.PATCH,
-        url=api_url_patterns.UPDATE,
-    )
-
-
-def test_list_registered_apis_basic(client, api_url_patterns):
+def test_list_registered_apis_basic(client, crud_patcher):
     api_id = str(uuid.uuid4())
-    responses.add(
-        responses.GET,
-        api_url_patterns.LIST,
+    crud_patcher.patch_list(
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Test API"},
@@ -78,9 +38,9 @@ def test_list_registered_apis_basic(client, api_url_patterns):
     assert response["registered_apis"][0]["name"] == "Test API"
 
 
-def test_list_registered_apis_with_filter_roles(client, patch_list):
+def test_list_registered_apis_with_filter_roles(client, crud_patcher):
     api_id = str(uuid.uuid4())
-    patch_list(
+    crud_patcher.patch_list(
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Owned API"},
@@ -98,9 +58,9 @@ def test_list_registered_apis_with_filter_roles(client, patch_list):
     assert response["registered_apis"][0]["id"] == api_id
 
 
-def test_list_registered_apis_with_filter_roles_string(client, patch_list):
+def test_list_registered_apis_with_filter_roles_string(client, crud_patcher):
     api_id = str(uuid.uuid4())
-    patch_list(
+    crud_patcher.patch_list(
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Viewable API"},
@@ -118,9 +78,9 @@ def test_list_registered_apis_with_filter_roles_string(client, patch_list):
     assert response["registered_apis"][0]["name"] == "Viewable API"
 
 
-def test_list_registered_apis_with_per_page(client, patch_list):
+def test_list_registered_apis_with_per_page(client, crud_patcher):
     api_ids = [str(uuid.uuid4()) for _ in range(3)]
-    patch_list(
+    crud_patcher.patch_list(
         json={
             "registered_apis": [
                 {"id": api_ids[0], "name": "API One"},
@@ -140,10 +100,10 @@ def test_list_registered_apis_with_per_page(client, patch_list):
     assert response["registered_apis"][0]["id"] == api_ids[0]
 
 
-def test_list_registered_apis_with_marker(client, patch_list):
+def test_list_registered_apis_with_marker(client, crud_patcher):
     marker = str(uuid.uuid4())
     api_id = str(uuid.uuid4())
-    patch_list(
+    crud_patcher.patch_list(
         json={
             "registered_apis": [
                 {"id": api_id, "name": "Next Page API"},
@@ -162,9 +122,9 @@ def test_list_registered_apis_with_marker(client, patch_list):
     assert response["registered_apis"][0]["name"] == "Next Page API"
 
 
-def test_list_registered_apis_with_orderby_string(client, patch_list):
+def test_list_registered_apis_with_orderby_string(client, crud_patcher):
     api_ids = [str(uuid.uuid4()) for _ in range(2)]
-    patch_list(
+    crud_patcher.patch_list(
         json={
             "registered_apis": [
                 {"id": api_ids[0], "name": "Alpha API"},
@@ -184,9 +144,9 @@ def test_list_registered_apis_with_orderby_string(client, patch_list):
     assert response["registered_apis"][1]["name"] == "Beta API"
 
 
-def test_get_registered_api(client, patch_show):
+def test_get_registered_api(client, crud_patcher):
     api_id = uuid.uuid4()
-    patch_show(
+    crud_patcher.patch_show(
         json={
             "id": str(api_id),
             "name": "Test API",
@@ -205,9 +165,9 @@ def test_get_registered_api(client, patch_show):
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
 
 
-def test_update_registered_api_basic(client, patch_update):
+def test_update_registered_api_basic(client, crud_patcher):
     api_id = uuid.uuid4()
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": str(api_id),
             "name": "Updated API",
@@ -230,9 +190,9 @@ def test_update_registered_api_basic(client, patch_update):
     assert responses.calls[0].request.method == "PATCH"
 
 
-def test_update_registered_api_with_description(client, patch_update):
+def test_update_registered_api_with_description(client, crud_patcher):
     api_id = uuid.uuid4()
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": str(api_id),
             "name": "Test API",
@@ -252,10 +212,10 @@ def test_update_registered_api_with_description(client, patch_update):
     assert response["description"] == "New description"
 
 
-def test_update_registered_api_with_roles(client, patch_update):
+def test_update_registered_api_with_roles(client, crud_patcher):
     api_id = uuid.uuid4()
     new_owners = ["urn:globus:auth:identity:user1", "urn:globus:auth:identity:user2"]
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": str(api_id),
             "name": "Test API",
@@ -275,7 +235,7 @@ def test_update_registered_api_with_roles(client, patch_update):
     assert response["roles"]["owners"] == new_owners
 
 
-def test_update_registered_api_with_target(client, patch_update):
+def test_update_registered_api_with_target(client, crud_patcher):
     api_id = uuid.uuid4()
     target = {
         "type": "openapi",
@@ -283,7 +243,7 @@ def test_update_registered_api_with_target(client, patch_update):
         "destination": {"method": "get", "url": "https://example.com/api"},
         "specification": {"operationId": "test-op", "responses": {}},
     }
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": str(api_id),
             "name": "Test API",
@@ -304,9 +264,9 @@ def test_update_registered_api_with_target(client, patch_update):
     assert response["target"] == target
 
 
-def test_update_registered_api_omitted_params_not_in_request(client, patch_update):
+def test_update_registered_api_omitted_params_not_in_request(client, crud_patcher):
     api_id = str(uuid.uuid4())
-    patch_update(
+    crud_patcher.patch_update(
         json={
             "id": api_id,
             "name": "Updated Name",
@@ -331,7 +291,7 @@ def test_update_registered_api_omitted_params_not_in_request(client, patch_updat
     assert "roles" not in request_body
 
 
-def test_create_registered_api(client, patch_create):
+def test_create_registered_api(client, crud_patcher):
     # Arrange
     api_id = str(uuid.uuid4())
     target = {
@@ -340,7 +300,7 @@ def test_create_registered_api(client, patch_create):
         "destination": {"method": "get", "url": "https://example.com/items"},
         "specification": {"operationId": "getItems", "responses": {}},
     }
-    patch_create(
+    crud_patcher.patch_create(
         json={
             "id": api_id,
             "name": "My New API",
