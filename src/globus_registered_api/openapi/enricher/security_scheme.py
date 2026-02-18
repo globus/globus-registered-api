@@ -1,7 +1,8 @@
 # This file is a part of globus-registered-api.
-# https://github.com/globusonline/globus-registered-api
-# Copyright 2025 Globus <support@globus.org>
+# https://github.com/globus/globus-registered-api
+# Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
+
 import openapi_pydantic as oa
 
 from globus_registered_api.config import RegisteredAPIConfig
@@ -46,7 +47,7 @@ class InjectSecuritySchemes(SchemaMutation):
         # Ensure that the method exists for that path.
         method_key = specifier.method.lower()
         if (existing_operation := getattr(path_item, method_key, None)) is not None:
-            return existing_operation
+            return existing_operation  # type: ignore[no-any-return]
 
         new_operation = oa.Operation()
         setattr(path_item, method_key, new_operation)

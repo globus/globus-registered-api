@@ -1,3 +1,8 @@
+# This file is a part of globus-registered-api.
+# https://github.com/globus/globus-registered-api
+# Copyright 2025-2026 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
+
 from types import SimpleNamespace
 
 import click
@@ -7,6 +12,8 @@ from globus_registered_api.openapi import OpenAPISpecAnalyzer
 from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.rendering import prompt_selection
 
+from ...context import CLIContext
+from ...context import with_cli_context
 from .domain import ManageContext
 from .domain import SubcommandCanceled
 from .roles import RoleConfigurator
@@ -19,8 +26,8 @@ _SENTINELS = SimpleNamespace(
 
 
 @click.command("manage")
-@click.pass_context
-def manage_command(ctx: click.Context) -> None:
+@with_cli_context
+def manage_command(ctx: CLIContext) -> None:
     """Manage Globus Registered API configuration."""
     manage_context = _create_manage_context(ctx)
 
@@ -59,7 +66,7 @@ def manage_command(ctx: click.Context) -> None:
                     menu_options = [(func, label) for label, func in subcommand]
 
 
-def _create_manage_context(ctx: click.Context) -> ManageContext:
+def _create_manage_context(ctx: CLIContext) -> ManageContext:
     config = RegisteredAPIConfig.load()
     if isinstance(config.core.specification, str):
         spec = load_openapi_spec(config.core.specification)
@@ -67,7 +74,7 @@ def _create_manage_context(ctx: click.Context) -> ManageContext:
         spec = config.core.specification
     analysis = OpenAPISpecAnalyzer().analyze(spec)
 
-    context = ManageContext(config=config, analysis=analysis, globus_app=ctx.obj)
+    context = ManageContext(config=config, analysis=analysis, globus_app=ctx.globus_app)
     context.globus_app.login()
 
     return context

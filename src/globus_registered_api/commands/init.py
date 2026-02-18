@@ -1,10 +1,14 @@
+# This file is a part of globus-registered-api.
+# https://github.com/globus/globus-registered-api
+# Copyright 2025-2026 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 import typing as t
 
 import click
 import openapi_pydantic as oa
 from globus_sdk import AuthClient
-from globus_sdk import GlobusApp
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import CompleteEvent
 from prompt_toolkit.completion import Completer
@@ -17,6 +21,8 @@ from prompt_toolkit.validation import Validator
 from globus_registered_api.config import CoreConfig
 from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.config import RoleConfig
+from globus_registered_api.context import CLIContext
+from globus_registered_api.context import with_cli_context
 from globus_registered_api.openapi import OpenAPISpecAnalyzer
 from globus_registered_api.openapi.loader import OpenAPILoadError
 from globus_registered_api.openapi.loader import load_openapi_spec
@@ -72,15 +78,15 @@ class ClickURLParam(click.ParamType):
 
 
 @click.command("init")
-@click.pass_context
-def init_command(ctx: click.Context) -> None:
+@with_cli_context
+def init_command(ctx: CLIContext) -> None:
     """Initialize a local Registered API Repository."""
     if RegisteredAPIConfig.exists():
         click.echo("Error: Cannot re-initialize an existing repository.")
         click.echo("Please use 'globus-registered-api manage' instead.")
         raise click.Abort()
-    globus_app: GlobusApp = ctx.obj
-    identity_id = AuthClient(app=globus_app).userinfo()["sub"]
+
+    identity_id = AuthClient(app=ctx.globus_app).userinfo()["sub"]
 
     click.echo("Initializing a new local registered API repository...")
     click.echo("Registered APIs leverage the OpenAPI specification.")

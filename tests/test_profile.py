@@ -1,6 +1,6 @@
 # This file is a part of globus-registered-api.
-# https://github.com/globusonline/globus-registered-api
-# Copyright 2025 Globus <support@globus.org>
+# https://github.com/globus/globus-registered-api
+# Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
 from unittest.mock import MagicMock
@@ -15,7 +15,6 @@ from globus_registered_api.cli import ProfileAwareJSONTokenStorage
 from globus_registered_api.cli import _create_globus_app
 from globus_registered_api.cli import _get_profile
 from globus_registered_api.cli import _resolve_namespace
-from globus_registered_api.cli import cli
 
 
 @pytest.mark.parametrize(
@@ -125,73 +124,3 @@ def test_client_app_ignores_profile(monkeypatch, mock_client_env):
     # Assert
     assert isinstance(app, ClientApp)
     assert app.config.token_storage is not ProfileAwareJSONTokenStorage
-
-
-@pytest.mark.parametrize(
-    "profile, format, expected_output, check_profile_absent",
-    [
-        pytest.param(None, "text", "testuser", True, id="text-no-profile"),
-        pytest.param(
-            "work", "text", "testuser (profile: work)", False, id="text-with-profile"
-        ),
-        pytest.param(
-            None, "json", '"preferred_username": "testuser"', True, id="json-no-profile"
-        ),
-        pytest.param(
-            "work", "json", '"profile": "work"', False, id="json-with-profile"
-        ),
-    ],
-)
-def test_whoami_with_profile(
-    cli_runner,
-    monkeypatch,
-    mock_auth_client,
-    profile,
-    format,
-    expected_output,
-    check_profile_absent,
-):
-    # Arrange
-    if profile is None:
-        monkeypatch.delenv(GLOBUS_PROFILE_ENV_VAR, raising=False)
-    else:
-        monkeypatch.setenv(GLOBUS_PROFILE_ENV_VAR, profile)
-
-    # Act
-    args = ["whoami"] if format == "text" else ["whoami", "--format", "json"]
-    result = cli_runner.invoke(cli, args)
-
-    # Assert
-    assert result.exit_code == 0
-    assert expected_output in result.output
-    if check_profile_absent:
-        assert "profile" not in result.output
-
-
-@pytest.mark.parametrize(
-    "profile, expected_message",
-    [
-        pytest.param(None, "Logged out successfully.", id="no-profile"),
-        pytest.param(
-            "work", "Logged out successfully from profile 'work'.", id="with-profile"
-        ),
-    ],
-)
-@patch("globus_registered_api.cli._create_globus_app")
-def test_logout_with_profile(
-    mock_create_app, cli_runner, monkeypatch, profile, expected_message
-):
-    # Arrange
-    if profile is None:
-        monkeypatch.delenv(GLOBUS_PROFILE_ENV_VAR, raising=False)
-    else:
-        monkeypatch.setenv(GLOBUS_PROFILE_ENV_VAR, profile)
-    mock_app = MagicMock()
-    mock_create_app.return_value = mock_app
-
-    # Act
-    result = cli_runner.invoke(cli, ["logout"])
-
-    # Assert
-    assert result.exit_code == 0
-    assert expected_message in result.output

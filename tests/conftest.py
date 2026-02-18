@@ -1,6 +1,6 @@
 # This file is a part of globus-registered-api.
-# https://github.com/globusonline/globus-registered-api
-# Copyright 2025 Globus <support@globus.org>
+# https://github.com/globus/globus-registered-api
+# Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
 import re
@@ -12,7 +12,9 @@ import pytest
 import responses
 from click.testing import CliRunner
 
+import globus_registered_api.clients
 import globus_registered_api.config
+from globus_registered_api import ExtendedFlowsClient
 
 # URL patterns for mocking Flows service responses
 LIST_REGISTERED_APIS_URL = re.compile(r"https://.*flows.*\.globus\.org/registered_apis")
@@ -104,14 +106,16 @@ def mock_auth_client(monkeypatch):
             # _create_auth_client is already patched and returns a mock
             # with userinfo() returning {"preferred_username": "testuser", ...}
     """
-    mock_auth = MagicMock()
-    mock_auth.userinfo.return_value = MockResponse(
+    client = MagicMock()
+    client.userinfo.return_value = MockResponse(
         {"preferred_username": "testuser", "email": "test@example.com"}
     )
     monkeypatch.setattr(
-        "globus_registered_api.cli._create_auth_client", lambda app: mock_auth
+        globus_registered_api.clients,
+        "AuthClient",
+        lambda *args, **kwargs: client,
     )
-    return mock_auth
+    return client
 
 
 @pytest.fixture(autouse=True)
@@ -125,3 +129,17 @@ def config_path(monkeypatch, tmp_path):
     monkeypatch.setattr(globus_registered_api.config, "_CONFIG_PATH", config_path)
 
     yield config_path
+
+
+@pytest.fixture
+def mock_flows_client(monkeypatch):
+    """
+    Fixture that patches ExtendedFlowsClient and returns a mock instance.
+    """
+    client = ExtendedFlowsClient()
+    monkeypatch.setattr(
+        globus_registered_api.clients,
+        "ExtendedFlowsClient",
+        lambda *args, **kwargs: client,
+    )
+    return client

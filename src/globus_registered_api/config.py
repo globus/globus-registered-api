@@ -1,6 +1,6 @@
 # This file is a part of globus-registered-api.
-# https://github.com/globusonline/globus-registered-api
-# Copyright 2025 Globus <support@globus.org>
+# https://github.com/globus/globus-registered-api
+# Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ class RegisteredAPIConfig(BaseModel):
             f.write(self.model_dump_json(indent=4))
 
     @classmethod
-    def load(cls):
+    def load(cls) -> RegisteredAPIConfig:
         """
         Read the config from disk, loading it into a RegisteredAPIConfig instance.
 

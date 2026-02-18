@@ -1,6 +1,6 @@
 # This file is a part of globus-registered-api.
-# https://github.com/globusonline/globus-registered-api
-# Copyright 2025 Globus <support@globus.org>
+# https://github.com/globus/globus-registered-api
+# Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
 import pathlib
@@ -17,7 +17,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Globus Registered API"
-copyright = "2025 Globus"
+copyright = "2025-2026 Globus"
 
 # Extract the project version.
 pyproject_ = pathlib.Path(__file__).parent.parent / "pyproject.toml"
