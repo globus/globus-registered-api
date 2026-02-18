@@ -8,17 +8,17 @@ from __future__ import annotations
 import os
 import sys
 import typing as t
-from collections.abc import Iterable
 from uuid import UUID
 
 import click
-from globus_sdk import AuthClient
 from globus_sdk import ClientApp
-from globus_sdk import FlowsClient
 from globus_sdk import GlobusAPIError
 from globus_sdk import GlobusAppConfig
-from globus_sdk import Scope
 from globus_sdk import UserApp
+from globus_sdk.scopes import AuthScopes
+from globus_sdk.scopes import FlowsScopes
+from globus_sdk.scopes import GroupsScopes
+from globus_sdk.scopes import SearchScopes
 from globus_sdk.token_storage import JSONTokenStorage
 from globus_sdk.token_storage import TokenStorage
 
@@ -95,9 +95,15 @@ class ProfileAwareJSONTokenStorage:
         )
 
 
-SCOPE_REQUIREMENTS: dict[str, str | Scope | Iterable[str | Scope]] = {
-    AuthClient.scopes.resource_server: [AuthClient.scopes.openid],
-    FlowsClient.scopes.resource_server: [FlowsClient.scopes.all],
+SCOPE_REQUIREMENTS = {
+    AuthScopes.resource_server: [
+        AuthScopes.openid,
+        AuthScopes.profile,
+        AuthScopes.email,
+    ],
+    GroupsScopes.resource_server: [GroupsScopes.view_my_groups_and_memberships],
+    SearchScopes.resource_server: [SearchScopes.search],
+    FlowsScopes.resource_server: [FlowsScopes.all],
 }
 
 
