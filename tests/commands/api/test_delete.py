@@ -25,7 +25,7 @@ def test_delete_registered_api_text_format(gra, patch_delete):
         json={
             "id": api_id,
             "name": "Test API",
-            "DELETE_PENDING": True,
+            "status": "DELETE_PENDING",
             "scheduled_deletion_timestamp": "2025-02-01T00:00:00+00:00",
         },
         status=202,
@@ -50,7 +50,7 @@ def test_delete_registered_api_json_format(gra, patch_delete):
         json={
             "id": api_id,
             "name": "Test API",
-            "DELETE_PENDING": True,
+            "status": "DELETE_PENDING",
             "scheduled_deletion_timestamp": "2025-02-01T00:00:00+00:00",
         },
         status=202,
@@ -60,7 +60,7 @@ def test_delete_registered_api_json_format(gra, patch_delete):
 
     assert result.exit_code == 0
     assert f'"id": "{api_id}"' in result.output
-    assert '"DELETE_PENDING": true' in result.output
+    assert '"status": "DELETE_PENDING"' in result.output
     assert '"scheduled_deletion_timestamp"' in result.output
 
 
@@ -71,7 +71,7 @@ def test_delete_registered_api_calls_correct_endpoint(gra, patch_delete):
         json={
             "id": api_id,
             "name": "Test API",
-            "DELETE_PENDING": True,
+            "status": "DELETE_PENDING",
             "scheduled_deletion_timestamp": "2025-02-01T00:00:00+00:00",
         },
         status=202,

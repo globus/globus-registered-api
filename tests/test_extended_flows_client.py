@@ -393,7 +393,7 @@ def test_delete_registered_api(client, patch_delete):
             "id": str(api_id),
             "name": "Test API",
             "description": "A test API",
-            "DELETE_PENDING": True,
+            "status": "DELETE_PENDING",
             "scheduled_deletion_timestamp": "2025-02-01T00:00:00+00:00",
             "roles": {
                 "owners": ["urn:globus:auth:identity:user1"],
@@ -410,7 +410,7 @@ def test_delete_registered_api(client, patch_delete):
 
     assert isinstance(response, GlobusHTTPResponse)
     assert response["id"] == str(api_id)
-    assert response["DELETE_PENDING"] is True
+    assert response["status"] == "DELETE_PENDING"
     assert response["scheduled_deletion_timestamp"] == "2025-02-01T00:00:00+00:00"
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
     assert responses.calls[0].request.method == "DELETE"
@@ -422,7 +422,7 @@ def test_delete_registered_api_with_string_id(client, patch_delete):
         json={
             "id": api_id,
             "name": "Test API",
-            "DELETE_PENDING": True,
+            "status": "DELETE_PENDING",
             "scheduled_deletion_timestamp": "2025-02-01T00:00:00+00:00",
         },
         status=202,
