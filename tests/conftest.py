@@ -24,6 +24,7 @@ def api_url_patterns():
         SHOW=re.compile(r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"),
         UPDATE=re.compile(r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"),
         CREATE=re.compile(r"https://.*flows.*\.globus\.org/registered_apis$"),
+        DELETE=re.compile(r"https://.*flows.*\.globus\.org/registered_apis/[a-f0-9-]+"),
     )
 
 

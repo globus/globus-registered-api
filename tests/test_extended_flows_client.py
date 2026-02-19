@@ -55,6 +55,15 @@ def patch_update(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
     )
 
 
+@pytest.fixture
+def patch_delete(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+    yield functools.partial(
+        responses.add,
+        method=responses.DELETE,
+        url=api_url_patterns.DELETE,
+    )
+
+
 def test_list_registered_apis_basic(client, api_url_patterns):
     api_id = str(uuid.uuid4())
     responses.add(
@@ -375,3 +384,51 @@ def test_create_registered_api(client, patch_create):
     assert request_body["name"] == "My New API"
     assert request_body["target"] == target
     assert request_body["description"] == "A test description"
+
+
+def test_delete_registered_api(client, patch_delete):
+    api_id = uuid.uuid4()
+    patch_delete(
+        json={
+            "id": str(api_id),
+            "name": "Test API",
+            "description": "A test API",
+            "status": "DELETE_PENDING",
+            "scheduled_deletion_timestamp": "2025-02-01T00:00:00+00:00",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T00:00:00+00:00",
+        },
+        status=202,
+    )
+
+    response = client.delete_registered_api(api_id)
+
+    assert isinstance(response, GlobusHTTPResponse)
+    assert response["id"] == str(api_id)
+    assert response["status"] == "DELETE_PENDING"
+    assert response["scheduled_deletion_timestamp"] == "2025-02-01T00:00:00+00:00"
+    assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
+    assert responses.calls[0].request.method == "DELETE"
+
+
+def test_delete_registered_api_with_string_id(client, patch_delete):
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    patch_delete(
+        json={
+            "id": api_id,
+            "name": "Test API",
+            "status": "DELETE_PENDING",
+            "scheduled_deletion_timestamp": "2025-02-01T00:00:00+00:00",
+        },
+        status=202,
+    )
+
+    response = client.delete_registered_api(api_id)
+
+    assert response["id"] == api_id
+    assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
