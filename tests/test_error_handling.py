@@ -39,8 +39,6 @@ def test_handle_non_auth_error_reraises(capsys):
     err = _make_api_error("NOT_FOUND")
 
     with pytest.raises(SystemExit) as exc_info:
-        # TypeError because mock can't be raised, but this proves the
-        # function attempted to re-raise rather than handling the error
         _handle_globus_api_error(err)
 
     assert exc_info.value.code == 1
