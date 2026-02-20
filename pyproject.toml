@@ -19,6 +19,8 @@ classifiers = [
 
 dependencies = [
     "click >=8,<9",
+    "prompt-toolkit",
+    "rich",
     "globus-sdk >=4",
     "requests",
     "types-requests (>=2.32.4.20260107,<3.0.0.0)",

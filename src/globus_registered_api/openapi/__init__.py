@@ -9,10 +9,15 @@ from globus_registered_api.openapi.processor import process_target
 from globus_registered_api.openapi.selector import AmbiguousContentTypeError
 from globus_registered_api.openapi.selector import TargetNotFoundError
 
+from .analyzer import OpenAPISpecAnalyzer
+from .analyzer import SpecAnalysis
+
 __all__ = [
     "OpenAPILoadError",
     "process_target",
     "ProcessingResult",
     "AmbiguousContentTypeError",
     "TargetNotFoundError",
+    "OpenAPISpecAnalyzer",
+    "SpecAnalysis",
 ]
