@@ -15,9 +15,10 @@ def _make_api_error(code: str) -> GlobusAPIError:
     """Create a GlobusAPIError with a specific error code."""
     err = MagicMock(spec=GlobusAPIError)
     err.code = code
-    err.message = None
+    err.message = "Something is very wrong here."
     # Make it a proper exception so it can be raised
     err.__class__ = GlobusAPIError
+    err.raw_json = {"code": code, "message": "Something is very wrong here."}
     return err
 
 
@@ -34,10 +35,15 @@ def test_handle_auth_error_exits_with_message(capsys):
     assert "globus-registered-api whoami" in captured.err
 
 
-def test_handle_non_auth_error_reraises():
+def test_handle_non_auth_error_reraises(capsys):
     err = _make_api_error("NOT_FOUND")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(SystemExit) as exc_info:
         # TypeError because mock can't be raised, but this proves the
         # function attempted to re-raise rather than handling the error
         _handle_globus_api_error(err)
+
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert err.code in captured.err
+    assert err.message in captured.err

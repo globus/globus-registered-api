@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import typing as t
@@ -119,8 +120,10 @@ def _handle_globus_api_error(err: GlobusAPIError) -> None:
             "to re-authenticate.",
             err=True,
         )
-        sys.exit(1)
-    raise err
+    else:
+        msg = json.dumps(err.raw_json, indent=2)
+        click.secho(msg, fg="yellow", err=True)
+    sys.exit(1)
 
 
 class ExceptionHandlingGroup(click.Group):
