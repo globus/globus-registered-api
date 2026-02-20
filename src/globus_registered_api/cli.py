@@ -31,6 +31,7 @@ if t.TYPE_CHECKING:
 # Constants
 NATIVE_CLIENT_ID = "5fde3f3e-78b3-4459-aea2-a91dfd9ace1a"
 GLOBUS_PROFILE_ENV_VAR = "GLOBUS_PROFILE"
+a = 3
 
 
 def _get_profile() -> str | None:
