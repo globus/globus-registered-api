@@ -11,16 +11,6 @@ from globus_sdk import GlobusAPIError
 from globus_registered_api.cli import _handle_globus_api_error
 
 
-@pytest.fixture(autouse=True)
-def exit_less_aggressively(monkeypatch):
-    """Patch sys.exit to raise SystemExit instead of exiting the test runner."""
-
-    def fake_exit(code=0):
-        raise SystemExit(code)
-
-    monkeypatch.setattr("sys.exit", fake_exit)
-
-
 def _make_api_error(code: str) -> GlobusAPIError:
     """Create a GlobusAPIError with a specific error code."""
     err = MagicMock(spec=GlobusAPIError)
