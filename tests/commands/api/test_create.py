@@ -369,7 +369,7 @@ def test_create_registered_api_api_error(gra, patch_create, spec_path):
 
     # Assert
     assert result.exit_code != 0
-    assert "Invalid target specification" in str(result.exception)
+    assert "Invalid target specification" in result.stderr
 
 
 @pytest.mark.parametrize(

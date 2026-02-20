@@ -100,7 +100,7 @@ def test_delete_registered_api_not_found(gra, patch_delete):
     result = gra(["api", "delete", api_id])
 
     assert result.exit_code != 0
-    assert "No Registered API exists" in str(result.exception)
+    assert "No Registered API exists" in result.stderr
 
 
 def test_delete_registered_api_forbidden(gra, patch_delete):
@@ -119,7 +119,7 @@ def test_delete_registered_api_forbidden(gra, patch_delete):
     result = gra(["api", "delete", api_id])
 
     assert result.exit_code != 0
-    assert "FORBIDDEN" in str(result.exception)
+    assert "FORBIDDEN" in result.stderr
 
 
 def test_delete_registered_api_invalid_uuid(gra):

@@ -108,7 +108,7 @@ def test_update_registered_api_not_found(gra, patch_update):
     result = gra(["api", "update", api_id, "--name", "Test"])
 
     assert result.exit_code != 0
-    assert "No Registered API exists" in str(result.exception)
+    assert "No Registered API exists" in result.stderr
 
 
 def test_update_registered_api_with_description(gra, patch_update):
