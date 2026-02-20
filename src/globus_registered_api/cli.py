@@ -5,13 +5,14 @@
 
 from __future__ import annotations
 
+import json
 import os
-import sys
 import typing as t
 from collections.abc import Iterable
 from uuid import UUID
 
 import click
+import click.exceptions
 from globus_sdk import AuthClient
 from globus_sdk import ClientApp
 from globus_sdk import FlowsClient
@@ -119,8 +120,10 @@ def _handle_globus_api_error(err: GlobusAPIError) -> None:
             "to re-authenticate.",
             err=True,
         )
-        sys.exit(1)
-    raise err
+    else:
+        msg = json.dumps(err.raw_json, indent=2)
+        click.secho(msg, fg="yellow", err=True)
+    raise click.exceptions.Exit(code=1)
 
 
 class ExceptionHandlingGroup(click.Group):
