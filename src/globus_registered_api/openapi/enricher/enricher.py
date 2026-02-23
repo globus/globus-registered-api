@@ -9,6 +9,7 @@ from globus_registered_api.config import RegisteredAPIConfig
 
 from .interface import SchemaMutation
 from .security_scheme import InjectSecuritySchemes
+from .servers import InjectBaseUrl
 
 
 class OpenAPIEnricher:
@@ -20,7 +21,10 @@ class OpenAPIEnricher:
     """
 
     def __init__(self, config: RegisteredAPIConfig) -> None:
-        self.mutations: list[SchemaMutation] = [InjectSecuritySchemes(config)]
+        self.mutations: list[SchemaMutation] = [
+            InjectSecuritySchemes(config),
+            InjectBaseUrl(config),
+        ]
 
     def enrich(self, schema: oa.OpenAPI) -> oa.OpenAPI:
         """
