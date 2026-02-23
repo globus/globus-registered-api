@@ -13,6 +13,7 @@ from prompt_toolkit.filters import is_done
 from prompt_toolkit.formatted_text import AnyFormattedText
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding import KeyPressEvent
+from prompt_toolkit.layout import AnyContainer
 from prompt_toolkit.layout import ConditionalContainer
 from prompt_toolkit.layout import HSplit
 from prompt_toolkit.layout import Layout
@@ -70,19 +71,19 @@ def prompt_multiselection(
     selector = MultiSelector(
         message=message,
         options=list(options),
-        defaults=list(defaults),
+        defaults=list(defaults) if defaults else None,
         custom_input=custom_input,
     )
     return selector.prompt()
 
 
 @dataclass
-class _MultiSelectResponse(t.Generic[T]):
+class _CustomCheckboxResponse(t.Generic[T]):
     add_custom_input: bool
     current_values: list[T]
 
 
-class MultiSelector:
+class MultiSelector(t.Generic[T]):
     def __init__(
         self,
         *,
@@ -91,6 +92,9 @@ class MultiSelector:
         defaults: list[T] | None,
         custom_input: bool,
     ) -> None:
+        if custom_input and not all(isinstance(options[0], str) for options in options):
+            raise ValueError("Custom input is only supported for string options.")
+
         self.message = message
         self.options = options
         self.defaults = defaults
@@ -100,14 +104,14 @@ class MultiSelector:
         response = self._create_selection_application().run()
         while response.add_custom_input:
             custom_input_str = self._create_custom_input_application().run()
-            self.options.append((custom_input_str, custom_input_str))
-            self.defaults = response.current_values + [custom_input_str]
+            self.options.append((custom_input_str, custom_input_str))  # type: ignore[arg-type]
+            self.defaults = response.current_values + [custom_input_str]  # type: ignore[list-item]
 
             response = self._create_selection_application().run()
 
         return response.current_values
 
-    def _create_selection_application(self) -> Application[_MultiSelectResponse]:
+    def _create_selection_application(self) -> Application[_CustomCheckboxResponse[T]]:
         checkbox_list = self._create_checkbox_list()
         header = Box(
             Label(text=self.message, dont_extend_height=True),
@@ -123,7 +127,7 @@ class MultiSelector:
             padding_right=1,
             padding_bottom=0,
         )
-        container = HSplit([header, body])
+        container: AnyContainer = HSplit([header, body])
         # Use a conditional container to hide the checkbox list after submission.
         container = ConditionalContainer(content=container, filter=~is_done)
         layout = Layout(container=container, focused_element=checkbox_list)
@@ -180,7 +184,9 @@ class MultiSelector:
         )
 
 
-class _CustomCheckboxList(CheckboxList[T]):
+class _CustomCheckboxList(
+    t.Generic[T], CheckboxList[T | _SubmitSentinel | _CustomInputSentinel]
+):
     """
     An extended CheckboxList widget.
 
@@ -193,28 +199,58 @@ class _CustomCheckboxList(CheckboxList[T]):
 
     def __init__(
         self,
-        *args,
         values: t.Sequence[tuple[T, AnyFormattedText]],
+        default_values: t.Sequence[T] | None,
+        open_character: str,
+        select_character: str,
+        close_character: str,
+        container_style: str,
+        default_style: str,
+        selected_style: str,
+        checked_style: str,
         custom_input: bool,
-        **kwargs,
     ) -> None:
-        if custom_input:
-            values = list(values) + [(_CUSTOM_INPUT_SENTINEL, "<Custom Value>")]
+        combined_values: list[
+            tuple[T | _SubmitSentinel | _CustomInputSentinel, AnyFormattedText]
+        ] = list(values)
 
-        values = list(values) + [(_SUBMIT_SENTINEL, "Submit")]
-        super().__init__(*args, values=values, **kwargs)
-        self.control.key_bindings.add_binding("enter")(self._intercept_enter)
+        # Attach custom control buttons to the end of the list.
+        if custom_input:
+            combined_values += [(_CUSTOM_INPUT_SENTINEL, "<Custom Value>")]
+        combined_values += [(_SUBMIT_SENTINEL, "<Submit>")]
+
+        super().__init__(
+            values=combined_values,
+            default_values=default_values,
+            open_character=open_character,
+            select_character=select_character,
+            close_character=close_character,
+            container_style=container_style,
+            default_style=default_style,
+            selected_style=selected_style,
+            checked_style=checked_style,
+        )
+
+        key_bindings = self.control.key_bindings
+        if not isinstance(key_bindings, KeyBindings):
+            raise RuntimeError("Unexpected key bindings type on CheckboxList control.")
+
+        key_bindings.add_binding("enter")(self._intercept_enter)
+        if default_values:
+            # If defaults are provided, start on the "Submit" option.
+            self._selected_index = len(values) - 1
 
     def _intercept_enter(self, event: KeyPressEvent) -> None:
+        # Override default enter behavior if control options are selected.
         selected_val = self.values[self._selected_index][0]
         if selected_val is _SUBMIT_SENTINEL:
-            result = _MultiSelectResponse(
+            result = _CustomCheckboxResponse(
                 add_custom_input=False,
                 current_values=self.current_values,
             )
             event.app.exit(result=result)
         elif selected_val is _CUSTOM_INPUT_SENTINEL:
-            result = _MultiSelectResponse(
+            result = _CustomCheckboxResponse(
                 add_custom_input=True,
                 current_values=self.current_values,
             )

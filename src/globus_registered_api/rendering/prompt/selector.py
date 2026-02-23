@@ -12,6 +12,7 @@ from prompt_toolkit.filters import is_done
 from prompt_toolkit.formatted_text import AnyFormattedText
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding import KeyPressEvent
+from prompt_toolkit.layout import AnyContainer
 from prompt_toolkit.layout import ConditionalContainer
 from prompt_toolkit.layout import HSplit
 from prompt_toolkit.layout import Layout
@@ -27,7 +28,7 @@ def prompt_selection(
     options: t.Sequence[tuple[T, AnyFormattedText]],
     *,
     default: T | None = None,
-):
+) -> T:
     """
     Prompt the user to select a single option from a supplied list.
 
@@ -59,7 +60,7 @@ def prompt_selection(
     return selector.prompt()
 
 
-class Selector:
+class Selector(t.Generic[T]):
     def __init__(
         self,
         *,
@@ -76,7 +77,7 @@ class Selector:
 
     def _create_selection_application(self) -> Application[T]:
         radio_list = self._create_radio_list()
-        container = Box(
+        container: AnyContainer = Box(
             radio_list,
             padding_top=0,
             padding_left=2,
