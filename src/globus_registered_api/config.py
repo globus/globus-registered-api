@@ -49,7 +49,7 @@ class RegisteredAPIConfig(BaseModel):
         """
         if not cls.exists():
             click.echo("Error: Missing repository config file.")
-            click.echo("Run 'globus-registered-api init' first to create a repository.")
+            click.echo("Run 'gra init' first to create a repository.")
             raise click.Abort()
 
         return cls.model_validate_json(_CONFIG_PATH.read_text())
@@ -107,6 +107,9 @@ class TargetConfig(BaseModel):
         return f"{self.alias} ({self.method} {self.path})"
 
 
+RoleAccessLevel = t.Literal["owner", "admin", "viewer"]
+
+
 class RoleConfig(BaseModel):
     """
     A configuration entry for a single identity or group.
@@ -121,7 +124,7 @@ class RoleConfig(BaseModel):
     id: UUID
 
     # The degree of permission granted to this entity.
-    access_level: t.Literal["owner", "admin", "viewer"]
+    access_level: RoleAccessLevel
 
     @property
     def sort_key(self) -> tuple[str, ...]:
