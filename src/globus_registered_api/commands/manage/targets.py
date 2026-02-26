@@ -262,9 +262,14 @@ class _TargetScopePrompter:
         if self._analysis.scopes_by_target.get(target_specifier):
             return None
 
+        doc_url = (
+            "https://github.com/globus/globus-registered-api/blob/main"
+            "/docs/explanation/what-is-a-scope.md"
+        )
         click.echo(f"\nNo Flows-supported security defined for '{target_specifier}'.")
-        # TODO - link to gra docs on GlobusAuth scopes once they exist.
         click.echo("Currently the service only supports Globus Auth security.\n")
+        click.echo("For more information about scopes in Registered APIs, visit:\n")
+        click.echo(doc_url)
         if click.confirm("Would you like to include a Globus Auth scope?"):
             return self._prompt_scope_input()
         return None
