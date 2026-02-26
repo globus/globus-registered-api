@@ -1,4 +1,0 @@
-Added
------
-
-*   Add ``globus-registered-api api delete`` command to delete registered APIs.
