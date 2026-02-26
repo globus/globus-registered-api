@@ -25,3 +25,40 @@ Please see the fragment files in the `changelog.d directory`_.
 
 
 ..  scriv-insert-here
+
+.. _changelog-0.1.0:
+
+0.1.0 - 2026-02-26
+==================
+
+Added
+-----
+
+Initial release.
+
+These commands are currently available:
+
+*   API commands under the ``gra api`` command group:
+
+    *   ``gra api create``
+    *   ``gra api list``
+    *   ``gra api show``
+    *   ``gra api update``
+    *   ``gra api delete``
+
+*   Globus Auth session management commands under the ``gra session`` command group:
+
+    *   ``gra session whoami``
+    *   ``gra session logout``
+
+*   Repository abstraction commands (currently only stubbed):
+
+    *   ``gra init``
+    *   ``gra manage``
+    *   ``gra publish``
+
+Supported environment variables:
+
+*   ``GLOBUS_PROFILE``, for profile-aware token storage.
+*   ``GLOBUS_REGISTERED_API_CLIENT_ID`` and ``GLOBUS_REGISTERED_API_CLIENT_SECRET``
+    for using a confidential client for API calls.
