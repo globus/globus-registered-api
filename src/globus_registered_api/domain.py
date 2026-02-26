@@ -9,10 +9,19 @@ import re
 import typing as t
 from dataclasses import dataclass
 
-HTTP_METHODS = ("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "TRACE", "OPTIONS")
 HTTPMethod = t.Literal[
     "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "TRACE", "OPTIONS"
 ]
+HTTP_METHODS: tuple[HTTPMethod, ...] = (
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "PATCH",
+    "HEAD",
+    "TRACE",
+    "OPTIONS",
+)
 
 
 _TARGET_SPECIFIER_REGEX = re.compile(
