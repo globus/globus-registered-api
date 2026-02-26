@@ -79,3 +79,16 @@ repos:
     rev: "v1.0.0"
     hooks:
       - id: "verify-consistent-pyproject-toml-python-requirements"
+
+  - repo: "https://github.com/thlorenz/doctoc"
+    rev: "v2.3.0"
+    hooks:
+      - id: "doctoc"
+        args:
+          [
+            "--github",
+            "--update-only",
+            "--maxlevel", "3",
+            "--mintocitems", "2",
+            "--title", "## Table of contents",
+          ]
