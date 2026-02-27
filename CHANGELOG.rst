@@ -26,6 +26,22 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-0.2.0:
+
+0.2.0 - 2026-02-27
+==================
+
+Added
+-----
+
+*   Implement an interactive ``gra init`` command to initialize a new repository.
+*   Implement an interactive ``gra manage`` command to manage a repository.
+
+Development
+-----------
+
+*   Add re-usable constructs for requesting single- and multi-value user selections.
+
 .. _changelog-0.1.0:
 
 0.1.0 - 2026-02-26
