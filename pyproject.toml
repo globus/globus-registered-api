@@ -1,6 +1,6 @@
 [project]
 name = "globus-registered-api"
-version = "0.1.0"
+version = "0.2.0"
 description = "Manage Registered APIs in the Globus Flows service"
 authors = [
     { name = "Kurt McKee", email = "support@globus.org" },
