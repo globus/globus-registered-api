@@ -1,6 +1,6 @@
 [project]
 name = "globus-registered-api"
-version = "0.1.0"
+version = "0.2.0"
 description = "Manage Registered APIs in the Globus Flows service"
 authors = [
     { name = "Kurt McKee", email = "support@globus.org" },
@@ -19,6 +19,8 @@ classifiers = [
 
 dependencies = [
     "click >=8,<9",
+    "prompt-toolkit >=3.0,<4.0",
+    "rich >=14.0,<15.0",
     "globus-sdk >=4",
     "requests",
     "types-requests (>=2.32.4.20260107,<3.0.0.0)",

@@ -5,6 +5,8 @@
 
 from globus_sdk import AuthClient
 from globus_sdk import GlobusApp
+from globus_sdk import GroupsClient
+from globus_sdk import SearchClient
 
 from globus_registered_api import ExtendedFlowsClient
 
@@ -31,3 +33,27 @@ def create_flows_client(app: GlobusApp) -> ExtendedFlowsClient:
     :return: An ExtendedFlowsClient configured with the provided app
     """
     return ExtendedFlowsClient(app=app)
+
+
+def create_groups_client(app: GlobusApp) -> GroupsClient:
+    """
+    Create a GroupsClient for the given app.
+
+    This function mostly exists for unified testing fixtures.
+
+    :param app: A Globus app instance to use for authentication
+    :return: A GroupsClient configured with the provided app
+    """
+    return GroupsClient(app=app)
+
+
+def create_search_client(app: GlobusApp) -> SearchClient:
+    """
+    Create a SearchClient for the given app.
+
+    This function mostly exists for unified testing fixtures.
+
+    :param app: A Globus app instance to use for authentication
+    :return: A SearchClient configured with the provided app
+    """
+    return SearchClient(app=app)

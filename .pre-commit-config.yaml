@@ -47,7 +47,7 @@ repos:
       - id: "black"
 
   - repo: "https://github.com/pycqa/isort"
-    rev: "7.0.0"
+    rev: "8.0.0"
     hooks:
       - id: "isort"
 
@@ -66,12 +66,12 @@ repos:
       - id: "editorconfig-checker"
 
   - repo: "https://github.com/python-jsonschema/check-jsonschema"
-    rev: "0.36.1"
+    rev: "0.37.0"
     hooks:
       - id: "check-dependabot"
 
   - repo: "https://github.com/rhysd/actionlint"
-    rev: "v1.7.10"
+    rev: "v1.7.11"
     hooks:
       - id: "actionlint"
 
