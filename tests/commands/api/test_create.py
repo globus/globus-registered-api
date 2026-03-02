@@ -12,7 +12,9 @@ import responses
 
 
 @pytest.fixture
-def patch_create(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
+def patch_create(
+    api_url_patterns,
+) -> t.Iterable[t.Callable[..., responses.BaseResponse]]:
     yield functools.partial(
         responses.add,
         method=responses.POST,
@@ -20,13 +22,33 @@ def patch_create(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
     )
 
 
-def test_create_registered_api_text_format(gra, patch_create, spec_path):
+@pytest.fixture
+def target_path(tmp_path):
+    target_file = tmp_path / "target.json"
+    target_file.write_text(
+        json.dumps(
+            {
+                "type": "openapi",
+                "openapi_version": "3.1",
+                "destination": {
+                    "method": "get",
+                    "url": "https://api.example.com/items",
+                },
+            }
+        )
+    )
+    return target_file
+
+
+def test_create_registered_api_text_format(gra, patch_create, target_path):
     # Arrange
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    name, desc = "My API", "Test description"
     patch_create(
         json={
-            "id": "12345678-1234-1234-1234-123456789abc",
-            "name": "My API",
-            "description": "Test description",
+            "id": api_id,
+            "name": name,
+            "description": desc,
             "roles": {
                 "owners": ["urn:globus:auth:identity:user1"],
                 "administrators": [],
@@ -34,39 +56,33 @@ def test_create_registered_api_text_format(gra, patch_create, spec_path):
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
             "edited_timestamp": None,
+            "updated_timestamp": None,
         },
         status=201,
     )
 
     # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            str(spec_path("minimal.json")),
-            "get",
-            "/items",
-            "My API",
-            "--description",
-            "Test description",
-        ],
-    )
+    result = gra(["api", "create", name, str(target_path), "--description", desc])
 
     # Assert
     assert result.exit_code == 0
     assert "ID:" in result.output
-    assert "12345678-1234-1234-1234-123456789abc" in result.output
+    assert api_id in result.output
     assert "Name:" in result.output
-    assert "My API" in result.output
+    assert name in result.output
+    assert "Description:" in result.output
+    assert desc in result.output
 
 
-def test_create_registered_api_json_format(gra, patch_create, spec_path):
+def test_create_registered_api_json_format(gra, patch_create, target_path):
     # Arrange
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    name, desc = "My API", "Test description"
     patch_create(
         json={
-            "id": "12345678-1234-1234-1234-123456789abc",
-            "name": "My API",
-            "description": "Test description",
+            "id": api_id,
+            "name": name,
+            "description": desc,
             "roles": {
                 "owners": ["urn:globus:auth:identity:user1"],
                 "administrators": [],
@@ -74,243 +90,41 @@ def test_create_registered_api_json_format(gra, patch_create, spec_path):
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
             "edited_timestamp": None,
+            "updated_timestamp": None,
         },
         status=201,
     )
 
     # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            str(spec_path("minimal.json")),
-            "get",
-            "/items",
-            "My API",
-            "--description",
-            "Test description",
-            "--format",
-            "json",
-        ],
-    )
+    basic_command = ["api", "create", name, str(target_path), "--description", desc]
+    result = gra(basic_command + ["--format", "json"])
 
     # Assert
     assert result.exit_code == 0
     output = json.loads(result.output)
-    assert output["id"] == "12345678-1234-1234-1234-123456789abc"
-    assert output["name"] == "My API"
-
-
-def test_create_registered_api_with_description(gra, patch_create, spec_path):
-    # Arrange
-    patch_create(
-        json={
-            "id": "12345678-1234-1234-1234-123456789abc",
-            "name": "My API",
-            "description": "A detailed description",
-            "roles": {
-                "owners": ["urn:globus:auth:identity:user1"],
-                "administrators": [],
-                "viewers": [],
-            },
-            "created_timestamp": "2025-01-01T00:00:00+00:00",
-            "edited_timestamp": None,
-        },
-        status=201,
-    )
-
-    # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            str(spec_path("minimal.json")),
-            "get",
-            "/items",
-            "My API",
-            "--description",
-            "A detailed description",
-        ],
-    )
-
-    # Assert
-    assert result.exit_code == 0
-    assert "A detailed description" in result.output
-    request_body = json.loads(responses.calls[0].request.body)
-    assert request_body["description"] == "A detailed description"
-
-
-def test_create_registered_api_sends_correct_target(gra, patch_create, spec_path):
-    # Arrange
-    patch_create(
-        json={
-            "id": "12345678-1234-1234-1234-123456789abc",
-            "name": "My API",
-            "description": "Test",
-            "roles": {
-                "owners": ["urn:globus:auth:identity:user1"],
-                "administrators": [],
-                "viewers": [],
-            },
-            "created_timestamp": "2025-01-01T00:00:00+00:00",
-            "edited_timestamp": None,
-        },
-        status=201,
-    )
-
-    # Act
-    gra(
-        [
-            "api",
-            "create",
-            str(spec_path("minimal.json")),
-            "get",
-            "/items",
-            "My API",
-            "--description",
-            "Test",
-        ],
-    )
-
-    # Assert
-    request_body = json.loads(responses.calls[0].request.body)
-    assert request_body["name"] == "My API"
-    assert "target" in request_body
-    target = request_body["target"]
-    assert target["type"] == "openapi"
-    assert target["openapi_version"] == "3.1"
-    assert target["destination"]["method"] == "get"
-    assert target["destination"]["url"] == "https://api.example.com/items"
-
-
-def test_create_registered_api_with_content_type(gra, patch_create, spec_path):
-    # Arrange
-    patch_create(
-        json={
-            "id": "12345678-1234-1234-1234-123456789abc",
-            "name": "Upload API",
-            "description": "Test",
-            "roles": {
-                "owners": ["urn:globus:auth:identity:user1"],
-                "administrators": [],
-                "viewers": [],
-            },
-            "created_timestamp": "2025-01-01T00:00:00+00:00",
-            "edited_timestamp": None,
-        },
-        status=201,
-    )
-
-    # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            str(spec_path("multiple_content_types.json")),
-            "post",
-            "/upload",
-            "Upload API",
-            "--description",
-            "Test",
-            "--content-type",
-            "application/json",
-        ],
-    )
-
-    # Assert
-    assert result.exit_code == 0
-    request_body = json.loads(responses.calls[0].request.body)
-    target = request_body["target"]
-    assert target["destination"]["method"] == "post"
+    assert output["id"] == api_id
+    assert output["name"] == name
+    assert output["description"] == desc
 
 
 def test_create_registered_api_with_nonexistent_file_shows_error(gra):
     # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            "/nonexistent.json",
-            "get",
-            "/items",
-            "My API",
-            "--description",
-            "Test",
-        ],
-    )
+    result = gra(["api", "create", "My API", "/nope.json", "--description", "Test"])
 
     # Assert
     assert result.exit_code != 0
-    assert "Failed to read file:" in result.output
+    assert "File '/nope.json' does not exist" in result.output
 
 
-def test_create_registered_api_with_invalid_route_shows_error(gra, spec_path):
-    # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            str(spec_path("minimal.json")),
-            "get",
-            "/nonexistent",
-            "My API",
-            "--description",
-            "Test",
-        ],
-    )
-
-    # Assert
-    assert result.exit_code != 0
-    assert "Route not found: '/nonexistent'" in result.output
-
-
-def test_create_registered_api_with_invalid_method_shows_error(gra, spec_path):
-    # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            str(spec_path("minimal.json")),
-            "delete",
-            "/items",
-            "My API",
-            "--description",
-            "Test",
-        ],
-    )
-
-    # Assert
-    assert result.exit_code != 0
-    assert "Method 'DELETE' not found for route '/items'" in result.output
-
-
-def test_create_registered_api_with_ambiguous_content_type_shows_error(gra, spec_path):
-    # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            str(spec_path("multiple_content_types.json")),
-            "post",
-            "/upload",
-            "My API",
-            "--description",
-            "Test",
-        ],
-    )
-
-    # Assert
-    assert result.exit_code != 0
-    assert "Multiple content-types match" in result.output
-
-
-def test_create_registered_api_calls_post_endpoint(gra, patch_create, spec_path):
+def test_create_registered_api_calls_post_endpoint(gra, patch_create, target_path):
     # Arrange
-    patch_create(
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    name, desc = "My API", "Test Description"
+    patched_create = patch_create(
         json={
-            "id": "12345678-1234-1234-1234-123456789abc",
-            "name": "My API",
-            "description": "Test",
+            "id": api_id,
+            "name": name,
+            "description": desc,
             "roles": {
                 "owners": ["urn:globus:auth:identity:user1"],
                 "administrators": [],
@@ -318,30 +132,20 @@ def test_create_registered_api_calls_post_endpoint(gra, patch_create, spec_path)
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
             "edited_timestamp": None,
+            "updated_timestamp": None,
         },
         status=201,
     )
 
     # Act
-    gra(
-        [
-            "api",
-            "create",
-            str(spec_path("minimal.json")),
-            "get",
-            "/items",
-            "My API",
-            "--description",
-            "Test",
-        ],
-    )
+    result = gra(["api", "create", name, str(target_path), "--description", desc])
 
     # Assert
-    assert "/registered_apis" in responses.calls[0].request.url
-    assert responses.calls[0].request.method == "POST"
+    assert result.exit_code == 0
+    assert patched_create.call_count == 1
 
 
-def test_create_registered_api_api_error(gra, patch_create, spec_path):
+def test_create_registered_api_api_error(gra, patch_create, target_path):
     # Arrange
     patch_create(
         status=400,
@@ -354,18 +158,7 @@ def test_create_registered_api_api_error(gra, patch_create, spec_path):
     )
 
     # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            str(spec_path("minimal.json")),
-            "get",
-            "/items",
-            "My API",
-            "--description",
-            "Test",
-        ],
-    )
+    result = gra(["api", "create", "My API", str(target_path), "--description", "Test"])
 
     # Assert
     assert result.exit_code != 0
@@ -376,22 +169,22 @@ def test_create_registered_api_api_error(gra, patch_create, spec_path):
     "args,expected_error",
     [
         pytest.param(
-            ["api", "create", "SPEC", "get", "/items", "My API"],
-            "Missing option '--description'",
-            id="missing-description",
+            ["api", "create", "My API", "--description", "Test"],
+            "Missing argument 'TARGET_FILE'",
+            id="missing-target",
         ),
         pytest.param(
-            ["api", "create", "SPEC", "get", "/items", "--description", "Test"],
-            "Missing argument 'NAME'",
-            id="missing-name",
+            ["api", "create", "My API", "$TARGET"],
+            "Missing option '--description'",
+            id="missing-description",
         ),
     ],
 )
 def test_create_registered_api_missing_required_param_shows_error(
-    gra, spec_path, args, expected_error
+    gra, target_path, args, expected_error
 ):
     # Arrange
-    args = [str(spec_path("minimal.json")) if arg == "SPEC" else arg for arg in args]
+    args = [str(target_path) if arg == "$TARGET" else arg for arg in args]
 
     # Act
     result = gra(args)
@@ -401,45 +194,97 @@ def test_create_registered_api_missing_required_param_shows_error(
     assert expected_error in result.output
 
 
-def test_create_registered_api_with_url_containing_query_params(
-    gra, patch_create, spec_path
+def test_create_registered_api_with_single_owner_admin_and_viewer(
+    gra, patch_create, target_path
 ):
     # Arrange
-    spec_url = "https://domain.example/spec?format=json&download=true"
-    spec_content = spec_path("minimal.json").read_text()
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    name, desc = "My API", "Test Description"
 
-    responses.add(responses.GET, spec_url, body=spec_content, status=200)
+    owner_urn = "urn:globus:auth:identity:user1"
+    admin_urn = "urn:globus:auth:identity:user2"
+    viewer_urn = "urn:globus:groups:id:group1"
+
     patch_create(
         json={
-            "id": "12345678-1234-1234-1234-123456789abc",
-            "name": "My API",
-            "description": "Test",
+            "id": api_id,
+            "name": name,
+            "description": desc,
             "roles": {
-                "owners": ["urn:globus:auth:identity:user1"],
-                "administrators": [],
-                "viewers": [],
+                "owners": [owner_urn],
+                "administrators": [admin_urn],
+                "viewers": [viewer_urn],
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
             "edited_timestamp": None,
+            "updated_timestamp": None,
         },
         status=201,
     )
 
     # Act
-    result = gra(
-        [
-            "api",
-            "create",
-            spec_url,
-            "get",
-            "/items",
-            "My API",
-            "--description",
-            "Test",
-        ],
+    basic_command = ["api", "create", name, str(target_path), "--description", desc]
+    result = gra(basic_command + ["--administrator", admin_urn, "--viewer", viewer_urn])
+
+    assert result.exit_code == 0
+    assert "Owners:" in result.output
+    assert owner_urn in result.output
+    assert "Administrators:" in result.output
+    assert admin_urn in result.output
+    assert "Viewers:" in result.output
+    assert viewer_urn in result.output
+
+
+def test_create_registered_api_with_multiple_owners_admins_and_viewers(
+    gra, patch_create, target_path
+):
+    # Arrange
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    name, desc = "My API", "Test Description"
+
+    owner_urns = [
+        "urn:globus:auth:identity:user1",
+        "urn:globus:auth:identity:user2",
+    ]
+    admin_urns = [
+        "urn:globus:auth:identity:user3",
+        "urn:globus:auth:identity:user4",
+    ]
+    viewer_urns = [
+        "urn:globus:groups:id:group1",
+        "urn:globus:groups:id:group2",
+    ]
+
+    patch_create(
+        json={
+            "id": api_id,
+            "name": name,
+            "description": desc,
+            "roles": {
+                "owners": owner_urns,
+                "administrators": admin_urns,
+                "viewers": viewer_urns,
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+            "updated_timestamp": None,
+        },
+        status=201,
     )
 
-    # Assert
+    # Act
+    basic_command = ["api", "create", name, str(target_path), "--description", desc]
+    result = gra(
+        basic_command
+        + ["--owner", owner_urns[0], "--owner", owner_urns[1]]
+        + ["--administrator", admin_urns[0], "--administrator", admin_urns[1]]
+        + ["--viewer", viewer_urns[0], "--viewer", viewer_urns[1]]
+    )
+
     assert result.exit_code == 0
-    assert "12345678-1234-1234-1234-123456789abc" in result.output
-    assert responses.calls[0].request.url == spec_url
+    for owner in owner_urns:
+        assert owner in result.output
+    for admin in admin_urns:
+        assert admin in result.output
+    for viewer in viewer_urns:
+        assert viewer in result.output
