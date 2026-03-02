@@ -362,13 +362,19 @@ def test_create_registered_api(client, patch_create):
             "target": target,
             "created_timestamp": "2025-01-01T00:00:00+00:00",
             "edited_timestamp": None,
+            "updated_timestamp": None,
         },
         status=201,
     )
 
     # Act
     response = client.create_registered_api(
-        name="My New API", description="A test description", target=target
+        name="My New API",
+        description="A test description",
+        target=target,
+        owners=["urn:globus:auth:identity:user1"],
+        administrators=[],
+        viewers=[],
     )
 
     # Assert
