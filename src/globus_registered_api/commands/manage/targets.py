@@ -5,6 +5,9 @@
 
 from __future__ import annotations
 
+import functools
+import typing as t
+
 import click
 from rich.console import Console
 from rich.panel import Panel
@@ -63,6 +66,18 @@ class TargetConfigurator:
             (self.remove_target, "Remove Target"),
         ]
 
+    @staticmethod
+    def _require_targets(method: t.Callable[..., None]) -> t.Callable[..., None]:
+        @functools.wraps(method)
+        def wrapper(self_: TargetConfigurator, *args: t.Any, **kwargs: t.Any) -> None:
+            if not self_.config.targets:
+                click.echo("\nNo targets are defined.\n")
+                return None
+            return method(self_, *args, **kwargs)
+
+        return wrapper
+
+    @_require_targets
     def display_target(self, target: TargetConfig | None = None) -> None:
         if target is None:
             target = self._target_prompter.prompt_for_config()
@@ -83,6 +98,7 @@ class TargetConfigurator:
         table = TargetSummaryTable(self.config.targets)
         table.print()
 
+    @_require_targets
     def modify_target(self) -> None:
         target = self._target_prompter.prompt_for_config()
         target.alias = click.prompt("Target Alias", type=str, default=target.alias)
@@ -111,6 +127,7 @@ class TargetConfigurator:
         self.config.commit()
         self.display_target(target)
 
+    @_require_targets
     def remove_target(self) -> None:
         target = self._target_prompter.prompt_for_config()
         self.config.targets.remove(target)

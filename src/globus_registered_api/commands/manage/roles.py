@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import functools
 import typing as t
 from uuid import UUID
 
@@ -76,11 +77,23 @@ class RoleConfigurator:
             (self.remove_role, "Remove Role"),
         ]
 
+    @staticmethod
+    def _require_roles(method: t.Callable[..., None]) -> t.Callable[..., None]:
+        @functools.wraps(method)
+        def wrapper(self_: RoleConfigurator, *args: t.Any, **kwargs: t.Any) -> None:
+            if not self_.config.roles:
+                click.echo("\nNo roles are defined.\n")
+                return None
+            return method(self_, *args, **kwargs)
+
+        return wrapper
+
     def list_roles(self) -> None:
         """Display a summary table of all configured roles."""
         table = RoleSummaryTable(self.config.roles, resolver=self._name_resolver)
         table.print()
 
+    @_require_roles
     def modify_role(self) -> None:
         """Modify a configured role's access level."""
         role = self._role_prompter.prompt_for_config()
@@ -119,6 +132,7 @@ class RoleConfigurator:
         self.config.roles.sort(key=lambda r: r.sort_key)
         self.config.commit()
 
+    @_require_roles
     def remove_role(self) -> None:
         """Remove a role from the configuration."""
         role = self._role_prompter.prompt_for_config()
