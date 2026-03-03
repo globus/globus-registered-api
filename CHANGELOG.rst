@@ -26,6 +26,55 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-0.3.0:
+
+0.3.0 - 2026-03-03
+==================
+
+Added
+-----
+
+*   Add Access Role Control to ``gra api create``.
+
+    Usage Example:
+
+    .. code-block:: shell
+
+        gra api create "My API" \
+            --target ./target-json-structure.json \
+            --description "My Cool API" \
+            --owner "urn:globus:auth:identity:0b8067fc-0bb4-46e4-b23d-3ad543624519" \
+            --admin "urn:globus:auth:identity:d86ff962-1b2a-4de8-8bde-7dc993494dcb" \
+            --admin "urn:globus:groups:id:b0d11f00-5701-480f-a523-5b03869dfdbc" \
+            --viewer "urn:globus:groups:id:ed3219c3-c4ef-4b04-932a-d00bf88ceea7"
+
+Fixed
+-----
+
+*   Sort the list of available targets more consistently.
+
+Changed
+-------
+
+*   Change the ``gra api create`` command to accept a target file,
+    instead of constructing one from a supplied OpenAPI specification.
+
+    New usage example:
+
+    .. code-block:: shell
+
+        gra api create "My API" \
+            --target ./target-json-structure.json \
+            --description "My Cool API"
+
+*   Change the ``gra api update`` command to accept a target file
+    with the option ``--target`` instead of a ``target-file`` argument.
+
+Development
+-----------
+
+*   Standardize the way that Registered APIs are printed across commands.
+
 .. _changelog-0.2.1:
 
 0.2.1 - 2026-03-02
