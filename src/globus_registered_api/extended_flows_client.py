@@ -128,6 +128,9 @@ class ExtendedFlowsClient(FlowsClient):
         name: str,
         description: str,
         target: dict[str, t.Any],
+        owners: list[str],
+        administrators: list[str],
+        viewers: list[str],
     ) -> GlobusHTTPResponse:
         """
         Create a new registered API.
@@ -135,12 +138,20 @@ class ExtendedFlowsClient(FlowsClient):
         :param name: Name for the registered API
         :param description: Description for the registered API
         :param target: Target definition dict (from OpenAPITarget.to_dict())
+        :param owners: List of owner URNs.
+        :param administrators: List of administrator URNs.
+        :param viewers: List of viewer URNs.
         :return: Response containing the created registered API
         """
         body: dict[str, t.Any] = {
             "name": name,
             "description": description,
             "target": target,
+            "roles": {
+                "owners": owners,
+                "administrators": administrators,
+                "viewers": viewers,
+            },
         }
 
         return self.post("/registered_apis", data=body)
