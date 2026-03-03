@@ -33,6 +33,7 @@ def test_update_registered_api_text_format(gra, patch_update):
                 "viewers": [],
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T01:00:00+00:00",
             "edited_timestamp": None,
         },
     )
@@ -59,6 +60,7 @@ def test_update_registered_api_json_format(gra, patch_update):
                 "viewers": [],
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T01:00:00+00:00",
             "edited_timestamp": None,
         },
     )
@@ -83,6 +85,7 @@ def test_update_registered_api_calls_correct_endpoint(gra, patch_update):
                 "viewers": [],
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T01:00:00+00:00",
             "edited_timestamp": None,
         },
     )
@@ -124,6 +127,7 @@ def test_update_registered_api_with_description(gra, patch_update):
                 "viewers": [],
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T01:00:00+00:00",
             "edited_timestamp": None,
         },
     )
@@ -148,6 +152,7 @@ def test_update_registered_api_with_owner(gra, patch_update):
                 "viewers": [],
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T01:00:00+00:00",
             "edited_timestamp": None,
         },
     )
@@ -174,6 +179,7 @@ def test_update_registered_api_with_multiple_owners(gra, patch_update):
                 "viewers": [],
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T01:00:00+00:00",
             "edited_timestamp": None,
         },
     )
@@ -211,6 +217,7 @@ def test_update_registered_api_no_viewers_clears_viewers(gra, patch_update):
                 "viewers": [],
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T01:00:00+00:00",
             "edited_timestamp": None,
         },
     )
@@ -237,6 +244,7 @@ def test_update_registered_api_no_administrators_clears_administrators(
                 "viewers": [],
             },
             "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T01:00:00+00:00",
             "edited_timestamp": None,
         },
     )

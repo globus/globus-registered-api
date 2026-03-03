@@ -178,7 +178,9 @@ class _TargetPrompter:
             (None, "<Enter custom path and method>")
         ] + [
             (target, f"{target.path} ({target.method})")
-            for target in sorted(spec_targets, key=lambda target: target.path)
+            for target in sorted(
+                spec_targets, key=lambda target: (target.path, target.method)
+            )
         ]
         return prompt_selection("Target", target_options)
 

@@ -11,6 +11,7 @@ from uuid import UUID
 import click
 
 from globus_registered_api.clients import create_flows_client
+from globus_registered_api.commands.api._common import echo_registered_api
 from globus_registered_api.context import CLIContext
 from globus_registered_api.context import with_cli_context
 
@@ -51,9 +52,9 @@ from globus_registered_api.context import with_cli_context
     help="Clear all viewers (can only be set by owners and administrators)",
 )
 @click.option(
-    "--target-file",
+    "--target",
     type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
-    help="Path to JSON file containing target definition",
+    help="Filepath to a JSON object containing the target definition",
 )
 @click.option("--format", type=click.Choice(["json", "text"]), default="text")
 @with_cli_context
@@ -67,7 +68,7 @@ def update_command(
     viewers: tuple[str, ...],
     no_administrators: bool,
     no_viewers: bool,
-    target_file: pathlib.Path | None,
+    target: pathlib.Path | None,
     format: str,
 ) -> None:
     """
@@ -101,9 +102,9 @@ def update_command(
         request["viewers"] = []
     elif viewers:
         request["viewers"] = list(set(viewers))
-    if target_file is not None:
+    if target is not None:
         try:
-            request["target"] = json.loads(target_file.read_text())
+            request["target"] = json.loads(target.read_text())
         except json.JSONDecodeError as e:
             raise click.UsageError(f"Invalid JSON in target file: {e}")
         except UnicodeDecodeError as e:
@@ -111,15 +112,4 @@ def update_command(
 
     res = flows_client.update_registered_api(registered_api_id, **request)
 
-    if format == "json":
-        click.echo(json.dumps(res.data, indent=2))
-    else:
-        click.echo(f"ID:             {res['id']}")
-        click.echo(f"Name:           {res['name']}")
-        click.echo(f"Description:    {res['description']}")
-        click.echo(f"Owners:         {res['roles']['owners']}")
-        click.echo(f"Administrators: {res['roles']['administrators']}")
-        click.echo(f"Viewers:        {res['roles']['viewers']}")
-        click.echo(f"Created:        {res['created_timestamp']}")
-        if res.get("edited_timestamp"):
-            click.echo(f"Edited:         {res['edited_timestamp']}")
+    echo_registered_api(res, format)

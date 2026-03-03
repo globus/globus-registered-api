@@ -4,45 +4,60 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import pathlib
 
 import click
 
 from globus_registered_api.clients import create_flows_client
+from globus_registered_api.commands.api._common import echo_registered_api
 from globus_registered_api.context import CLIContext
 from globus_registered_api.context import with_cli_context
-from globus_registered_api.domain import HTTP_METHODS
-from globus_registered_api.domain import TargetSpecifier
-from globus_registered_api.openapi import AmbiguousContentTypeError
-from globus_registered_api.openapi import OpenAPILoadError
-from globus_registered_api.openapi import TargetNotFoundError
-from globus_registered_api.openapi import process_target
 
 
 @click.command("create")
-@click.argument("openapi_spec")
-@click.argument("method", type=click.Choice(HTTP_METHODS, case_sensitive=False))
-@click.argument("route")
 @click.argument("name")
 @click.option(
-    "--content-type",
-    default="*",
-    help="Target content-type for request body (required if multiple exist)",
+    "--target",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=pathlib.Path),
+    help="Filepath to a JSON object containing the target definition",
 )
 @click.option(
     "--description",
     required=True,
     help="Description for the registered API",
 )
+@click.option(
+    "--owner",
+    "owners",
+    multiple=True,
+    help="Set owner URN (can specify multiple, can only be set by owners)",
+)
+@click.option(
+    "--administrator",
+    "administrators",
+    multiple=True,
+    help="Set administrator URN (can specify multiple, can only be set by owners)",
+)
+@click.option(
+    "--viewer",
+    "viewers",
+    multiple=True,
+    help=(
+        "Set viewer URN (can specify multiple, can only be set by owners "
+        "and administrators)"
+    ),
+)
 @click.option("--format", type=click.Choice(["json", "text"]), default="text")
 @with_cli_context
 def create_command(
     ctx: CLIContext,
-    openapi_spec: str,
-    method: str,
-    route: str,
+    target: pathlib.Path,
     name: str,
-    content_type: str,
     description: str,
+    owners: tuple[str, ...],
+    administrators: tuple[str, ...],
+    viewers: tuple[str, ...],
     format: str,
 ) -> None:
     """
@@ -51,41 +66,23 @@ def create_command(
     Extracts a target endpoint from an OpenAPI spec and registers it with
     the Flows service.
 
-    OPENAPI_SPEC - A filepath or URL to an OpenAPI specification (JSON or YAML).
-
-    METHOD - Target API's HTTP method (e.g., get, post, put, delete).
-
-    ROUTE - Target API's route path (e.g., /items or /items/{item_id}).
-
-    NAME - Name for the registered API.
+    NAME - Name of the new registered API.
 
     Example:
 
     \b
-        gra api create ./spec.json get /items "My API" --description "My API"
+        gra api create  "My API"  --target ./target.json --description "My API"
     """
-    try:
-        target = TargetSpecifier.create(method, route, content_type)
-    except ValueError as e:
-        raise click.ClickException(str(e))
-
-    try:
-        result = process_target(openapi_spec, target)
-    except (OpenAPILoadError, TargetNotFoundError, AmbiguousContentTypeError) as e:
-        raise click.ClickException(str(e))
-
     flows_client = create_flows_client(ctx.globus_app)
 
+    target_content = json.loads(target.read_text())
     res = flows_client.create_registered_api(
         name=name,
         description=description,
-        target=result.to_dict(),
+        target=target_content,
+        owners=list(owners),
+        administrators=list(administrators),
+        viewers=list(viewers),
     )
 
-    if format == "json":
-        click.echo(json.dumps(res.data, indent=2))
-    else:
-        click.echo(f"ID:          {res['id']}")
-        click.echo(f"Name:        {res['name']}")
-        click.echo(f"Description: {res['description']}")
-        click.echo(f"Created:     {res['created_timestamp']}")
+    echo_registered_api(res, format)
