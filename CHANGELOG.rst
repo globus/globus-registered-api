@@ -26,6 +26,16 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-0.2.1:
+
+0.2.1 - 2026-03-02
+==================
+
+Fixed
+-----
+
+*   Fix an ``AssertionError`` that occurs if there are no roles or no targets.
+
 .. _changelog-0.2.0:
 
 0.2.0 - 2026-02-27
