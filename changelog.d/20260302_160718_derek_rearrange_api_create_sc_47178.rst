@@ -26,6 +26,9 @@ Changed
 
         gra api create "My API" ./target-json-structure.json --description "My Cool API"
 
+*   Change the ``gra api update`` command to accept a target file with the option
+    ``--target`` instead of ``target-file``.
+
 Development
 -----------
 

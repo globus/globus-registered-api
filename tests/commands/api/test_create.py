@@ -40,7 +40,12 @@ def target_path(tmp_path):
     return target_file
 
 
-def test_create_registered_api_text_format(gra, patch_create, target_path):
+@pytest.fixture
+def target_option(target_path):
+    return ["--target", str(target_path)]
+
+
+def test_create_registered_api_text_format(gra, patch_create, target_option):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
     name, desc = "My API", "Test description"
@@ -62,7 +67,7 @@ def test_create_registered_api_text_format(gra, patch_create, target_path):
     )
 
     # Act
-    result = gra(["api", "create", name, str(target_path), "--description", desc])
+    result = gra(["api", "create", name, *target_option, "--description", desc])
 
     # Assert
     assert result.exit_code == 0
@@ -74,7 +79,7 @@ def test_create_registered_api_text_format(gra, patch_create, target_path):
     assert desc in result.output
 
 
-def test_create_registered_api_json_format(gra, patch_create, target_path):
+def test_create_registered_api_json_format(gra, patch_create, target_option):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
     name, desc = "My API", "Test description"
@@ -96,7 +101,7 @@ def test_create_registered_api_json_format(gra, patch_create, target_path):
     )
 
     # Act
-    basic_command = ["api", "create", name, str(target_path), "--description", desc]
+    basic_command = ["api", "create", name, *target_option, "--description", desc]
     result = gra(basic_command + ["--format", "json"])
 
     # Assert
@@ -109,14 +114,15 @@ def test_create_registered_api_json_format(gra, patch_create, target_path):
 
 def test_create_registered_api_with_nonexistent_file_shows_error(gra):
     # Act
-    result = gra(["api", "create", "My API", "/nope.json", "--description", "Test"])
+    cmd = ["api", "create", "My API", "--target", "/nope.json", "--description", "Test"]
+    result = gra(cmd)
 
     # Assert
     assert result.exit_code != 0
     assert "File '/nope.json' does not exist" in result.output
 
 
-def test_create_registered_api_calls_post_endpoint(gra, patch_create, target_path):
+def test_create_registered_api_calls_post_endpoint(gra, patch_create, target_option):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
     name, desc = "My API", "Test Description"
@@ -138,14 +144,14 @@ def test_create_registered_api_calls_post_endpoint(gra, patch_create, target_pat
     )
 
     # Act
-    result = gra(["api", "create", name, str(target_path), "--description", desc])
+    result = gra(["api", "create", name, *target_option, "--description", desc])
 
     # Assert
     assert result.exit_code == 0
     assert patched_create.call_count == 1
 
 
-def test_create_registered_api_api_error(gra, patch_create, target_path):
+def test_create_registered_api_api_error(gra, patch_create, target_option):
     # Arrange
     patch_create(
         status=400,
@@ -158,7 +164,7 @@ def test_create_registered_api_api_error(gra, patch_create, target_path):
     )
 
     # Act
-    result = gra(["api", "create", "My API", str(target_path), "--description", "Test"])
+    result = gra(["api", "create", "My API", *target_option, "--description", "Test"])
 
     # Assert
     assert result.exit_code != 0
@@ -169,12 +175,17 @@ def test_create_registered_api_api_error(gra, patch_create, target_path):
     "args,expected_error",
     [
         pytest.param(
+            ["api", "create", "--target", "$TARGET", "--description", "Test"],
+            "Missing argument 'NAME'",
+            id="missing-name",
+        ),
+        pytest.param(
             ["api", "create", "My API", "--description", "Test"],
-            "Missing argument 'TARGET_FILE'",
+            "Missing option '--target'",
             id="missing-target",
         ),
         pytest.param(
-            ["api", "create", "My API", "$TARGET"],
+            ["api", "create", "My API", "--target", "$TARGET"],
             "Missing option '--description'",
             id="missing-description",
         ),
@@ -195,7 +206,7 @@ def test_create_registered_api_missing_required_param_shows_error(
 
 
 def test_create_registered_api_with_single_owner_admin_and_viewer(
-    gra, patch_create, target_path
+    gra, patch_create, target_option
 ):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
@@ -223,7 +234,7 @@ def test_create_registered_api_with_single_owner_admin_and_viewer(
     )
 
     # Act
-    basic_command = ["api", "create", name, str(target_path), "--description", desc]
+    basic_command = ["api", "create", name, *target_option, "--description", desc]
     result = gra(basic_command + ["--administrator", admin_urn, "--viewer", viewer_urn])
 
     assert result.exit_code == 0
@@ -236,7 +247,7 @@ def test_create_registered_api_with_single_owner_admin_and_viewer(
 
 
 def test_create_registered_api_with_multiple_owners_admins_and_viewers(
-    gra, patch_create, target_path
+    gra, patch_create, target_option
 ):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
@@ -273,7 +284,7 @@ def test_create_registered_api_with_multiple_owners_admins_and_viewers(
     )
 
     # Act
-    basic_command = ["api", "create", name, str(target_path), "--description", desc]
+    basic_command = ["api", "create", name, *target_option, "--description", desc]
     result = gra(
         basic_command
         + ["--owner", owner_urns[0], "--owner", owner_urns[1]]

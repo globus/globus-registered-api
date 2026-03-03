@@ -16,9 +16,11 @@ from globus_registered_api.context import with_cli_context
 
 @click.command("create")
 @click.argument("name")
-@click.argument(
-    "target_file",
+@click.option(
+    "--target",
+    required=True,
     type=click.Path(exists=True, dir_okay=False, readable=True, path_type=pathlib.Path),
+    help="Filepath to a JSON object containing the target definition",
 )
 @click.option(
     "--description",
@@ -50,7 +52,7 @@ from globus_registered_api.context import with_cli_context
 @with_cli_context
 def create_command(
     ctx: CLIContext,
-    target_file: pathlib.Path,
+    target: pathlib.Path,
     name: str,
     description: str,
     owners: tuple[str, ...],
@@ -64,24 +66,20 @@ def create_command(
     Extracts a target endpoint from an OpenAPI spec and registers it with
     the Flows service.
 
-    NAME - Name of the registered API.
-
-    TARGET_FILE - A filepath to a target JSON object.
-
-    DESCRIPTION - Description for the registered API.
+    NAME - Name of the new registered API.
 
     Example:
 
     \b
-        gra api create  "My API"  ./target.json--description "My API"
+        gra api create  "My API"  --target ./target.json --description "My API"
     """
     flows_client = create_flows_client(ctx.globus_app)
 
-    target = json.loads(target_file.read_text())
+    target_content = json.loads(target.read_text())
     res = flows_client.create_registered_api(
         name=name,
         description=description,
-        target=target,
+        target=target_content,
         owners=list(owners),
         administrators=list(administrators),
         viewers=list(viewers),
