@@ -8,7 +8,9 @@ Added
 
     .. code-block:: console
 
-        gra api create "My API" ./target-json-structure.json --description "My API" \
+        gra api create "My API" \
+            --target ./target-json-structure.json \
+            --description "My Cool API" \
             --owner "urn:globus:auth:identity:0b8067fc-0bb4-46e4-b23d-3ad543624519" \
             --admin "urn:globus:auth:identity:d86ff962-1b2a-4de8-8bde-7dc993494dcb" \
             --admin "urn:globus:groups:id:b0d11f00-5701-480f-a523-5b03869dfdbc" \
@@ -24,7 +26,9 @@ Changed
 
     .. code-block:: console
 
-        gra api create "My API" ./target-json-structure.json --description "My Cool API"
+        gra api create "My API" \
+            --target ./target-json-structure.json \
+            --description "My Cool API"
 
 *   Change the ``gra api update`` command to accept a target file with the option
     ``--target`` instead of ``target-file``.
