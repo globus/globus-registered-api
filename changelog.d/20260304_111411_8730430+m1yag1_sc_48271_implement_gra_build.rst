@@ -1,4 +1,0 @@
-Added
------
-
-*   Add ``build`` CLI command to generate a manifest file for registered APIs.
