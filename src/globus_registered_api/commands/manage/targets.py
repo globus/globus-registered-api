@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import functools
 import typing as t
+from dataclasses import dataclass
 
 import click
 from rich.console import Console
@@ -19,13 +20,15 @@ from globus_registered_api.config import TargetConfig
 from globus_registered_api.domain import HTTP_METHODS
 from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi import SpecAnalysis
-from globus_registered_api.rendering import prompt_multiselection
 from globus_registered_api.rendering import prompt_selection
 
 from .domain import ConfiguratorMenu
 from .domain import ManageContext
 
 console = Console()
+
+
+class _ManualInput: ...
 
 
 class TargetSummaryTable(Table):
@@ -46,6 +49,18 @@ class TargetSummaryTable(Table):
 
     def print(self) -> None:
         console.print(self)
+
+
+@dataclass
+class ImputedSecurity:
+    """
+    Dynamic override of TargetSecurityConfig for display purposes.
+
+    Represents a security definition imputed from the OpenAPI spec, not defined in
+    the config.
+    """
+
+    globus_auth_scopes: list[str]
 
 
 class TargetConfigurator:
@@ -82,16 +97,15 @@ class TargetConfigurator:
         if target is None:
             target = self._target_prompter.prompt_for_config()
 
-        if not target.scope_strings:
-            # Impute scopes from the spec analysis if they aren't defined explicitly.
+        if not target.security.globus_auth_scope:
             if spec_scopes := self.analysis.scopes_by_target.get(target.specifier):
+                # Create a copy of the target, ignoring type incompatibility for display
+                #   purposes.
                 target = target.model_copy()
-                target.scope_strings = [f"<Imputed> {scope}" for scope in spec_scopes]
+                imputed_security = ImputedSecurity(globus_auth_scopes=spec_scopes)
+                target.security = imputed_security  # type: ignore
 
-        panel = Panel(
-            Pretty(target, expand_all=True),
-            title=str(target),
-        )
+        panel = Panel(Pretty(target, expand_all=True), title=str(target))
         console.print(panel)
 
     def list_targets(self) -> None:
@@ -102,7 +116,9 @@ class TargetConfigurator:
     def modify_target(self) -> None:
         target = self._target_prompter.prompt_for_config()
         target.alias = click.prompt("Target Alias", type=str, default=target.alias)
-        target.scope_strings = self._scope_prompter.prompt_for_existing_target(target)
+        globus_auth_scope = self._scope_prompter.prompt_for_existing_target(target)
+        target.security.globus_auth_scope = globus_auth_scope
+
         self.config.targets.sort(key=lambda ta: ta.sort_key)
         self.config.commit()
         self.display_target(target)
@@ -114,15 +130,16 @@ class TargetConfigurator:
         click.echo("Provide a human friendly name like 'create-resource'.")
         target_alias = click.prompt("Target Alias", type=str)
 
-        scope_strings = self._scope_prompter.prompt_for_new_target(target_specifier)
+        globus_auth_scope = self._scope_prompter.prompt_for_new_target(target_specifier)
 
         target = TargetConfig(
             path=target_specifier.path,
             method=target_specifier.method,
             alias=target_alias,
-            scope_strings=scope_strings,
+            security=TargetConfig.Security(globus_auth_scope=globus_auth_scope),
         )
         self.config.targets.append(target)
+
         self.config.targets.sort(key=lambda ta: ta.sort_key)
         self.config.commit()
         self.display_target(target)
@@ -199,7 +216,7 @@ class _TargetPrompter:
 
 class _TargetScopePrompter:
     """
-    Class responsible for prompting the user to select scopes for a target.
+    Class responsible for prompting the user to select a scope for a target.
 
     Scope prompting is skipped if the spec already defines scopes for the target.
     """
@@ -208,55 +225,50 @@ class _TargetScopePrompter:
         self._config = config
         self._analysis = analysis
 
-    def prompt_for_new_target(self, target_specifier: TargetSpecifier) -> list[str]:
+    def prompt_for_new_target(self, target_specifier: TargetSpecifier) -> str | None:
         """
-        Prompt for scopes to include in a newly registered target config.
+        Prompt for a scope to include in a newly registered target config.
 
         Target scope prompting is silently skipped if the spec explicitly defines them.
         """
         if self._analysis.scopes_by_target.get(target_specifier):
-            return []
+            return None
 
-        click.echo(
-            f"\nThe {target_specifier} OpenAPI specification doesn't define any "
-            "Globus Auth scopes."
-        )
+        click.echo(f"\nNo Flows-supported security defined for '{target_specifier}'.")
         # TODO - link to gra docs on GlobusAuth scopes once they exist.
-        if not click.confirm("Would you like to register any?", default=True):
-            return []
+        click.echo("Currently the service only supports Globus Auth security.\n")
+        if click.confirm("Would you like to include a Globus Auth scope?"):
+            return self._prompt_scope_input()
+        return None
 
-        all_scopes = self._all_scopes()
-        return prompt_multiselection(
-            "Scope",
-            [(scope, scope) for scope in sorted(all_scopes)],
-            defaults=[scope for scope in all_scopes if scope.endswith(":all")],
-            custom_input=True,
-        )
-
-    def prompt_for_existing_target(self, target: TargetConfig) -> list[str]:
+    def prompt_for_existing_target(self, target: TargetConfig) -> str | None:
         """
-        Prompt for scopes to include in an already registered target config.
+        Prompt for a scope to include in an already registered target config.
 
         Target scope prompting is silently skipped if the spec explicitly defines them.
         """
         if self._analysis.scopes_by_target.get(target.specifier):
             # Special case -
-            #   The `gra manage` command only allows attaching scopes to targets that
-            #   lack them in the specification. But since the config file can be
-            #   manually edited; always respect an explicitly defined scope list.
-            if not target.scope_strings:
-                return []
+            #   The `gra manage` command only allows attaching a scope to a target that
+            #   lacks any in the specification. But since the config file can be
+            #   manually edited, always respect an explicitly defined scope.
+            if not target.security.globus_auth_scope:
+                return None
 
-        return prompt_multiselection(
-            "Scope",
-            [(scope, scope) for scope in sorted(self._all_scopes())],
-            defaults=target.scope_strings,
-            custom_input=True,
-        )
+        return self._prompt_scope_input(default=target.security.globus_auth_scope)
 
-    def _all_scopes(self) -> set[str]:
-        """Get the set of all scope strings between the spec and config."""
-        scope_strings = set(self._analysis.scope_strings)
+    def _prompt_scope_input(self, default: str | None = None) -> str | None:
+        all_known_scopes = set(self._analysis.scope_strings)
         for target in self._config.targets:
-            scope_strings.update(target.scope_strings)
-        return scope_strings
+            if target.security.globus_auth_scope:
+                all_known_scopes.add(target.security.globus_auth_scope)
+
+        scope_options: list[tuple[str | None | _ManualInput, str]] = [
+            (None, "<None>"),
+            (_ManualInput(), "<Enter a scope string>"),
+        ] + [(scope, scope) for scope in sorted(all_known_scopes)]
+
+        resp = prompt_selection("Scope", scope_options, default=default)
+        if isinstance(resp, _ManualInput):
+            return t.cast(str, click.prompt("Scope String", type=str))
+        return resp
