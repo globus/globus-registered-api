@@ -176,7 +176,7 @@ def test_target_management_modify_target(prompt_patcher, config, target_configur
 
 
 def test_target_management_modify_target_remove_scope(
-    prompt_patcher, config, target_configurator, config_path
+    prompt_patcher, config, target_configurator
 ):
     target = TargetConfig(
         path="/example",
