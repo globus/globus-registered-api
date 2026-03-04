@@ -80,6 +80,9 @@ class TargetConfig(BaseModel):
     A configuration entry for a single target within a Registered API service.
     """
 
+    class Security(BaseModel):
+        globus_auth_scope: str | None = None
+
     # A relative API path string (e.g., /resource/{id}/action).
     # This will be appended to the core.base_url to form the full target URL.
     path: str
@@ -91,8 +94,8 @@ class TargetConfig(BaseModel):
     # E.g., create-resource
     alias: str
 
-    # The list of globus-auth scope strings which independently consent to this target.
-    scope_strings: list[str] = Field(default_factory=list)
+    # Additional security configuration to be mixed in with an OpenAPI specification.
+    security: Security = Field(default_factory=Security)
 
     @property
     def sort_key(self) -> tuple[str, ...]:
