@@ -249,9 +249,9 @@ class _TargetScopePrompter:
         """
         if self._analysis.scopes_by_target.get(target.specifier):
             # Special case -
-            #   The `gra manage` command only allows attaching a scope to a targets that
-            #   lacks them in the specification. But since the config file can be
-            #   manually edited; always respect an explicitly defined scope.
+            #   The `gra manage` command only allows attaching a scope to a target that
+            #   lacks any in the specification. But since the config file can be
+            #   manually edited, always respect an explicitly defined scope.
             if not target.security.globus_auth_scope:
                 return None
 
