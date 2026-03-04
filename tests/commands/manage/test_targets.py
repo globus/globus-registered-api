@@ -143,6 +143,42 @@ def test_target_management_display_target(
     assert "alias='get-example'" in outstream
 
 
+def test_target_management_display_maintains_imputed_scope_ordering(
+    prompt_patcher, config, rich_disabled_colors, capsys
+):
+    # Simulate a laundry list of scopes in the OpenAPI specification to make it
+    #   unlikely we accidentally reorder them back into the same order.
+    suffixes = ["read", "write", "delete", "admin", "superuser", "owner", "all"]
+    scopes = [f"example:{suffix}" for suffix in suffixes]
+    # Update the spec to define scopes for a target.
+    config.core.specification.paths["/example"].get.security = [
+        {"GlobusAuth": [f"example:{scope}"]} for scope in scopes
+    ]
+
+    # Add a target to the config which points at that spec endpoint.
+    target = TargetConfig(path="/example", method="GET", alias="get-example")
+    config.targets = [target]
+    config.commit()
+
+    # Re-analyze the updated specification instead of using the fixture-provided one.
+    analysis = OpenAPISpecAnalyzer().analyze(config.core.specification)
+    ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
+    target_configurator = TargetConfigurator(ctx)
+
+    config.commit()
+
+    # Set up a sequence of selections to be made by the mocked selector.
+    prompt_patcher.add_input("selection", target)
+
+    target_configurator.display_target()
+
+    outstream = capsys.readouterr().out
+    # Verify that "order is maintained" by ensuring that the index of the output stream
+    #   is increasing as we go through the list of scopes in their original order.
+    actual_order = sorted(scopes, key=lambda s: outstream.index(s))
+    assert actual_order == scopes
+
+
 def test_target_management_remove_target(prompt_patcher, config, target_configurator):
     # Add some targets to the config.
     get_target = TargetConfig(path="/example", method="GET", alias="get-example")
