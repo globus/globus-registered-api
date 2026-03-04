@@ -3,7 +3,7 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-from .encricher import OpenAPIEnricher
+from .enricher import OpenAPIEnricher
 from .interface import SchemaMutation
 
 __all__ = (
