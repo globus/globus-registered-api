@@ -234,7 +234,7 @@ class _TargetScopePrompter:
         if self._analysis.scopes_by_target.get(target_specifier):
             return None
 
-        click.echo(f"\nNo flows-supported security defined for '{target_specifier}'.")
+        click.echo(f"\nNo Flows-supported security defined for '{target_specifier}'.")
         # TODO - link to gra docs on GlobusAuth scopes once they exist.
         click.echo("Currently the service only supports Globus Auth security.\n")
         if click.confirm("Would you like to include a Globus Auth scope?"):
