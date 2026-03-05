@@ -26,6 +26,23 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-0.4.0:
+
+0.4.0 - 2026-03-04
+==================
+
+Breaking changes
+----------------
+
+*   Change the ``GlobusAuth`` scope config model to only allow one scope per target.
+
+    This is a breaking change for any config with a defined target.
+
+Added
+-----
+
+*   Add a ``gra build`` command to generate a manifest file for Registered APIs.
+
 .. _changelog-0.3.0:
 
 0.3.0 - 2026-03-03
