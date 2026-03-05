@@ -171,10 +171,10 @@ def test_target_specification_structure(gra, config_with_targets, manifest_path)
     # Assert - destination values
     get_dest = apis["get-example"]["target"]["destination"]
     assert get_dest["method"] == "get"
-    assert get_dest["url"] == "/example"
+    assert get_dest["url"] == "https://api.example.com/example"
     post_dest = apis["create-example"]["target"]["destination"]
     assert post_dest["method"] == "post"
-    assert post_dest["url"] == "/example"
+    assert post_dest["url"] == "https://api.example.com/example"
     # Assert - specification structure
     for _alias, entry in apis.items():
         spec = entry["target"]["specification"]
@@ -230,6 +230,62 @@ def test_manifest_overwrites_existing_file(gra, config_with_targets, manifest_pa
     assert len(manifest["registered-apis"]) == 2
     assert "get-example" in manifest["registered-apis"]
     assert "create-example" in manifest["registered-apis"]
+
+
+@pytest.mark.parametrize(
+    "base_url,expected_url",
+    [
+        pytest.param(
+            "https://api.example.com",
+            "https://api.example.com/example",
+            id="base_url_without_trailing_slash",
+        ),
+        pytest.param(
+            "https://api.example.com/",
+            "https://api.example.com/example",
+            id="base_url_with_trailing_slash",
+        ),
+        pytest.param(
+            "https://api.example.com/v2/",
+            "https://api.example.com/v2/example",
+            id="base_url_with_path_and_trailing_slash",
+        ),
+        pytest.param(
+            "https://api.example.com/v2",
+            "https://api.example.com/v2/example",
+            id="base_url_with_path_without_trailing_slash",
+        ),
+    ],
+)
+def test_build_destination_url_slash_handling(
+    gra, openapi_schema, manifest_path, base_url, expected_url
+):
+    # Arrange
+    core = CoreConfig(
+        base_url=base_url,
+        specification=openapi_schema,
+    )
+    targets = [
+        TargetConfig(
+            path="/example",
+            method="GET",
+            alias="get-example",
+            scope_strings=["example:read"],
+        ),
+    ]
+    config = RegisteredAPIConfig(core=core, targets=targets, roles=[])
+    config.commit()
+
+    # Act
+    result = gra(["build"])
+
+    # Assert
+    assert result.exit_code == 0
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    dest_url = manifest["registered-apis"]["get-example"]["target"]["destination"][
+        "url"
+    ]
+    assert dest_url == expected_url
 
 
 def test_manifest_directory_creation(gra, config_with_targets, tmp_path, monkeypatch):

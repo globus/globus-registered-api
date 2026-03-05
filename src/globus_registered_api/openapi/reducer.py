@@ -65,10 +65,7 @@ def reduce_to_target(spec: oa.OpenAPI, target: TargetInfo) -> OpenAPITarget:
 
 def _build_destination(spec: oa.OpenAPI, target: TargetInfo) -> dict[str, str]:
     """Build the destination dict with method and full URL."""
-    base_url = ""
-    if spec.servers and len(spec.servers) > 0:
-        base_url = spec.servers[0].url.rstrip("/")
-
+    base_url = spec.servers[0].url.rstrip("/")
     url = f"{base_url}{target.matched_target.path}"
 
     return {

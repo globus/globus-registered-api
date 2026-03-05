@@ -26,6 +26,17 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-0.4.1:
+
+0.4.1 - 2026-03-05
+==================
+
+Fixed
+-----
+
+*   Fix ``gra build`` to generate absolute destination URLs
+    instead of relative paths using ``base_url`` from config.
+
 .. _changelog-0.4.0:
 
 0.4.0 - 2026-03-04
