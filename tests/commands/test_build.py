@@ -171,10 +171,10 @@ def test_target_specification_structure(gra, config_with_targets, manifest_path)
     # Assert - destination values
     get_dest = apis["get-example"]["target"]["destination"]
     assert get_dest["method"] == "get"
-    assert get_dest["url"] == "/example"
+    assert get_dest["url"] == "https://api.example.com/example"
     post_dest = apis["create-example"]["target"]["destination"]
     assert post_dest["method"] == "post"
-    assert post_dest["url"] == "/example"
+    assert post_dest["url"] == "https://api.example.com/example"
     # Assert - specification structure
     for _alias, entry in apis.items():
         spec = entry["target"]["specification"]

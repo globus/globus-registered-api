@@ -46,7 +46,9 @@ def build_command(_ctx: CLIContext) -> None:
     # Process each target
     registered_apis: dict[str, ComputedRegisteredAPI] = {}
     for target_config in config.targets:
-        result = process_target(enriched_spec, target_config.specifier)
+        result = process_target(
+            enriched_spec, target_config.specifier, config.core.base_url
+        )
         registered_apis[target_config.alias] = ComputedRegisteredAPI(
             target=result.target
         )

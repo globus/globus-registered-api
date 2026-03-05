@@ -41,6 +41,7 @@ class ProcessingResult:
 def process_target(
     spec_or_path: oa.OpenAPI | str | Path,
     target: TargetSpecifier,
+    base_url: str = "",
 ) -> ProcessingResult:
     """
     Process an OpenAPI spec to extract a target endpoint.
@@ -55,6 +56,7 @@ def process_target(
 
     :param spec_or_path: OpenAPI spec object or path to spec file
     :param target: Target specifier (method, path, optional content-type)
+    :param base_url: Base URL to use for destination (overrides spec.servers)
     :return: ProcessingResult containing the reduced spec
     :raises OpenAPILoadError: If spec file cannot be loaded
     :raises TargetNotFoundError: If route or method not found
@@ -68,6 +70,6 @@ def process_target(
 
     # Find and reduce
     target_info = find_target(spec, target)
-    openapi_target = reduce_to_target(spec, target_info)
+    openapi_target = reduce_to_target(spec, target_info, base_url)
 
     return ProcessingResult(target=openapi_target)
