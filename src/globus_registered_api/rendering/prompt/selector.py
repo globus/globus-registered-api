@@ -33,8 +33,6 @@ def prompt_selection(
     """
     Prompt the user to select a single option from a supplied list.
 
-    Note: for multiple selection, use ``prompt_multiselection`` instead.
-
     Usage:
     >>> from globus_registered_api.rendering.prompt import prompt_selection
     >>> options = [(1, "Red"), (2, "Green"), (3, "Blue")]

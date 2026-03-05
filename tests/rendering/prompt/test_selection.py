@@ -11,7 +11,6 @@ from prompt_toolkit.input import PipeInput
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 
-from globus_registered_api.rendering import prompt_multiselection
 from globus_registered_api.rendering import prompt_selection
 
 KEY_UP = "\x1b[A"
@@ -73,67 +72,3 @@ def test_prompt_selection_with_default(input_simulator):
     response = prompt_selection("Color", options, default=2)
 
     assert response == 2
-
-
-def test_prompt_multiselection(input_simulator):
-    """
-    Rendering
-    =========
-    Select one or more Colors:
-     > Red
-       Green
-       Blue
-       <Submit>
-    """
-    input_simulator.send_text(KEY_ENTER)  # Select the first option.
-    input_simulator.send_text(KEY_DOWN + KEY_ENTER)  # Select the second option.
-    input_simulator.send_text(KEY_DOWN * 2 + KEY_ENTER)  # Select the submit button.
-
-    options = [(1, "Red"), (2, "Green"), (3, "Blue")]
-    response = prompt_multiselection("Color", options)
-
-    assert response == [1, 2]
-
-
-def test_prompt_multiselection_with_defaults(input_simulator):
-    # When defaults are provided, "Submit" will be hovered at the start, so just enter.
-    input_simulator.send_text(KEY_ENTER)
-
-    options = [(1, "Red"), (2, "Green"), (3, "Blue")]
-    response = prompt_multiselection("Color", options, defaults=[1, 2])
-
-    assert response == [1, 2]
-
-
-def test_prompt_multiselection_deselection(input_simulator):
-    input_simulator.send_text(KEY_ENTER)  # Select the first option.
-    input_simulator.send_text(KEY_ENTER)  # Deselect the first option.
-    input_simulator.send_text(KEY_DOWN * 4 + KEY_ENTER)  # Select the submit button.
-
-    options = [(1, "Red"), (2, "Green"), (3, "Blue")]
-    response = prompt_multiselection("Color", options)
-
-    assert response == []
-
-
-def test_prompt_multiselection_enter_custom_input(input_simulator):
-    """
-    Rendering
-    =========
-    Select one or more Colors:
-     > Red
-       Green
-       Blue
-       <Custom Value>
-       <Submit>
-    """
-
-    # Select the 'Enter custom input' option.
-    input_simulator.send_text(KEY_DOWN * 3 + KEY_ENTER)
-    input_simulator.send_text("pink" + KEY_ENTER)  # Enter "pink" as the custom input.
-    input_simulator.send_text(KEY_ENTER)  # Select the submit button.
-
-    options = [("red", "Red"), ("green", "Green"), ("blue", "Blue")]
-    response = prompt_multiselection("Color", options, custom_input=True)
-
-    assert response == ["pink"]

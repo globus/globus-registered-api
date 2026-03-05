@@ -15,7 +15,6 @@ from click.testing import CliRunner
 from prompt_toolkit.formatted_text import AnyFormattedText
 
 import globus_registered_api.cli as cli_module
-import globus_registered_api.rendering.prompt.multiselector as multiselector_module
 import globus_registered_api.rendering.prompt.selector as selector_module
 from globus_registered_api.cli import cli as root_gra_command
 from globus_registered_api.config import CoreConfig
@@ -79,7 +78,6 @@ _PromptType = t.Literal[
     "prompt_toolkit_prompt",
     "confirmation",
     "selection",
-    "multiselection",
 ]
 T = t.TypeVar("T")
 
@@ -96,8 +94,6 @@ class PromptPatcher:
             - Input are compared against the supplied list of keys.
               If a match is found the corresponding value is returned, otherwise
                 the input is returned as the value.
-        - multiselection: rendering.prompt_multiselection
-            - Similar behavior to `selection`, both keys and values are accepted.
     """
 
     def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -107,14 +103,10 @@ class PromptPatcher:
         self._confirm_responses = self._patch_function(click, "confirm")
         self._prompt_toolkit_responses = self._patch_function(prompt_toolkit, "prompt")
 
-        # Selectors and MultiSelector get special handling to account for key mapping.
+        # Selectors get special handling to account for key mapping.
         self._select_responses = self._patch_selector(
             selector_module,
             "Selector",
-        )
-        self._multiselect_responses = self._patch_selector(
-            multiselector_module,
-            "MultiSelector",
         )
 
     def add_input(self, prompt_type: _PromptType, response: t.Any) -> None:
@@ -126,8 +118,6 @@ class PromptPatcher:
             self._prompt_toolkit_responses.append(response)
         elif prompt_type == "selection":
             self._select_responses.append(response)
-        elif prompt_type == "multiselection":
-            self._multiselect_responses.append(response)
         else:
             raise ValueError(f"Invalid prompt type: {prompt_type}")
 
@@ -186,10 +176,6 @@ class PromptPatcher:
                 if clazz == "Selector":
                     if isinstance(resp, str) and resp in self.value_map:
                         resp = self.value_map[resp]
-                elif clazz == "MultiSelector":
-                    for i, r in enumerate(resp):
-                        if isinstance(r, str) and r in self.value_map:
-                            resp[i] = self.value_map[r]
 
                 response_idx += 1
                 return resp
