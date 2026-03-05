@@ -41,19 +41,16 @@ class OpenAPITarget:
         return result
 
 
-def reduce_to_target(
-    spec: oa.OpenAPI, target: TargetInfo, base_url: str = ""
-) -> OpenAPITarget:
+def reduce_to_target(spec: oa.OpenAPI, target: TargetInfo) -> OpenAPITarget:
     """
     Reduce an OpenAPI spec to just the target operation and its dependencies.
 
     :param spec: The full OpenAPI specification
     :param target: Information about the target operation
-    :param base_url: Base URL to use for destination (overrides spec.servers)
     :return: A reduced spec with operation, destination, and collected components
     """
     # Build destination URL
-    destination = _build_destination(spec, target, base_url)
+    destination = _build_destination(spec, target)
 
     # Collect referenced components
     components = _collect_components(spec, target.operation)
@@ -66,15 +63,10 @@ def reduce_to_target(
     )
 
 
-def _build_destination(
-    spec: oa.OpenAPI, target: TargetInfo, base_url: str = ""
-) -> dict[str, str]:
+def _build_destination(spec: oa.OpenAPI, target: TargetInfo) -> dict[str, str]:
     """Build the destination dict with method and full URL."""
-    # Use provided base_url, fallback to spec.servers if not provided
-    if not base_url and spec.servers and len(spec.servers) > 0:
-        base_url = spec.servers[0].url
-
-    url = f"{base_url.rstrip('/')}{target.matched_target.path}"
+    base_url = spec.servers[0].url.rstrip("/")
+    url = f"{base_url}{target.matched_target.path}"
 
     return {
         "method": target.matched_target.method.lower(),

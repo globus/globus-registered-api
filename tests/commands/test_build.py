@@ -232,6 +232,46 @@ def test_manifest_overwrites_existing_file(gra, config_with_targets, manifest_pa
     assert "create-example" in manifest["registered-apis"]
 
 
+@pytest.mark.parametrize(
+    "base_url,expected_url",
+    [
+        # base_url without trailing slash
+        ("https://api.example.com", "https://api.example.com/example"),
+        # base_url with trailing slash
+        ("https://api.example.com/", "https://api.example.com/example"),
+    ],
+)
+def test_build_destination_url_slash_handling(
+    gra, openapi_schema, manifest_path, base_url, expected_url
+):
+    # Arrange
+    core = CoreConfig(
+        base_url=base_url,
+        specification=openapi_schema,
+    )
+    targets = [
+        TargetConfig(
+            path="/example",
+            method="GET",
+            alias="get-example",
+            scope_strings=["example:read"],
+        ),
+    ]
+    config = RegisteredAPIConfig(core=core, targets=targets, roles=[])
+    config.commit()
+
+    # Act
+    result = gra(["build"])
+
+    # Assert
+    assert result.exit_code == 0
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    dest_url = manifest["registered-apis"]["get-example"]["target"]["destination"][
+        "url"
+    ]
+    assert dest_url == expected_url
+
+
 def test_manifest_directory_creation(gra, config_with_targets, tmp_path, monkeypatch):
     # Arrange
     new_manifest_path = tmp_path / "new_dir" / "manifest.json"
