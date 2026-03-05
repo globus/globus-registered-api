@@ -3,10 +3,6 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-from .enricher import OpenAPIEnricher
-from .interface import SchemaMutation
+from .dispatch import build_command
 
-__all__ = (
-    "OpenAPIEnricher",
-    "SchemaMutation",
-)
+__all__ = ("build_command",)

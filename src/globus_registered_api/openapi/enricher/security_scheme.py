@@ -79,11 +79,11 @@ class InjectSecuritySchemes(SchemaMutation):
             if globus_scopes and len(globus_scopes) == 1:
                 predefined_scopes.add(globus_scopes[0])
 
-        # Insert any missing scopes to the start of the list:
+        # Insert a scope addition at the start of the security list.
         #    Given the operation's level of specificity, this ignores content-types.
-        for scope in target.scope_strings:
-            if scope not in predefined_scopes:
-                security.insert(0, {"GlobusAuth": [scope]})
+        desired_scope = target.security.globus_auth_scope
+        if desired_scope and desired_scope not in predefined_scopes:
+            security.insert(0, {"GlobusAuth": [desired_scope]})
 
         # Only update the model if we made changes, to avoid unnecessary mutations.
         if security:
