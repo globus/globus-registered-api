@@ -234,7 +234,7 @@ class _TargetScopePrompter:
         if self._analysis.scopes_by_target.get(target_specifier):
             return None
 
-        click.echo(f"\nNo flows-supported security defined for '{target_specifier}'.")
+        click.echo(f"\nNo Flows-supported security defined for '{target_specifier}'.")
         # TODO - link to gra docs on GlobusAuth scopes once they exist.
         click.echo("Currently the service only supports Globus Auth security.\n")
         if click.confirm("Would you like to include a Globus Auth scope?"):
@@ -249,9 +249,9 @@ class _TargetScopePrompter:
         """
         if self._analysis.scopes_by_target.get(target.specifier):
             # Special case -
-            #   The `gra manage` command only allows attaching a scope to a targets that
-            #   lacks them in the specification. But since the config file can be
-            #   manually edited; always respect an explicitly defined scope.
+            #   The `gra manage` command only allows attaching a scope to a target that
+            #   lacks any in the specification. But since the config file can be
+            #   manually edited, always respect an explicitly defined scope.
             if not target.security.globus_auth_scope:
                 return None
 
