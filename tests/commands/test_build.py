@@ -235,10 +235,26 @@ def test_manifest_overwrites_existing_file(gra, config_with_targets, manifest_pa
 @pytest.mark.parametrize(
     "base_url,expected_url",
     [
-        # base_url without trailing slash
-        ("https://api.example.com", "https://api.example.com/example"),
-        # base_url with trailing slash
-        ("https://api.example.com/", "https://api.example.com/example"),
+        pytest.param(
+            "https://api.example.com",
+            "https://api.example.com/example",
+            id="base_url_without_trailing_slash",
+        ),
+        pytest.param(
+            "https://api.example.com/",
+            "https://api.example.com/example",
+            id="base_url_with_trailing_slash",
+        ),
+        pytest.param(
+            "https://api.example.com/v2/",
+            "https://api.example.com/v2/example",
+            id="base_url_with_path_and_trailing_slash",
+        ),
+        pytest.param(
+            "https://api.example.com/v2",
+            "https://api.example.com/v2/example",
+            id="base_url_with_path_without_trailing_slash",
+        ),
     ],
 )
 def test_build_destination_url_slash_handling(
