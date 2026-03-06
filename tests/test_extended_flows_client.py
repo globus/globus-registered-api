@@ -438,3 +438,77 @@ def test_delete_registered_api_with_string_id(client, patch_delete):
 
     assert response["id"] == api_id
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
+
+
+def test_create_registered_api_without_roles(client, patch_create):
+    api_id = str(uuid.uuid4())
+    target = {
+        "type": "openapi",
+        "openapi_version": "3.1",
+        "destination": {"method": "get", "url": "https://example.com/items"},
+        "specification": {"operationId": "getItems", "responses": {}},
+    }
+    patch_create(
+        json={
+            "id": api_id,
+            "name": "No Roles API",
+            "description": "API without explicit roles",
+            "target": target,
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+        },
+        status=201,
+    )
+
+    response = client.create_registered_api(
+        name="No Roles API",
+        description="API without explicit roles",
+        target=target,
+    )
+
+    assert isinstance(response, GlobusHTTPResponse)
+    assert response["id"] == api_id
+    assert response["name"] == "No Roles API"
+
+    request_body = json.loads(responses.calls[0].request.body)
+    assert request_body["name"] == "No Roles API"
+    assert request_body["target"] == target
+    # Roles should not be in request if not provided
+    assert "roles" not in request_body
+
+
+def test_create_registered_api_with_partial_roles(client, patch_create):
+    api_id = str(uuid.uuid4())
+    target = {
+        "type": "openapi",
+        "openapi_version": "3.1",
+        "destination": {"method": "get", "url": "https://example.com/items"},
+        "specification": {"operationId": "getItems", "responses": {}},
+    }
+    patch_create(
+        json={
+            "id": api_id,
+            "name": "Partial Roles API",
+            "description": "API with only owners",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+            },
+            "target": target,
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+        },
+        status=201,
+    )
+
+    response = client.create_registered_api(
+        name="Partial Roles API",
+        description="API with only owners",
+        target=target,
+        owners=["urn:globus:auth:identity:user1"],
+    )
+
+    assert isinstance(response, GlobusHTTPResponse)
+    assert response["id"] == api_id
+
+    request_body = json.loads(responses.calls[0].request.body)
+    # Roles dict should only contain owners, not administrators or viewers
+    assert "roles" in request_body
+    assert request_body["roles"] == {"owners": ["urn:globus:auth:identity:user1"]}
