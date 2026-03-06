@@ -90,3 +90,37 @@ def test_role_config_sort_precedence(first_config, second_config):
     configs = sorted(configs, key=lambda config: config.sort_key)
     assert configs[0] == first_config
     assert configs[1] == second_config
+
+
+def test_target_config_registered_api_id_defaults_to_none():
+    target = TargetConfig(alias="test", path="/test", method="GET")
+    assert target.registered_api_id is None
+
+
+def test_target_config_registered_api_id_accepts_uuid():
+    test_uuid = UUID("12345678-1234-1234-1234-123456789abc")
+    target = TargetConfig(
+        alias="test", path="/test", method="GET", registered_api_id=test_uuid
+    )
+    assert target.registered_api_id == test_uuid
+
+
+def test_target_config_serialization_includes_registered_api_id():
+    test_uuid = UUID("12345678-1234-1234-1234-123456789abc")
+    target = TargetConfig(
+        alias="test", path="/test", method="GET", registered_api_id=test_uuid
+    )
+    serialized = target.model_dump()
+    assert serialized["registered_api_id"] == test_uuid
+
+
+def test_role_config_auth_urn_for_identity():
+    identity_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    role = RoleConfig(type="identity", id=identity_id, access_level="owner")
+    assert role.auth_urn == f"urn:globus:auth:identity:{identity_id}"
+
+
+def test_role_config_auth_urn_for_group():
+    group_id = UUID("660e8400-e29b-41d4-a716-446655440001")
+    role = RoleConfig(type="group", id=group_id, access_level="admin")
+    assert role.auth_urn == f"urn:globus:groups:id:{group_id}"

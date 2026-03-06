@@ -97,6 +97,9 @@ class TargetConfig(BaseModel):
     # Additional security configuration to be mixed in with an OpenAPI specification.
     security: Security = Field(default_factory=Security)
 
+    # The UUID of the registered API in Flows service, if published.
+    registered_api_id: UUID | None = None
+
     @property
     def sort_key(self) -> tuple[str, ...]:
         # Sort by path then method, disambiguating duplicate targets by alias.
@@ -133,3 +136,15 @@ class RoleConfig(BaseModel):
     def sort_key(self) -> tuple[str, ...]:
         # Sort by type, then id for consistent ordering.
         return self.type, str(self.id)
+
+    @property
+    def auth_urn(self) -> str:
+        """
+        Convert role configuration to Flows API URN format.
+
+        :return: URN string for the role
+        """
+        if self.type == "group":
+            return f"urn:globus:groups:id:{self.id}"
+        else:  # identity
+            return f"urn:globus:auth:identity:{self.id}"
