@@ -94,6 +94,9 @@ class TargetConfig(BaseModel):
     # E.g., create-resource
     alias: str
 
+    # Human-readable description of what this target does.
+    description: str
+
     # Additional security configuration to be mixed in with an OpenAPI specification.
     security: Security = Field(default_factory=Security)
 

@@ -6,6 +6,7 @@
 import typing as t
 from dataclasses import dataclass
 
+import openapi_pydantic as oa
 from globus_sdk import GlobusApp
 
 from globus_registered_api.config import RegisteredAPIConfig
@@ -17,6 +18,7 @@ class ManageContext:
     """Context object for configurator subcommands."""
 
     config: RegisteredAPIConfig
+    spec: oa.OpenAPI
     analysis: SpecAnalysis
     globus_app: GlobusApp
 

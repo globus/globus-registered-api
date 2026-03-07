@@ -81,7 +81,9 @@ def _create_manage_context(ctx: CLIContext) -> ManageContext:
         spec = config.core.specification
     analysis = OpenAPISpecAnalyzer().analyze(spec)
 
-    context = ManageContext(config=config, analysis=analysis, globus_app=ctx.globus_app)
+    context = ManageContext(
+        config=config, spec=spec, analysis=analysis, globus_app=ctx.globus_app
+    )
     context.globus_app.login()
 
     return context
