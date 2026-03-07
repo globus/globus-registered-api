@@ -32,13 +32,13 @@ def config_with_targets(openapi_schema):
             path="/example",
             method="GET",
             alias="get-example",
-            scope_strings=["example:read"],
+            description="Get example resource",
         ),
         TargetConfig(
             path="/example",
             method="POST",
             alias="create-example",
-            scope_strings=["example:write"],
+            description="Create example resource",
         ),
     ]
     return RegisteredAPIConfig(core=core, targets=targets, roles=[])
@@ -69,7 +69,7 @@ def test_build_generates_manifest_with_single_target(gra, config, manifest_path)
             path="/example",
             method="GET",
             alias="get-example",
-            scope_strings=[],
+            description="Get example resource",
         )
     )
     config.commit()
@@ -216,7 +216,7 @@ def test_manifest_overwrites_existing_file(gra, config_with_targets, manifest_pa
             path="/example",
             method="POST",
             alias="create-example",
-            scope_strings=["example:write"],
+            description="Create example resource",
         )
     )
     config_with_targets.commit()
@@ -270,7 +270,7 @@ def test_build_destination_url_slash_handling(
             path="/example",
             method="GET",
             alias="get-example",
-            scope_strings=["example:read"],
+            description="Get example resource",
         ),
     ]
     config = RegisteredAPIConfig(core=core, targets=targets, roles=[])

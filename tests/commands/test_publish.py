@@ -41,11 +41,13 @@ def config_with_targets_and_roles(openapi_schema):
             path="/example",
             method="GET",
             alias="get-example",
+            description="Get example resource",
         ),
         TargetConfig(
             path="/example",
             method="POST",
             alias="create-example",
+            description="Create example resource",
         ),
     ]
     roles = [
@@ -84,7 +86,9 @@ def manifest_for_config(config_with_targets_and_roles, manifest_path):
                 "method": target.method.lower(),
             },
         )
-        registered_apis[target.alias] = ComputedRegisteredAPI(target=api_target)
+        registered_apis[target.alias] = ComputedRegisteredAPI(
+            target=api_target, description=target.description
+        )
 
     manifest = RegisteredAPIManifest(
         build_timestamp=datetime.now(timezone.utc),
