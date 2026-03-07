@@ -97,25 +97,6 @@ def publish_target(context: PublishContext, alias: str) -> None:
     context.config.commit()
 
 
-def _get_description(
-    context: PublishContext, alias: str, target_config: TargetConfig
-) -> str:
-    """
-    Generate description from OpenAPI operation or config fallback.
-
-    :param context: PublishContext with manifest containing OpenAPI metadata
-    :param alias: Target alias
-    :param target_config: TargetConfig from config file (for fallback values)
-    :return: Description string
-    """
-    operation = context.manifest.registered_apis[alias].target.operation
-    return (
-        operation.summary
-        or operation.description
-        or f"{alias}: {target_config.method} {target_config.path}"
-    )
-
-
 def _create_target(context: PublishContext, alias: str, target: TargetConfig) -> None:
     """
     Create a new registered API in Flows service.
@@ -127,7 +108,7 @@ def _create_target(context: PublishContext, alias: str, target: TargetConfig) ->
     click.echo(f"Creating registered API for {alias}...")
 
     target_def = context.manifest.registered_apis[alias].target.to_dict()
-    description = _get_description(context, alias, target)
+    description = context.manifest.registered_apis[alias].description
 
     response = context.flows_client.create_registered_api(
         name=alias,
@@ -159,7 +140,7 @@ def _update_target(context: PublishContext, alias: str, target: TargetConfig) ->
     )
 
     target_def = context.manifest.registered_apis[alias].target.to_dict()
-    description = _get_description(context, alias, target)
+    description = context.manifest.registered_apis[alias].description
 
     context.flows_client.update_registered_api(
         target.registered_api_id,

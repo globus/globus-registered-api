@@ -31,6 +31,7 @@ def test_target_management_add_target(prompt_patcher, target_configurator):
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", "/example (GET)")
     prompt_patcher.add_input("click_prompt", "get-example")
+    prompt_patcher.add_input("click_prompt", "Get example")  # Description
     prompt_patcher.add_input("confirmation", False)  # Skip scope configurations.
 
     target_configurator.add_target()
@@ -46,6 +47,7 @@ def test_target_management_add_target_with_manual_scope(
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", "/example (GET)")
     prompt_patcher.add_input("click_prompt", "get-example")
+    prompt_patcher.add_input("click_prompt", "Get example")  # Description
     prompt_patcher.add_input("confirmation", True)  # Configure scope.
     prompt_patcher.add_input("selection", "example:read")
 
@@ -79,6 +81,7 @@ def test_target_management_add_target_with_defined_scopes(
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", "/example (GET)")
     prompt_patcher.add_input("click_prompt", "get-example")
+    prompt_patcher.add_input("click_prompt", "Get example")  # Description
 
     target_configurator.add_target()
 
@@ -97,6 +100,7 @@ def test_target_management_add_manual_target(prompt_patcher, target_configurator
     prompt_patcher.add_input("click_prompt", "/manual")
     prompt_patcher.add_input("selection", "POST")
     prompt_patcher.add_input("click_prompt", "post-manual")
+    prompt_patcher.add_input("click_prompt", "post-manual: POST /manual")  # Description
     prompt_patcher.add_input("confirmation", False)  # Skip scope configurations.
 
     target_configurator.add_target()
@@ -203,6 +207,7 @@ def test_target_management_modify_target(prompt_patcher, config, target_configur
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", target)
     prompt_patcher.add_input("click_prompt", "get-example-updated")  # Change the alias
+    prompt_patcher.add_input("click_prompt", "Get example")  # Keep the description
     prompt_patcher.add_input("selection", None)  # Don't add a scope.
 
     target_configurator.modify_target()
@@ -226,6 +231,7 @@ def test_target_management_modify_target_remove_scope(
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", target)
     prompt_patcher.add_input("click_prompt", "get-example")  # Don't change the alias
+    prompt_patcher.add_input("click_prompt", "Get example")  # Keep the description
     prompt_patcher.add_input("selection", None)  # Remove the scope.
 
     target_configurator.modify_target()

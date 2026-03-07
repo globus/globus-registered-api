@@ -20,6 +20,7 @@ from globus_registered_api.config import TargetConfig
 from globus_registered_api.domain import HTTP_METHODS
 from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi import SpecAnalysis
+from globus_registered_api.openapi.selector import find_target
 from globus_registered_api.rendering import prompt_selection
 
 from .domain import ConfiguratorMenu
@@ -66,6 +67,7 @@ class ImputedSecurity:
 class TargetConfigurator:
     def __init__(self, context: ManageContext) -> None:
         self.config = context.config
+        self.spec = context.spec
         self.analysis = context.analysis
         self._target_prompter = _TargetPrompter(context.config, context.analysis)
         self._scope_prompter = _TargetScopePrompter(context.config, context.analysis)
@@ -112,10 +114,34 @@ class TargetConfigurator:
         table = TargetSummaryTable(self.config.targets)
         table.print()
 
+    def _get_default_description(
+        self, target_specifier: TargetSpecifier, alias: str
+    ) -> str:
+        """
+        Generate default description from OpenAPI operation or fallback.
+
+        :param target_specifier: Target path and method
+        :param alias: User-provided alias
+        :return: Default description string
+        """
+        try:
+            target_info = find_target(self.spec, target_specifier)
+            return (
+                target_info.operation.summary
+                or target_info.operation.description
+                or f"{alias}: {target_specifier.method} {target_specifier.path}"
+            )
+        except Exception:
+            # Target not in spec (manual entry) - use fallback
+            return f"{alias}: {target_specifier.method} {target_specifier.path}"
+
     @_require_targets
     def modify_target(self) -> None:
         target = self._target_prompter.prompt_for_config()
         target.alias = click.prompt("Target Alias", type=str, default=target.alias)
+        target.description = click.prompt(
+            "Description", type=str, default=target.description
+        )
         globus_auth_scope = self._scope_prompter.prompt_for_existing_target(target)
         target.security.globus_auth_scope = globus_auth_scope
 
@@ -130,12 +156,18 @@ class TargetConfigurator:
         click.echo("Provide a human friendly name like 'create-resource'.")
         target_alias = click.prompt("Target Alias", type=str)
 
+        default_description = self._get_default_description(
+            target_specifier, target_alias
+        )
+        description = click.prompt("Description", type=str, default=default_description)
+
         globus_auth_scope = self._scope_prompter.prompt_for_new_target(target_specifier)
 
         target = TargetConfig(
             path=target_specifier.path,
             method=target_specifier.method,
             alias=target_alias,
+            description=description,
             security=TargetConfig.Security(globus_auth_scope=globus_auth_scope),
         )
         self.config.targets.append(target)
