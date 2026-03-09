@@ -52,7 +52,7 @@ class OpenAPISpecPath(click.ParamType):
 class OpenAPISpecPathValidator(Validator):
     def validate(self, document: Document) -> None:
         try:
-            load_openapi_spec(document.text)
+            load_openapi_spec(document.text.strip())
         except OpenAPILoadError as e:
             raise ValidationError(cursor_position=len(document.text), message=str(e))
 
@@ -135,7 +135,7 @@ def _prompt_for_inline_core_config() -> CoreConfig:
 
 
 def _prompt_for_reference_core_config() -> CoreConfig:
-    click.echo("Great, can I find this specification?")
+    click.echo("Great, where can I find this specification?")
     click.echo("This may be either a URL or a local filesystem path.")
     click.echo()
 
@@ -144,7 +144,7 @@ def _prompt_for_reference_core_config() -> CoreConfig:
         completer=OpenAPISpecCompleter(),
         validator=OpenAPISpecPathValidator(),
         validate_while_typing=False,
-    )
+    ).strip()
     click.echo("Looks like an OpenAPI specification, perfect.")
 
     openapi_spec = load_openapi_spec(spec_path)
