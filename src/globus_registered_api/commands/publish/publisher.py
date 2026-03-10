@@ -67,15 +67,11 @@ def validate_aliases(context: PublishContext, aliases: list[str]) -> None:
     config_aliases = {target.alias for target in context.config.targets}
     manifest_aliases = set(context.manifest.registered_apis.keys())
 
-    invalid_aliases = [
-        alias
-        for alias in aliases
-        if alias not in config_aliases or alias not in manifest_aliases
-    ]
+    invalid_aliases = set(aliases) - (config_aliases & manifest_aliases)
 
     if invalid_aliases:
         click.echo("Error: The following target aliases are not configured:")
-        for alias in invalid_aliases:
+        for alias in sorted(invalid_aliases):
             click.echo(f"  - {alias}")
         raise click.Abort()
 
@@ -101,20 +97,22 @@ def publish_target(context: PublishContext, alias: str) -> None:
     context.config.commit()
 
 
-def _get_description(context: PublishContext, alias: str, target: TargetConfig) -> str:
+def _get_description(
+    context: PublishContext, alias: str, target_config: TargetConfig
+) -> str:
     """
-    Generate description from OpenAPI operation or fallback to sensible default.
+    Generate description from OpenAPI operation or config fallback.
 
-    :param context: PublishContext with manifest
+    :param context: PublishContext with manifest containing OpenAPI metadata
     :param alias: Target alias
-    :param target: Target configuration
+    :param target_config: TargetConfig from config file (for fallback values)
     :return: Description string
     """
     operation = context.manifest.registered_apis[alias].target.operation
     return (
         operation.summary
         or operation.description
-        or f"{alias}: {target.method} {target.path}"
+        or f"{alias}: {target_config.method} {target_config.path}"
     )
 
 
