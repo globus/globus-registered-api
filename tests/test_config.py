@@ -39,23 +39,45 @@ def test_load_config_when_no_config_exists():
         RegisteredAPIConfig.load()
 
 
+def test_load_config_when_version_mismatch(config_path, capsys):
+    config_dict = {
+        "document_version": "0.0",
+        "core": {
+            "base_url": "https://api.example.com",
+            "specification": "https://api.example.com/openapi.json",
+        },
+        "targets": [],
+        "roles": [],
+    }
+    config_path.parent.mkdir()
+    with open(config_path, "w") as f:
+        json.dump(config_dict, f, indent=4)
+
+    with pytest.raises(click.Abort):
+        RegisteredAPIConfig.load()
+
+    err = capsys.readouterr().err
+    assert "Out-of-date config version: 0.0." in err
+    assert "Required version:" in err
+
+
 @pytest.mark.parametrize(
     "first_config,second_config",
     [
         (
             # Path is the highest sort precedence
-            TargetConfig(alias="b", path="a", method="POST"),
-            TargetConfig(alias="a", path="b", method="GET"),
+            TargetConfig(alias="b", path="a", method="POST", description="Test"),
+            TargetConfig(alias="a", path="b", method="GET", description="Test"),
         ),
         (
             # Then method
-            TargetConfig(alias="b", path="a", method="GET"),
-            TargetConfig(alias="a", path="a", method="POST"),
+            TargetConfig(alias="b", path="a", method="GET", description="Test"),
+            TargetConfig(alias="a", path="a", method="POST", description="Test"),
         ),
         (
             # Then alias
-            TargetConfig(alias="a", path="a", method="GET"),
-            TargetConfig(alias="b", path="a", method="GET"),
+            TargetConfig(alias="a", path="a", method="GET", description="Test"),
+            TargetConfig(alias="b", path="a", method="GET", description="Test"),
         ),
     ],
 )
@@ -93,14 +115,18 @@ def test_role_config_sort_precedence(first_config, second_config):
 
 
 def test_target_config_registered_api_id_defaults_to_none():
-    target = TargetConfig(alias="test", path="/test", method="GET")
+    target = TargetConfig(alias="test", path="/test", method="GET", description="Test")
     assert target.registered_api_id is None
 
 
 def test_target_config_registered_api_id_accepts_uuid():
     test_uuid = UUID("12345678-1234-1234-1234-123456789abc")
     target = TargetConfig(
-        alias="test", path="/test", method="GET", registered_api_id=test_uuid
+        alias="test",
+        path="/test",
+        method="GET",
+        description="Test",
+        registered_api_id=test_uuid,
     )
     assert target.registered_api_id == test_uuid
 
@@ -108,7 +134,11 @@ def test_target_config_registered_api_id_accepts_uuid():
 def test_target_config_serialization_includes_registered_api_id():
     test_uuid = UUID("12345678-1234-1234-1234-123456789abc")
     target = TargetConfig(
-        alias="test", path="/test", method="GET", registered_api_id=test_uuid
+        alias="test",
+        path="/test",
+        method="GET",
+        description="Test",
+        registered_api_id=test_uuid,
     )
     serialized = target.model_dump()
     assert serialized["registered_api_id"] == test_uuid
@@ -124,3 +154,10 @@ def test_role_config_auth_urn_for_group():
     group_id = UUID("660e8400-e29b-41d4-a716-446655440001")
     role = RoleConfig(type="group", id=group_id, access_level="admin")
     assert role.auth_urn == f"urn:globus:groups:id:{group_id}"
+
+
+def test_target_config_requires_description():
+    target = TargetConfig(
+        alias="test", path="/test", method="GET", description="Test endpoint"
+    )
+    assert target.description == "Test endpoint"

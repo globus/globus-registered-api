@@ -44,12 +44,14 @@ def target_configs() -> SimpleNamespace:
             alias="get-example",
             path="/example",
             method="GET",
+            description="Example GET endpoint",
             security=TargetConfig.Security(globus_auth_scope="my_service:read"),
         ),
         post_example=TargetConfig(
             alias="post-example",
             path="/example",
             method="POST",
+            description="Example POST endpoint",
             security=TargetConfig.Security(globus_auth_scope="my_service:write"),
         ),
     )

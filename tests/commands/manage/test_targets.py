@@ -22,7 +22,8 @@ def rich_disabled_colors(monkeypatch):
 
 @pytest.fixture
 def target_configurator(config):
-    analysis = OpenAPISpecAnalyzer().analyze(config.core.specification)
+    spec = config.core.specification
+    analysis = OpenAPISpecAnalyzer().analyze(spec)
     ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
     return TargetConfigurator(ctx)
 
@@ -31,12 +32,15 @@ def test_target_management_add_target(prompt_patcher, target_configurator):
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", "/example (GET)")
     prompt_patcher.add_input("click_prompt", "get-example")
+    prompt_patcher.add_input("click_prompt", "Get example")  # Description
     prompt_patcher.add_input("confirmation", False)  # Skip scope configurations.
 
     target_configurator.add_target()
 
     # Verify we've added the expected target to the config and committed it.
-    expected = TargetConfig(path="/example", method="GET", alias="get-example")
+    expected = TargetConfig(
+        path="/example", method="GET", alias="get-example", description="Get example"
+    )
     assert RegisteredAPIConfig.load().targets == [expected]
 
 
@@ -46,6 +50,7 @@ def test_target_management_add_target_with_manual_scope(
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", "/example (GET)")
     prompt_patcher.add_input("click_prompt", "get-example")
+    prompt_patcher.add_input("click_prompt", "Get example")  # Description
     prompt_patcher.add_input("confirmation", True)  # Configure scope.
     prompt_patcher.add_input("selection", "example:read")
 
@@ -56,6 +61,7 @@ def test_target_management_add_target_with_manual_scope(
         path="/example",
         method="GET",
         alias="get-example",
+        description="Get example",
         security=TargetConfig.Security(globus_auth_scope="example:read"),
     )
     assert RegisteredAPIConfig.load().targets == [expected]
@@ -72,17 +78,21 @@ def test_target_management_add_target_with_defined_scopes(
     config.commit()
 
     # Re-analyze the updated specification instead of using the fixture-provided one.
-    analysis = OpenAPISpecAnalyzer().analyze(config.core.specification)
+    spec = config.core.specification
+    analysis = OpenAPISpecAnalyzer().analyze(spec)
     ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
     target_configurator = TargetConfigurator(ctx)
 
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", "/example (GET)")
     prompt_patcher.add_input("click_prompt", "get-example")
+    prompt_patcher.add_input("click_prompt", "Get example")  # Description
 
     target_configurator.add_target()
 
-    expected = TargetConfig(path="/example", method="GET", alias="get-example")
+    expected = TargetConfig(
+        path="/example", method="GET", alias="get-example", description="Get example"
+    )
     assert RegisteredAPIConfig.load().targets == [expected]
 
     # Spec-defined scopes are not committed to config, but are flagged as "imputed".
@@ -97,11 +107,17 @@ def test_target_management_add_manual_target(prompt_patcher, target_configurator
     prompt_patcher.add_input("click_prompt", "/manual")
     prompt_patcher.add_input("selection", "POST")
     prompt_patcher.add_input("click_prompt", "post-manual")
+    prompt_patcher.add_input("click_prompt", "post-manual: POST /manual")  # Description
     prompt_patcher.add_input("confirmation", False)  # Skip scope configurations.
 
     target_configurator.add_target()
 
-    expected = TargetConfig(path="/manual", method="POST", alias="post-manual")
+    expected = TargetConfig(
+        path="/manual",
+        method="POST",
+        alias="post-manual",
+        description="post-manual: POST /manual",
+    )
     assert RegisteredAPIConfig.load().targets == [expected]
 
 
@@ -110,8 +126,18 @@ def test_target_management_list_targets(
 ):
     # Add some targets to the config.
     config.targets = [
-        TargetConfig(path="/example", method="GET", alias="get-example"),
-        TargetConfig(path="/example", method="POST", alias="post-example"),
+        TargetConfig(
+            path="/example",
+            method="GET",
+            alias="get-example",
+            description="Get example",
+        ),
+        TargetConfig(
+            path="/example",
+            method="POST",
+            alias="post-example",
+            description="Post example",
+        ),
     ]
     config.commit()
 
@@ -126,8 +152,12 @@ def test_target_management_display_target(
     prompt_patcher, config, target_configurator, rich_disabled_colors, capsys
 ):
     # Add some targets to the config.
-    get_target = TargetConfig(path="/example", method="GET", alias="get-example")
-    post_target = TargetConfig(path="/example", method="POST", alias="post-example")
+    get_target = TargetConfig(
+        path="/example", method="GET", alias="get-example", description="Get example"
+    )
+    post_target = TargetConfig(
+        path="/example", method="POST", alias="post-example", description="Post example"
+    )
     config.targets = [get_target, post_target]
     config.commit()
 
@@ -156,12 +186,15 @@ def test_target_management_display_maintains_imputed_scope_ordering(
     ]
 
     # Add a target to the config which points at that spec endpoint.
-    target = TargetConfig(path="/example", method="GET", alias="get-example")
+    target = TargetConfig(
+        path="/example", method="GET", alias="get-example", description="Get example"
+    )
     config.targets = [target]
     config.commit()
 
     # Re-analyze the updated specification instead of using the fixture-provided one.
-    analysis = OpenAPISpecAnalyzer().analyze(config.core.specification)
+    spec = config.core.specification
+    analysis = OpenAPISpecAnalyzer().analyze(spec)
     ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
     target_configurator = TargetConfigurator(ctx)
 
@@ -181,8 +214,12 @@ def test_target_management_display_maintains_imputed_scope_ordering(
 
 def test_target_management_remove_target(prompt_patcher, config, target_configurator):
     # Add some targets to the config.
-    get_target = TargetConfig(path="/example", method="GET", alias="get-example")
-    post_target = TargetConfig(path="/example", method="POST", alias="post-example")
+    get_target = TargetConfig(
+        path="/example", method="GET", alias="get-example", description="Get example"
+    )
+    post_target = TargetConfig(
+        path="/example", method="POST", alias="post-example", description="Post example"
+    )
     config.targets = [get_target, post_target]
     config.commit()
 
@@ -196,18 +233,28 @@ def test_target_management_remove_target(prompt_patcher, config, target_configur
 
 def test_target_management_modify_target(prompt_patcher, config, target_configurator):
     # Add a target to the config.
-    target = TargetConfig(path="/example", method="GET", alias="get-example")
+    target = TargetConfig(
+        path="/example", method="GET", alias="get-example", description="Get example"
+    )
     config.targets = [target]
     config.commit()
 
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", target)
     prompt_patcher.add_input("click_prompt", "get-example-updated")  # Change the alias
+    prompt_patcher.add_input(
+        "click_prompt", "Updated description"
+    )  # Change the description
     prompt_patcher.add_input("selection", None)  # Don't add a scope.
 
     target_configurator.modify_target()
 
-    expected = TargetConfig(path="/example", method="GET", alias="get-example-updated")
+    expected = TargetConfig(
+        path="/example",
+        method="GET",
+        alias="get-example-updated",
+        description="Updated description",
+    )
     assert RegisteredAPIConfig.load().targets == [expected]
 
 
@@ -218,6 +265,7 @@ def test_target_management_modify_target_remove_scope(
         path="/example",
         method="GET",
         alias="get-example",
+        description="Get example",
         security=TargetConfig.Security(globus_auth_scope="example:read"),
     )
     config.targets = [target]
@@ -226,9 +274,12 @@ def test_target_management_modify_target_remove_scope(
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_input("selection", target)
     prompt_patcher.add_input("click_prompt", "get-example")  # Don't change the alias
+    prompt_patcher.add_input("click_prompt", "Get example")  # Keep the description
     prompt_patcher.add_input("selection", None)  # Remove the scope.
 
     target_configurator.modify_target()
 
-    expected = TargetConfig(path="/example", method="GET", alias="get-example")
+    expected = TargetConfig(
+        path="/example", method="GET", alias="get-example", description="Get example"
+    )
     assert RegisteredAPIConfig.load().targets == [expected]
