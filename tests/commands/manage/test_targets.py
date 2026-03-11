@@ -24,9 +24,7 @@ def rich_disabled_colors(monkeypatch):
 def target_configurator(config):
     spec = config.core.specification
     analysis = OpenAPISpecAnalyzer().analyze(spec)
-    ctx = ManageContext(
-        config=config, spec=spec, analysis=analysis, globus_app=MagicMock()
-    )
+    ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
     return TargetConfigurator(ctx)
 
 
@@ -82,9 +80,7 @@ def test_target_management_add_target_with_defined_scopes(
     # Re-analyze the updated specification instead of using the fixture-provided one.
     spec = config.core.specification
     analysis = OpenAPISpecAnalyzer().analyze(spec)
-    ctx = ManageContext(
-        config=config, spec=spec, analysis=analysis, globus_app=MagicMock()
-    )
+    ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
     target_configurator = TargetConfigurator(ctx)
 
     # Set up a sequence of selections to be made by the mocked selector.
@@ -199,9 +195,7 @@ def test_target_management_display_maintains_imputed_scope_ordering(
     # Re-analyze the updated specification instead of using the fixture-provided one.
     spec = config.core.specification
     analysis = OpenAPISpecAnalyzer().analyze(spec)
-    ctx = ManageContext(
-        config=config, spec=spec, analysis=analysis, globus_app=MagicMock()
-    )
+    ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
     target_configurator = TargetConfigurator(ctx)
 
     config.commit()

@@ -87,10 +87,7 @@ def setup_globus_responses(mock_auth_client, mock_groups_client, mock_search_cli
 
 @pytest.fixture
 def role_configurator(config):
-    spec = config.core.specification
-    ctx = ManageContext(
-        config=config, spec=spec, analysis=MagicMock(), globus_app=MagicMock()
-    )
+    ctx = ManageContext(config=config, analysis=MagicMock(), globus_app=MagicMock())
     return RoleConfigurator(ctx)
 
 
