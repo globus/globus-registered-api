@@ -125,6 +125,7 @@ filterwarnings = [
 [tool.scriv]
 version = "literal: pyproject.toml: project.version"
 categories = [
+    "Breaking changes",
     "Python support",
     "Added",
     "Fixed",
