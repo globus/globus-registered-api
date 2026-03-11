@@ -39,7 +39,7 @@ class RegisteredAPIConfig(BaseModel):
     roles: list[RoleConfig]
 
     @field_validator("document_version", mode="before")
-    def validate_document_version(cls, v: t.Any) -> str:
+    def validate_document_version(cls, v: t.Any) -> t.Any:
         if isinstance(v, str) and v != _CURRENT_VERSION:
             click.secho(f"Error: Out-of-date config version: {v}.", fg="red", err=True)
             click.secho(
