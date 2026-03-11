@@ -39,6 +39,28 @@ def test_load_config_when_no_config_exists():
         RegisteredAPIConfig.load()
 
 
+def test_load_config_when_version_mismatch(config_path, capsys):
+    config_dict = {
+        "document_version": "0.0",
+        "core": {
+            "base_url": "https://api.example.com",
+            "specification": "https://api.example.com/openapi.json",
+        },
+        "targets": [],
+        "roles": [],
+    }
+    config_path.parent.mkdir()
+    with open(config_path, "w") as f:
+        json.dump(config_dict, f, indent=4)
+
+    with pytest.raises(click.Abort):
+        RegisteredAPIConfig.load()
+
+    err = capsys.readouterr().err
+    assert "Out-of-date config version: 0.0." in err
+    assert "Required version:" in err
+
+
 @pytest.mark.parametrize(
     "first_config,second_config",
     [
