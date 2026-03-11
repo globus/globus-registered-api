@@ -92,6 +92,29 @@ def test_init_service_with_remote_openapi_spec(gra, prompt_patcher):
     assert config.core.base_url == "https://api.remote-service.com"
 
 
+def test_init_service_with_remote_openapi_spec_and_whitespace(gra, prompt_patcher):
+    remote_spec_url = "https://random-domain.com/openapi.json"
+    specification = {
+        "openapi": "3.1.0",
+        "info": {"title": "Remote API", "version": "1.0.0"},
+    }
+    responses.get(remote_spec_url, json=specification)
+
+    # Set up a sequence of inputs to be made by the mocked user.
+    prompt_patcher.add_input("confirmation", True)  # Yes, I have an OpenAPI spec.
+    prompt_patcher.add_input("prompt_toolkit_prompt", f"{remote_spec_url}\n")
+    prompt_patcher.add_input("click_prompt", "https://api.remote-service.com")
+
+    result = gra(["init"], catch_exceptions=False)
+
+    assert result.exit_code == 0
+    assert "Successfully initialized repository!" in result.output
+
+    config = RegisteredAPIConfig.load()
+    assert config.core.specification == remote_spec_url
+    assert config.core.base_url == "https://api.remote-service.com"
+
+
 def test_init_service_with_multiple_servers(gra, prompt_patcher):
     remote_spec_url = "https://random-domain.com/openapi.json"
     specification = {
