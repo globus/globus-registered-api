@@ -26,6 +26,22 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-0.6.0:
+
+0.6.0 - 2026-03-11
+==================
+
+Added
+-----
+
+*   Prompt for target descriptions in the ``gra manage`` command.
+*   Add a document version to the config file with a more user-friendly error message.
+
+Documentation
+-------------
+
+*   Introduce project documentation.
+
 .. _changelog-0.5.0:
 
 0.5.0 - 2026-03-10
