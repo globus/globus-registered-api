@@ -26,6 +26,25 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-0.5.0:
+
+0.5.0 - 2026-03-10
+==================
+
+Added
+-----
+
+*   Add a ``gra publish`` command to create and update registered APIs
+    in the Flows service.
+
+Fixed
+-----
+
+*   Remove whitespace from OpenAPI specification URLs and paths.
+
+    Whitespaces, including newlines, may be introduced via copy-and-paste.
+    Extraneous whitespace is now removed to prevent these types of issues.
+
 .. _changelog-0.4.1:
 
 0.4.1 - 2026-03-05

@@ -1,4 +1,0 @@
-Added
------
-
-*   Add a ``gra publish`` command to create and update registered APIs in the Flows service.
