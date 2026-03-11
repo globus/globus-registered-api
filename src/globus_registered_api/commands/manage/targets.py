@@ -20,7 +20,6 @@ from globus_registered_api.config import TargetConfig
 from globus_registered_api.domain import HTTP_METHODS
 from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi import SpecAnalysis
-from globus_registered_api.openapi.selector import find_target
 from globus_registered_api.rendering import prompt_selection
 
 from .domain import ConfiguratorMenu
@@ -67,7 +66,6 @@ class ImputedSecurity:
 class TargetConfigurator:
     def __init__(self, context: ManageContext) -> None:
         self.config = context.config
-        self.spec = context.spec
         self.analysis = context.analysis
         self._target_prompter = _TargetPrompter(context.config, context.analysis)
         self._scope_prompter = _TargetScopePrompter(context.config, context.analysis)
@@ -118,22 +116,20 @@ class TargetConfigurator:
         self, target_specifier: TargetSpecifier, alias: str
     ) -> str:
         """
-        Generate default description from OpenAPI operation or fallback.
+        Generate default description from pre-computed analysis or fallback.
 
         :param target_specifier: Target path and method
         :param alias: User-provided alias
         :return: Default description string
         """
-        try:
-            target_info = find_target(self.spec, target_specifier)
-            return (
-                target_info.operation.summary
-                or target_info.operation.description
-                or f"{alias}: {target_specifier.method} {target_specifier.path}"
-            )
-        except Exception:
-            # Target not in spec (manual entry) - use fallback
-            return f"{alias}: {target_specifier.method} {target_specifier.path}"
+        fallback = f"{alias}: {target_specifier.method} {target_specifier.path}"
+
+        if spec_description := self.analysis.descriptions_by_target.get(
+            target_specifier
+        ):
+            return spec_description
+
+        return fallback
 
     @_require_targets
     def modify_target(self) -> None:

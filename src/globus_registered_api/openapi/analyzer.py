@@ -26,6 +26,10 @@ class SpecAnalysis:
     # A mapping of targets and scopes, identifying well-defined scopes per target.
     scopes_by_target: dict[TargetSpecifier, list[str]]
 
+    # A mapping of targets to their descriptions
+    # (from operation.summary or operation.description).
+    descriptions_by_target: dict[TargetSpecifier, str | None]
+
     # All servers defined in the specification with an HTTPS scheme.
     https_servers: list[str]
 
@@ -35,6 +39,7 @@ class OpenAPISpecAnalyzer:
         targets: list[TargetSpecifier] = []
         scopes: t.Set[str] = set()
         scopes_by_target: dict[TargetSpecifier, list[str]] = {}
+        descriptions_by_target: dict[TargetSpecifier, str | None] = {}
 
         for path, path_schema in (spec.paths or {}).items():
             for method in HTTP_METHODS:
@@ -42,6 +47,11 @@ class OpenAPISpecAnalyzer:
                     target = TargetSpecifier.create(method, path)
                     targets.append(target)
                     scopes_by_target[target] = []
+
+                    descriptions_by_target[target] = (
+                        operation.summary or operation.description
+                    )
+
                     for requirement in operation.security or []:
                         if (
                             len(requirement) == 1
@@ -61,5 +71,6 @@ class OpenAPISpecAnalyzer:
             targets=targets,
             scope_strings=sorted(scopes),
             scopes_by_target=scopes_by_target,
+            descriptions_by_target=descriptions_by_target,
             https_servers=https_servers,
         )
