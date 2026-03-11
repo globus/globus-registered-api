@@ -37,6 +37,7 @@ class ComputedRegisteredAPI(BaseModel):
     """Represents a single registered API target with its enriched specification."""
 
     target: OpenAPITarget
+    description: str
 
     @field_validator("target", mode="before")
     @classmethod

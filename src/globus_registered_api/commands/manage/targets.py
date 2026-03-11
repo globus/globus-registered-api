@@ -112,10 +112,32 @@ class TargetConfigurator:
         table = TargetSummaryTable(self.config.targets)
         table.print()
 
+    def _get_default_description(
+        self, target_specifier: TargetSpecifier, alias: str
+    ) -> str:
+        """
+        Generate default description from pre-computed analysis or fallback.
+
+        :param target_specifier: Target path and method
+        :param alias: User-provided alias
+        :return: Default description string
+        """
+        fallback = f"{alias}: {target_specifier.method} {target_specifier.path}"
+
+        if spec_description := self.analysis.descriptions_by_target.get(
+            target_specifier
+        ):
+            return spec_description
+
+        return fallback
+
     @_require_targets
     def modify_target(self) -> None:
         target = self._target_prompter.prompt_for_config()
         target.alias = click.prompt("Target Alias", type=str, default=target.alias)
+        target.description = click.prompt(
+            "Description", type=str, default=target.description
+        )
         globus_auth_scope = self._scope_prompter.prompt_for_existing_target(target)
         target.security.globus_auth_scope = globus_auth_scope
 
@@ -130,12 +152,18 @@ class TargetConfigurator:
         click.echo("Provide a human friendly name like 'create-resource'.")
         target_alias = click.prompt("Target Alias", type=str)
 
+        default_description = self._get_default_description(
+            target_specifier, target_alias
+        )
+        description = click.prompt("Description", type=str, default=default_description)
+
         globus_auth_scope = self._scope_prompter.prompt_for_new_target(target_specifier)
 
         target = TargetConfig(
             path=target_specifier.path,
             method=target_specifier.method,
             alias=target_alias,
+            description=description,
             security=TargetConfig.Security(globus_auth_scope=globus_auth_scope),
         )
         self.config.targets.append(target)
