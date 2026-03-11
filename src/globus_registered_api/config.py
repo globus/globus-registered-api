@@ -13,6 +13,7 @@ import click
 import openapi_pydantic as oa
 from pydantic import BaseModel
 from pydantic import Field
+from pydantic import field_validator
 
 from globus_registered_api.domain import HTTPMethod
 from globus_registered_api.domain import TargetSpecifier
@@ -20,7 +21,12 @@ from globus_registered_api.domain import TargetSpecifier
 _CONFIG_PATH = Path(".globus_registered_api/config.json")
 
 
+_CURRENT_VERSION = "0.1"
+
+
 class RegisteredAPIConfig(BaseModel):
+    document_version: str = Field(default=_CURRENT_VERSION)
+
     # Central config, supplied at repository initialization time.
     core: CoreConfig
 
@@ -31,6 +37,21 @@ class RegisteredAPIConfig(BaseModel):
     # A list of roles, defining access control for identities and groups.
     # Entities within this list must be unique (w.r.t their type and id).
     roles: list[RoleConfig]
+
+    @field_validator("document_version", mode="before")
+    def validate_document_version(cls, v: t.Any) -> t.Any:
+        if isinstance(v, str) and v != _CURRENT_VERSION:
+            click.secho(f"Error: Out-of-date config version: {v}.", fg="red", err=True)
+            click.secho(
+                f"       Required version: {_CURRENT_VERSION}.", fg="red", err=True
+            )
+            click.secho(
+                "Please check the release notes for upgrade instructions.",
+                fg="yellow",
+                err=True,
+            )
+            raise click.Abort()
+        return v
 
     def commit(self) -> None:
         """
