@@ -11,6 +11,7 @@ Globus Registered API
 
     This software, and the feature it interacts with, is in a closed preview.
 
-    It is not generally available for use yet.
+    It is not generally available for public use.
 
-This is the Globus Registered API CLI.
+Documentation, including tutorials and interface references, may be found
+`here <docs/README.md>`_.
