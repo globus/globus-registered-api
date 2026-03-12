@@ -14,4 +14,4 @@ Globus Registered API
     It is not generally available for public use.
 
 Documentation, including tutorials and interface references, may be found
-`here <docs/README.md>`_.
+`here <docs/README.md#globus-registered-api>`_.
