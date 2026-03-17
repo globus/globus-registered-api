@@ -87,6 +87,7 @@ class RegisteredAPIManifest(BaseModel):
         # - Unicode characters preserved (emojis, em-dash)
         with _MANIFEST_PATH.open("w", encoding="utf-8") as f:
             json.dump(manifest_dict, f, indent=4, sort_keys=True, ensure_ascii=False)
+            f.write("\n")
 
     @classmethod
     def load(cls) -> RegisteredAPIManifest:
