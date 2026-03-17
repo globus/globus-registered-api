@@ -58,7 +58,7 @@ class RegisteredAPIConfig(BaseModel):
         Write the current config state to disk.
         """
         _CONFIG_PATH.parent.mkdir(exist_ok=True)
-        _CONFIG_PATH.write_text(self.model_dump_json(indent=4))
+        _CONFIG_PATH.write_text(self.model_dump_json(indent=4) + "\n")
 
     @classmethod
     def load(cls) -> RegisteredAPIConfig:
