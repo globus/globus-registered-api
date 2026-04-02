@@ -12,6 +12,8 @@ import globus_registered_api.manifest as manifest_module
 from globus_registered_api.config import CoreConfig
 from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.config import TargetConfig
+from globus_registered_api.domain import TargetSpecifier
+from globus_registered_api.openapi.loader import load_openapi_spec
 
 
 @pytest.fixture(autouse=True)
@@ -144,6 +146,126 @@ def test_manifest_keys_alphabetically_sorted(gra, config_with_targets, manifest_
     assert top_keys == sorted(top_keys)
     api_keys = list(manifest["registered-apis"].keys())
     assert api_keys == sorted(api_keys)
+
+
+def test_manifest_route_parameters_are_inherited(gra, config, manifest_path, spec_path):
+    """Verify that shared route parameters are inherited.
+
+    The `with_refs.json` file contains content similar to this:
+
+        components:
+            parameters:
+                Id: <definition of 'id' parameter, with a ref to 'schemas/Id', below>
+            schemas:
+                Id: <definition of 'id' schema>
+
+        /items/{id}:
+            parameters:
+                - <ref to 'parameters/Id', above>
+
+            put:
+                # no parameters defined
+
+    This test confirms that the shared 'id' parameter is inherited by the 'put' method,
+    and that the 'Id' schema is included.
+    """
+
+    # Arrange
+    spec = load_openapi_spec(spec_path("with_refs.json"))
+    target = TargetSpecifier.create("put", "/items/{id}")
+    target_config = TargetConfig(
+        path=target.path,
+        method=target.method,
+        alias="update-item",
+        description="description",
+        security=TargetConfig.Security(globus_auth_scope="scope"),
+    )
+    config.core.specification = spec
+    config.targets = [target_config]
+    config.commit()
+
+    # Act
+    result = gra(["build"])
+
+    # Assert
+    assert result.exit_code == 0
+    manifest_text = manifest_path.read_text(encoding="utf-8")
+    manifest = json.loads(manifest_text)
+    target = manifest["registered-apis"]["update-item"]["target"]
+    # "parameters" shouldn't exist because no refs into it should be needed;
+    # they should have been expanded in-place.
+    assert "parameters" not in target["components"]
+
+    # Only one inherited parameter is expected.
+    parameters = target["specification"]["parameters"]
+    assert len(parameters) == 1
+    assert parameters[0]["description"] == "Defined in components"
+
+    # Expect a reference to `#/components/schemas/Id` to be valid.
+    assert parameters[0]["schema"]["$ref"] == "#/components/schemas/Id"
+    assert "Id" in target["components"]["schemas"]
+
+
+def test_manifest_method_parameters_override_route_parameters(
+    gra, config, manifest_path, spec_path
+):
+    """Verify that method-specific parameters override route parameters.
+
+    The `with_refs.json` file contains content similar to this:
+
+        components:
+            parameters:
+                Id: <definition of 'id' parameter, with a ref to 'schemas/Id', below>
+            schemas:
+                Id: <definition of 'id' schema>
+
+
+        /items/{id}:
+            parameters:
+                - <ref to 'parameters/Id', above>
+
+            get:
+                parameters:
+                    - <redefinition of 'id' parameter, with explicit schema>
+
+    This test confirms that the redefined 'id' parameter takes precedence,
+    and that the 'Id' schema is dropped because it's not needed.
+    """
+
+    # Arrange
+    spec = load_openapi_spec(spec_path("with_refs.json"))
+    target = TargetSpecifier.create("get", "/items/{id}")
+    target_config = TargetConfig(
+        path=target.path,
+        method=target.method,
+        alias="get-item",
+        description="description",
+        security=TargetConfig.Security(globus_auth_scope="scope"),
+    )
+    config.core.specification = spec
+    config.targets = [target_config]
+    config.commit()
+
+    # Act
+    result = gra(["build"])
+
+    # Assert
+    assert result.exit_code == 0
+    manifest_text = manifest_path.read_text(encoding="utf-8")
+    manifest = json.loads(manifest_text)
+    target = manifest["registered-apis"]["get-item"]["target"]
+    # "parameters" shouldn't exist because no refs into it should be needed;
+    # they should have been deduplicated and removed.
+    assert "parameters" not in target["components"]
+
+    # Only one parameter is expected due to deduplication.
+    parameters = target["specification"]["parameters"]
+    assert len(parameters) == 1
+    assert parameters[0]["description"] == "Defined in the method"
+
+    # The method-specific `id` parameter should have no `$ref`.
+    assert "$ref" not in parameters[0]["schema"]
+    assert "Id" not in target["components"]["schemas"]
 
 
 def test_target_specification_structure(gra, config_with_targets, manifest_path):
