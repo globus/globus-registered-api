@@ -59,10 +59,11 @@ def openapi_schema() -> oa.OpenAPI:
 
 
 @pytest.fixture
-def config(openapi_schema) -> RegisteredAPIConfig:
+def config(openapi_schema, subscription_id) -> RegisteredAPIConfig:
     core = CoreConfig(
         base_url="https://api.example.com",
         specification=openapi_schema,
+        subscription_id=subscription_id,
     )
     config = RegisteredAPIConfig(core=core, targets=[], roles=[])
     return config

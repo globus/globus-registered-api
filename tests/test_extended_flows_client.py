@@ -340,6 +340,25 @@ def test_update_registered_api_omitted_params_not_in_request(client, patch_updat
     assert "roles" not in request_body
 
 
+def test_update_registered_api_with_subscription_id(client, patch_update):
+    api_id = str(uuid.uuid4())
+    subscription_id = "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"
+    patch_update(
+        json={
+            "id": api_id,
+            "name": "Updated Name",
+            "subscription_id": subscription_id,
+        },
+    )
+
+    client.update_registered_api(
+        api_id, name="Updated Name", subscription_id=subscription_id
+    )
+
+    request_body = json.loads(responses.calls[0].request.body)
+    assert request_body["subscription_id"] == subscription_id
+
+
 def test_create_registered_api(client, patch_create):
     # Arrange
     api_id = str(uuid.uuid4())
@@ -372,6 +391,7 @@ def test_create_registered_api(client, patch_create):
         name="My New API",
         description="A test description",
         target=target,
+        subscription_id="a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
         owners=["urn:globus:auth:identity:user1"],
         administrators=[],
         viewers=[],
@@ -463,6 +483,7 @@ def test_create_registered_api_without_roles(client, patch_create):
         name="No Roles API",
         description="API without explicit roles",
         target=target,
+        subscription_id="a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
     )
 
     assert isinstance(response, GlobusHTTPResponse)
@@ -502,6 +523,7 @@ def test_create_registered_api_with_partial_roles(client, patch_create):
         name="Partial Roles API",
         description="API with only owners",
         target=target,
+        subscription_id="a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
         owners=["urn:globus:auth:identity:user1"],
     )
 

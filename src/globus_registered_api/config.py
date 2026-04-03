@@ -14,6 +14,7 @@ import openapi_pydantic as oa
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import field_validator
+from pydantic import model_validator
 
 from globus_registered_api.domain import HTTPMethod
 from globus_registered_api.domain import TargetSpecifier
@@ -21,7 +22,7 @@ from globus_registered_api.domain import TargetSpecifier
 _CONFIG_PATH = Path(".globus_registered_api/config.json")
 
 
-_CURRENT_VERSION = "0.1"
+_CURRENT_VERSION = "0.2"
 
 
 class RegisteredAPIConfig(BaseModel):
@@ -52,6 +53,29 @@ class RegisteredAPIConfig(BaseModel):
             )
             raise click.Abort()
         return v
+
+    @model_validator(mode="after")
+    def validate_subscription_id(self) -> RegisteredAPIConfig:
+        """Ensure subscription_id is present for v0.2+ configs."""
+        if (
+            self.document_version == _CURRENT_VERSION
+            and self.core.subscription_id is None
+        ):
+            click.secho(
+                "Error: Missing required field: subscription_id.", fg="red", err=True
+            )
+            click.secho(
+                "       This field is required in config version 0.2.",
+                fg="red",
+                err=True,
+            )
+            click.secho(
+                "Please check the release notes for upgrade instructions.",
+                fg="yellow",
+                err=True,
+            )
+            raise click.Abort()
+        return self
 
     def commit(self) -> None:
         """
@@ -94,6 +118,23 @@ class CoreConfig(BaseModel):
     # The OpenAPI specification for this repository.
     # This must be either an inline OpenAPI document or a file path/URL pointing to one.
     specification: str | oa.OpenAPI
+
+    # Subscription ID that grants access to registered APIs.
+    # Required for v0.2+, but optional here to allow version validator to run first.
+    subscription_id: str | None = None
+
+    def get_subscription_id(self) -> str:
+        """
+        Get the subscription ID, raising an error if not set.
+
+        This also provides type-safe access after config validation.
+        """
+        if self.subscription_id is None:
+            raise ValueError(
+                "subscription_id is required but not set in config. "
+                "Please update your config to include a subscription_id."
+            )
+        return self.subscription_id
 
 
 class TargetConfig(BaseModel):

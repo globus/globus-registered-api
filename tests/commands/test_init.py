@@ -29,6 +29,7 @@ def test_init_gives_the_caller_owner_permissions(gra, prompt_patcher, mock_auth_
     prompt_patcher.add_input("confirmation", False)  # No I don't have an OpenAPI spec.
     prompt_patcher.add_input("click_prompt", "Test Service")
     prompt_patcher.add_input("click_prompt", "https://api.testservice.com")
+    prompt_patcher.add_input("click_prompt", "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d")
 
     gra(["init"], catch_exceptions=False)
 
@@ -41,6 +42,7 @@ def test_init_service_without_openapi_spec(gra, prompt_patcher):
     prompt_patcher.add_input("confirmation", False)  # No I don't have an OpenAPI spec.
     prompt_patcher.add_input("click_prompt", "Test Service")
     prompt_patcher.add_input("click_prompt", "https://api.testservice.com")
+    prompt_patcher.add_input("click_prompt", "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d")
 
     result = gra(["init"], catch_exceptions=False)
 
@@ -57,6 +59,7 @@ def test_init_service_with_local_openapi_spec(gra, prompt_patcher, spec_path):
     prompt_patcher.add_input("confirmation", True)  # Yes, I have an OpenAPI spec.
     prompt_patcher.add_input("prompt_toolkit_prompt", local_spec_path)
     prompt_patcher.add_input("confirmation", True)  # Use the server as base url.
+    prompt_patcher.add_input("click_prompt", "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d")
 
     result = gra(["init"], catch_exceptions=False)
 
@@ -81,6 +84,7 @@ def test_init_service_with_remote_openapi_spec(gra, prompt_patcher):
     prompt_patcher.add_input("confirmation", True)  # Yes, I have an OpenAPI spec.
     prompt_patcher.add_input("prompt_toolkit_prompt", remote_spec_url)
     prompt_patcher.add_input("click_prompt", "https://api.remote-service.com")
+    prompt_patcher.add_input("click_prompt", "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d")
 
     result = gra(["init"], catch_exceptions=False)
 
@@ -104,6 +108,7 @@ def test_init_service_with_remote_openapi_spec_and_whitespace(gra, prompt_patche
     prompt_patcher.add_input("confirmation", True)  # Yes, I have an OpenAPI spec.
     prompt_patcher.add_input("prompt_toolkit_prompt", f"{remote_spec_url}\n")
     prompt_patcher.add_input("click_prompt", "https://api.remote-service.com")
+    prompt_patcher.add_input("click_prompt", "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d")
 
     result = gra(["init"], catch_exceptions=False)
 
@@ -132,6 +137,7 @@ def test_init_service_with_multiple_servers(gra, prompt_patcher):
     prompt_patcher.add_input("prompt_toolkit_prompt", remote_spec_url)
     prompt_patcher.add_input("confirmation", True)  # Yes, use of the servers.
     prompt_patcher.add_input("selection", "https://api.server2.com")
+    prompt_patcher.add_input("click_prompt", "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d")
 
     result = gra(["init"], catch_exceptions=False)
 
