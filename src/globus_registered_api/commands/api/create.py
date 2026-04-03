@@ -78,7 +78,7 @@ def create_command(
 
     \b
         gra api create "My API" --target ./target.json --description "My API" \\
-            --subscription-id a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d
+            --subscription-id 00000000-e5f6-4a5b-8c9d-0e1f2a3b4c5d
     """
     flows_client = create_flows_client(ctx.globus_app)
 
