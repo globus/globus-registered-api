@@ -10,31 +10,15 @@ Breaking changes
     with ``globus-registered-api publish`` to associate them with your subscription.
     Once set, the subscription ID cannot be changed.
 
-    **Before (v0.1):**
-
-    .. code-block:: json
+    .. code-block:: diff
 
         {
-          "document_version": "0.1",
+        - "document_version": "0.1",
+        + "document_version": "0.2",
           "core": {
+        +   "subscription_id": "your-subscription-uuid-here",
             "base_url": "https://api.example.com",
             "specification": "openapi.yaml"
-          },
-          "targets": [],
-          "roles": []
-        }
-
-    **After (v0.2):**
-
-    .. code-block:: json
-       :emphasize-lines: 6
-
-        {
-          "document_version": "0.2",
-          "core": {
-            "base_url": "https://api.example.com",
-            "specification": "openapi.yaml",
-            "subscription_id": "your-subscription-uuid-here"
           },
           "targets": [],
           "roles": []
