@@ -70,7 +70,7 @@ def test_reduce_to_target_transforms_is_none(spec_path):
 # --- Component collection ---
 
 
-def test_reduce_to_target_collects_referenced_schemas(spec_path):
+def test_reduce_to_target_collects_referenced_schemas_only(spec_path):
     # Arrange
     spec = load_openapi_spec(spec_path("with_refs.json"))
     target = TargetSpecifier.create("get", "/items")
@@ -82,7 +82,23 @@ def test_reduce_to_target_collects_referenced_schemas(spec_path):
     # Assert
     assert result.components is not None
     assert "schemas" in result.components
+    assert "parameters" not in result.components
     assert "Item" in result.components["schemas"]
+
+
+def test_reduce_to_target_deduplicates_parameters(spec_path):
+    # Arrange
+    spec = load_openapi_spec(spec_path("with_refs.json"))
+    target = TargetSpecifier.create("get", "/items/{id}")
+    target_info = find_target(spec, target)
+
+    # Act
+    result = reduce_to_target(spec, target_info)
+
+    # Assert
+    assert result.operation.parameters is not None
+    assert len(result.operation.parameters) == 1
+    assert result.operation.parameters[0].description == "Defined in the method"
 
 
 def test_reduce_to_target_collects_transitive_references(spec_path):

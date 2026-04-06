@@ -69,6 +69,9 @@ def find_target(
 
         raise TargetNotFoundError(msg)
 
+    # Combine the shared route parameters and method-specific parameters.
+    operation.parameters = _combine_parameters(path_item, operation)
+
     # Resolve content type
     resolved_content_type = _resolve_content_type(operation, target.content_type)
 
@@ -83,6 +86,32 @@ def find_target(
         matched_target=resolved_specifier,
         operation=operation,
     )
+
+
+def _combine_parameters(
+    path_item: oa.PathItem,
+    operation: oa.Operation,
+) -> list[oa.Parameter | oa.Reference] | None:
+    """Combine shared route parameters and method-specific parameters.
+
+    The order is important for subsequent reference resolution and de-duplication:
+    parameters found at the route level may be overridden
+    by the parameters defined at the method level.
+
+    ..  code-block:: yaml
+
+        /resources/{resource_id}:
+            parameters:
+                - ...        # <-- These parameters are shared among the methods.
+
+            get:
+                parameters:
+                    - ...    # <-- These parameters override those defined above.
+    """
+
+    route_parameters = path_item.parameters or []
+    method_parameters = operation.parameters or []
+    return (route_parameters + method_parameters) or None
 
 
 def _operation_method_map(path_item: oa.PathItem) -> dict[str, oa.Operation | None]:
