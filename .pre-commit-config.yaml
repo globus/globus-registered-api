@@ -42,12 +42,12 @@ repos:
           - "python"
 
   - repo: "https://github.com/psf/black-pre-commit-mirror"
-    rev: "26.1.0"
+    rev: "26.3.1"
     hooks:
       - id: "black"
 
   - repo: "https://github.com/pycqa/isort"
-    rev: "8.0.0"
+    rev: "8.0.1"
     hooks:
       - id: "isort"
 
@@ -66,12 +66,12 @@ repos:
       - id: "editorconfig-checker"
 
   - repo: "https://github.com/python-jsonschema/check-jsonschema"
-    rev: "0.37.0"
+    rev: "0.37.1"
     hooks:
       - id: "check-dependabot"
 
   - repo: "https://github.com/rhysd/actionlint"
-    rev: "v1.7.11"
+    rev: "v1.7.12"
     hooks:
       - id: "actionlint"
 
@@ -81,7 +81,7 @@ repos:
       - id: "verify-consistent-pyproject-toml-python-requirements"
 
   - repo: "https://github.com/thlorenz/doctoc"
-    rev: "v2.3.0"
+    rev: "v2.4.0"
     hooks:
       - id: "doctoc"
         args:
