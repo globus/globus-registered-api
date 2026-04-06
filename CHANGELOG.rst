@@ -26,6 +26,19 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-0.7.0:
+
+0.7.0 - 2026-04-06
+==================
+
+Changed
+-------
+
+*   Support parameter references like ``#/components/parameters/Id``.
+*   Deduplicate parameters.
+*   Write config and manifest with trailing newlines.
+    This helps the files align with common VCS linting rules.
+
 .. _changelog-0.6.0:
 
 0.6.0 - 2026-03-11
