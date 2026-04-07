@@ -68,18 +68,28 @@
             }
         },
         "/items/{id}": {
+            "parameters": [
+                {
+                  "$ref": "#/components/parameters/Id"
+                }
+            ],
+            "put": {
+                "summary": "Test inherited parameter references",
+                "operationId": "updateItem"
+            },
             "get": {
                 "summary": "Get item by ID",
                 "operationId": "getItem",
                 "parameters": [
                     {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
+                      "name": "id",
+                      "in": "path",
+                      "required": true,
+                      "description": "Defined in the method",
+                      "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
                     }
                 ],
                 "responses": {
@@ -108,7 +118,22 @@
         }
     },
     "components": {
+        "parameters": {
+          "Id": {
+            "name": "id",
+            "in": "path",
+            "description": "Defined in components",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        },
         "schemas": {
+            "Id": {
+              "type": "string",
+              "format": "uuid"
+            },
             "Item": {
                 "type": "object",
                 "required": [

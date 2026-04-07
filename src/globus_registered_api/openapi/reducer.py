@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import re
 import typing as t
 from dataclasses import dataclass
 
@@ -52,6 +51,9 @@ def reduce_to_target(spec: oa.OpenAPI, target: TargetInfo) -> OpenAPITarget:
     # Build destination URL
     destination = _build_destination(spec, target)
 
+    # Deduplicate parameters
+    target.operation.parameters = _deduplicate_parameters(spec, target.operation)
+
     # Collect referenced components
     components = _collect_components(spec, target.operation)
 
@@ -83,8 +85,12 @@ def _collect_components(
     Traverses the operation to find all $ref references and collects
     the referenced schemas, including transitive references.
     """
-    if spec.components is None or spec.components.schemas is None:
+    if spec.components is None:
         return None
+    spec_components: dict[t.Literal["schemas", "parameters"], dict[str, t.Any]] = {
+        "schemas": spec.components.schemas or {},
+        "parameters": spec.components.parameters or {},
+    }
 
     # Find all $ref strings in the operation
     operation_dict = operation.model_dump(by_alias=True, exclude_none=True)
@@ -94,7 +100,7 @@ def _collect_components(
         return None
 
     # Collect schemas for each ref
-    collected_schemas: dict[str, t.Any] = {}
+    collected_components: dict[str, dict[str, t.Any]] = {}
     schemas_to_process = set(refs)
     processed_refs: set[str] = set()
 
@@ -104,27 +110,27 @@ def _collect_components(
             continue
         processed_refs.add(ref)
 
-        schema_name = _extract_schema_name(ref)
-        if schema_name is None:
+        subcomponent, name = _extract_reference(ref)
+        if subcomponent is None:
             continue
 
-        if schema_name not in spec.components.schemas:
+        if name not in spec_components[subcomponent]:
             continue
 
-        schema = spec.components.schemas[schema_name]
-        schema_dict = schema.model_dump(by_alias=True, exclude_none=True)
-        collected_schemas[schema_name] = schema_dict
+        definition = spec_components[subcomponent][name]
+        definition_dict = definition.model_dump(by_alias=True, exclude_none=True)
+        collected_components.setdefault(subcomponent, {})[name] = definition_dict
 
         # Find transitive refs in this schema
-        transitive_refs = _find_all_refs(schema_dict)
+        transitive_refs = _find_all_refs(definition_dict)
         for tref in transitive_refs:
             if tref not in processed_refs:
                 schemas_to_process.add(tref)
 
-    if not collected_schemas:
+    if not collected_components:
         return None
 
-    return {"schemas": collected_schemas}
+    return collected_components
 
 
 def _find_all_refs(obj: t.Any) -> set[str]:
@@ -145,10 +151,63 @@ def _find_all_refs(obj: t.Any) -> set[str]:
     return refs
 
 
-def _extract_schema_name(ref: str) -> str | None:
-    """Extract the schema name from a $ref string like '#/components/schemas/Item'."""
-    pattern = r"^#/components/schemas/(.+)$"
-    match = re.match(pattern, ref)
-    if match:
-        return match.group(1)
+def _extract_reference(
+    ref: str,
+) -> tuple[t.Literal["schemas", "parameters"], str] | tuple[None, None]:
+    """Extract the subcomponent name and reference name from a $ref string.
+
+    For example, '#/components/schemas/Item' will return `("schemas", "Item")`.
+    """
+
+    try:
+        _, _, subcomponent, name = ref.rsplit("/", maxsplit=3)
+        if subcomponent not in ("schemas", "parameters"):
+            raise ValueError(f"Invalid subcomponent {subcomponent}")
+        if not name:
+            raise ValueError("'name' is empty")
+    except ValueError:
+        return None, None
+
+    return t.cast(t.Literal["schemas", "parameters"], subcomponent), name
+
+
+def _deduplicate_parameters(
+    spec: oa.OpenAPI, operation: oa.Operation
+) -> list[oa.Parameter | oa.Reference] | None:
+    """
+    Deduplicate parameters.
+
+    If parameters are duplicated, only the last one listed is kept.
+    """
+
+    if not operation.parameters:
+        return None
+
+    spec_parameters = (spec.components.parameters if spec.components else None) or {}
+
+    # The key is the tuple `(parameter.param_in, parameter.name)`.
+    collected_parameters: dict[tuple[str, str], oa.Parameter | oa.Reference] = {}
+
+    for parameter in operation.parameters:
+        if isinstance(parameter, oa.Parameter):
+            key = (parameter.param_in, parameter.name)
+            collected_parameters[key] = parameter
+        else:  # isinstance(parameter, oa.Reference)
+            # Reject invalid references.
+            if not parameter.ref.startswith("#/components/parameters/"):
+                msg = f"'{parameter.ref}' must start with '#/components/parameters/'."
+                raise ValueError(msg)
+            _, _, _, name = parameter.ref.rsplit("/", maxsplit=3)
+            if name not in spec_parameters:
+                msg = f"'{parameter.ref}' cannot be found in 'components'."
+                raise ValueError(msg)
+            defined_parameter = spec_parameters[name]
+            if isinstance(defined_parameter, oa.Reference):
+                msg = f"'{parameter.ref}' must not be another reference."
+                raise ValueError(msg)
+            key = defined_parameter.param_in, defined_parameter.name
+            collected_parameters[key] = defined_parameter
+
+    if collected_parameters:
+        return list(collected_parameters.values())
     return None
