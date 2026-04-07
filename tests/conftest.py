@@ -147,3 +147,15 @@ def mock_flows_client(monkeypatch):
     client = ExtendedFlowsClient()
     monkeypatch.setattr(src_clients, "ExtendedFlowsClient", lambda *_, **__: client)
     return client
+
+
+@pytest.fixture
+def subscription_id():
+    """Standard subscription ID for testing."""
+    return "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"
+
+
+@pytest.fixture
+def subscription_option(subscription_id):
+    """CLI option for subscription ID."""
+    return ["--subscription-id", subscription_id]

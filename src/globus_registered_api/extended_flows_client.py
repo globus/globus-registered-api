@@ -90,6 +90,7 @@ class ExtendedFlowsClient(FlowsClient):
         administrators: list[str] | None = None,
         viewers: list[str] | None = None,
         target: dict[str, t.Any] | None = None,
+        subscription_id: str | None = None,
     ) -> GlobusHTTPResponse:
         """
         Update a registered API by ID.
@@ -101,6 +102,7 @@ class ExtendedFlowsClient(FlowsClient):
         :param administrators: List of administrator URNs (replaces existing)
         :param viewers: List of viewer URNs (replaces existing)
         :param target: Target definition dict
+        :param subscription_id: Subscription ID for the registered API
         :return: Response containing the updated registered API
         """
         body: dict[str, t.Any] = _filter_nones(
@@ -108,6 +110,7 @@ class ExtendedFlowsClient(FlowsClient):
                 "name": name,
                 "description": description,
                 "target": target,
+                "subscription_id": subscription_id,
             }
         )
 
@@ -128,6 +131,7 @@ class ExtendedFlowsClient(FlowsClient):
         name: str,
         description: str,
         target: dict[str, t.Any],
+        subscription_id: str | uuid.UUID,
         owners: list[str] | None = None,
         administrators: list[str] | None = None,
         viewers: list[str] | None = None,
@@ -138,6 +142,7 @@ class ExtendedFlowsClient(FlowsClient):
         :param name: Name for the registered API
         :param description: Description for the registered API
         :param target: Target definition dict (from OpenAPITarget.to_dict())
+        :param subscription_id: Subscription ID that grants access to registered APIs
         :param owners: Optional list of owner URNs
         :param administrators: Optional list of administrator URNs
         :param viewers: Optional list of viewer URNs
@@ -155,6 +160,7 @@ class ExtendedFlowsClient(FlowsClient):
             "name": name,
             "description": description,
             "target": target,
+            "subscription_id": str(subscription_id),
         }
 
         if roles:

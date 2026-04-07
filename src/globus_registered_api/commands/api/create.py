@@ -48,6 +48,11 @@ from globus_registered_api.context import with_cli_context
         "and administrators)"
     ),
 )
+@click.option(
+    "--subscription-id",
+    required=True,
+    help="Subscription ID that grants access to registered APIs",
+)
 @click.option("--format", type=click.Choice(["json", "text"]), default="text")
 @with_cli_context
 def create_command(
@@ -55,6 +60,7 @@ def create_command(
     target: pathlib.Path,
     name: str,
     description: str,
+    subscription_id: str,
     owners: tuple[str, ...],
     administrators: tuple[str, ...],
     viewers: tuple[str, ...],
@@ -71,7 +77,8 @@ def create_command(
     Example:
 
     \b
-        gra api create  "My API"  --target ./target.json --description "My API"
+        gra api create "My API" --target ./target.json --description "My API" \\
+            --subscription-id 00000000-e5f6-4a5b-8c9d-0e1f2a3b4c5d
     """
     flows_client = create_flows_client(ctx.globus_app)
 
@@ -80,6 +87,7 @@ def create_command(
         name=name,
         description=description,
         target=target_content,
+        subscription_id=subscription_id,
         owners=list(owners),
         administrators=list(administrators),
         viewers=list(viewers),
