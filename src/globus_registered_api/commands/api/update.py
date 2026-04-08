@@ -56,7 +56,23 @@ from globus_registered_api.context import with_cli_context
     type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
     help="Filepath to a JSON object containing the target definition",
 )
-@click.option("--format", type=click.Choice(["json", "text"]), default="text")
+@click.option(
+    "--data-templates",
+    "data_templates_path",
+    hidden=True,
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=pathlib.Path),
+    help="A path to a file containing a JSON-formatted data template.",
+)
+@click.option(
+    "--state-input-schema",
+    "state_input_schema_path",
+    hidden=True,
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=pathlib.Path),
+    help="A path to a file containing a JSON-formatted state input schema.",
+)
+@click.option(
+    "--format", "format_", type=click.Choice(["json", "text"]), default="text"
+)
 @with_cli_context
 def update_command(
     ctx: CLIContext,
@@ -69,7 +85,9 @@ def update_command(
     no_administrators: bool,
     no_viewers: bool,
     target: pathlib.Path | None,
-    format: str,
+    format_: str,
+    data_templates_path: pathlib.Path | None,
+    state_input_schema_path: pathlib.Path | None,
 ) -> None:
     """
     Update a registered API by ID.
@@ -109,7 +127,10 @@ def update_command(
             raise click.UsageError(f"Invalid JSON in target file: {e}")
         except UnicodeDecodeError as e:
             raise click.UsageError(f"Unable to read target file: {e}")
-
+    if data_templates_path is not None:
+        request["data_templates"] = json.loads(data_templates_path.read_text())
+    if state_input_schema_path is not None:
+        request["state_input_schema"] = json.loads(state_input_schema_path.read_text())
     res = flows_client.update_registered_api(registered_api_id, **request)
 
-    echo_registered_api(res, format)
+    echo_registered_api(res, format_)

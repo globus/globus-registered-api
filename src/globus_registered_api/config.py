@@ -11,6 +11,7 @@ from uuid import UUID
 
 import click
 import openapi_pydantic as oa
+import pydantic
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import field_validator
@@ -164,6 +165,18 @@ class TargetConfig(BaseModel):
 
     # The UUID of the registered API in Flows service, if published.
     registered_api_id: UUID | None = None
+
+    data_templates: dict[str, t.Any] | None = pydantic.Field(
+        default=None,
+        repr=False,  # Exclude from on-screen display rendering.
+        exclude_if=lambda v: v is None,  # Exclude from serializing if None.
+    )
+
+    state_input_schema: dict[str, t.Any] | None = pydantic.Field(
+        default=None,
+        repr=False,  # Exclude from on-screen display rendering.
+        exclude_if=lambda v: v is None,  # Exclude from serializing if None.
+    )
 
     @property
     def sort_key(self) -> tuple[str, ...]:

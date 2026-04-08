@@ -45,6 +45,13 @@ def target_option(target_path):
     return ["--target", str(target_path)]
 
 
+def test_create_help(gra):
+    result = gra(["api", "create", "--help"])
+    assert "--help" in result.stdout  # Sanity check
+    assert "--data-templates" not in result.stdout
+    assert "--state-input-schema" not in result.stdout
+
+
 def test_create_registered_api_text_format(
     gra, patch_create, target_option, subscription_option, subscription_id
 ):
@@ -197,6 +204,55 @@ def test_create_registered_api_calls_post_endpoint(
     # Assert
     assert result.exit_code == 0
     assert patched_create.call_count == 1
+
+
+def test_create_registered_api_includes_hidden_arguments(
+    gra, patch_create, target_option, subscription_option, subscription_id, tmp_path
+):
+    # Arrange
+    data_templates_path = tmp_path / "data_templates.json"
+    data_templates_path.write_text('{"data_templates": true}')
+    state_input_schema_path = tmp_path / "state_input_schema.json"
+    state_input_schema_path.write_text('{"state_input_schema": true}')
+
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    name, desc = "My API", "Test Description"
+    patch_create(
+        json={
+            "id": api_id,
+            "name": name,
+            "description": desc,
+            "subscription_id": subscription_id,
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+            "updated_timestamp": None,
+        },
+        status=201,
+    )
+
+    # Act
+    gra(
+        [
+            "api",
+            "create",
+            name,
+            *target_option,
+            *("--description", desc),
+            *subscription_option,
+            *("--data-templates", data_templates_path),
+            *("--state-input-schema", state_input_schema_path),
+        ]
+    )
+
+    # Assert
+    body = responses.calls[0].request.body
+    assert b'"data_templates": {"data_templates": true}' in body
+    assert b'"state_input_schema": {"state_input_schema": true}' in body
 
 
 def test_create_registered_api_api_error(
