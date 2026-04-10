@@ -26,6 +26,45 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-0.8.0:
+
+0.8.0 - 2026-04-10
+==================
+
+Breaking changes
+----------------
+
+*   Require ``subscription_id`` in config and bump document version to ``0.2``.
+
+    A Globus subscription is now required to create and update registered APIs.
+    Existing configs in ``.globus_registered_api/config.json`` must be manually updated:
+    bump ``document_version`` to ``0.2`` and add a ``subscription_id`` field to the
+    ``core`` section, then run ``globus-registered-api build`` to regenerate the manifest.
+    After updating the config, republish existing registered APIs with
+    ``globus-registered-api publish`` to associate them with your subscription.
+    Once set, the subscription ID cannot be changed.
+
+    .. code-block:: diff
+
+        {
+        - "document_version": "0.1",
+        + "document_version": "0.2",
+          "core": {
+        +   "subscription_id": "your-subscription-uuid-here",
+            "base_url": "https://api.example.com",
+            "specification": "openapi.yaml"
+          },
+          "targets": [],
+          "roles": []
+        }
+
+*   ``ExtendedFlowsClient.create_registered_api()`` now requires keyword arguments.
+
+Development
+-----------
+
+*   Reduce test suite runtimes by eliminating transport retries.
+
 .. _changelog-0.7.0:
 
 0.7.0 - 2026-04-06
