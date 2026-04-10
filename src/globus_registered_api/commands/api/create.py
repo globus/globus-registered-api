@@ -53,7 +53,23 @@ from globus_registered_api.context import with_cli_context
     required=True,
     help="Subscription ID that grants access to registered APIs",
 )
-@click.option("--format", type=click.Choice(["json", "text"]), default="text")
+@click.option(
+    "--data-templates",
+    "data_templates_path",
+    hidden=True,
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=pathlib.Path),
+    help="A path to a file containing a JSON-formatted data template.",
+)
+@click.option(
+    "--state-input-schema",
+    "state_input_schema_path",
+    hidden=True,
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=pathlib.Path),
+    help="A path to a file containing a JSON-formatted state input schema.",
+)
+@click.option(
+    "--format", "format_", type=click.Choice(["json", "text"]), default="text"
+)
 @with_cli_context
 def create_command(
     ctx: CLIContext,
@@ -64,7 +80,9 @@ def create_command(
     owners: tuple[str, ...],
     administrators: tuple[str, ...],
     viewers: tuple[str, ...],
-    format: str,
+    format_: str,
+    data_templates_path: pathlib.Path | None,
+    state_input_schema_path: pathlib.Path | None,
 ) -> None:
     """
     Create a new registered API from an OpenAPI specification.
@@ -83,6 +101,12 @@ def create_command(
     flows_client = create_flows_client(ctx.globus_app)
 
     target_content = json.loads(target.read_text())
+    data_templates = {}
+    if data_templates_path is not None:
+        data_templates = json.loads(data_templates_path.read_text())
+    state_input_schema = {}
+    if state_input_schema_path is not None:
+        state_input_schema = json.loads(state_input_schema_path.read_text())
     res = flows_client.create_registered_api(
         name=name,
         description=description,
@@ -91,6 +115,8 @@ def create_command(
         owners=list(owners),
         administrators=list(administrators),
         viewers=list(viewers),
+        data_templates=data_templates or None,
+        state_input_schema=state_input_schema or None,
     )
 
-    echo_registered_api(res, format)
+    echo_registered_api(res, format_)

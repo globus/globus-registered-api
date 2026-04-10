@@ -9,6 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import globus_sdk.transport
 import pytest
 import responses
 
@@ -144,7 +145,9 @@ def mock_flows_client(monkeypatch):
         Unlike other clients, flows is only patched to prevent GlobusApp-binding.
         Calls will be made against the real api domains (but intercepted by responses).
     """
-    client = ExtendedFlowsClient()
+
+    retry_config = globus_sdk.transport.RetryConfig(max_retries=0)
+    client = ExtendedFlowsClient(retry_config=retry_config)
     monkeypatch.setattr(src_clients, "ExtendedFlowsClient", lambda *_, **__: client)
     return client
 

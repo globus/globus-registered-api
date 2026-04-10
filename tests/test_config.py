@@ -121,6 +121,11 @@ def test_target_config_registered_api_id_defaults_to_none():
     assert target.registered_api_id is None
 
 
+def test_target_config_data_templates_defaults_to_none():
+    target = TargetConfig(alias="test", path="/test", method="GET", description="Test")
+    assert target.data_templates is None
+
+
 def test_target_config_registered_api_id_accepts_uuid():
     test_uuid = UUID("12345678-1234-1234-1234-123456789abc")
     target = TargetConfig(
@@ -144,6 +149,30 @@ def test_target_config_serialization_includes_registered_api_id():
     )
     serialized = target.model_dump()
     assert serialized["registered_api_id"] == test_uuid
+
+
+def test_target_config_serialization_includes_data_templates_if_set():
+    data_templates = {"requests": {}, "responses": {"2XX": {}}}
+    target = TargetConfig(
+        alias="test",
+        path="/test",
+        method="GET",
+        description="Test",
+        data_templates=data_templates,
+    )
+    serialized = target.model_dump()
+    assert serialized["data_templates"] == data_templates
+
+
+def test_target_config_serialization_excludes_data_templates_if_unset():
+    target = TargetConfig(
+        alias="test",
+        path="/test",
+        method="GET",
+        description="Test",
+    )
+    serialized = target.model_dump()
+    assert "data_templates" not in serialized
 
 
 def test_role_config_auth_urn_for_identity():

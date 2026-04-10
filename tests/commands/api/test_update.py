@@ -20,6 +20,13 @@ def patch_update(api_url_patterns) -> t.Iterable[t.Callable[..., None]]:
     )
 
 
+def test_update_help(gra):
+    result = gra(["api", "update", "--help"])
+    assert "--help" in result.stdout  # Sanity check
+    assert "--data-templates" not in result.stdout
+    assert "--state-input-schema" not in result.stdout
+
+
 def test_update_registered_api_text_format(gra, patch_update):
     api_id = "12345678-1234-1234-1234-123456789abc"
     patch_update(
@@ -94,6 +101,47 @@ def test_update_registered_api_calls_correct_endpoint(gra, patch_update):
 
     assert f"/registered_apis/{api_id}" in responses.calls[0].request.url
     assert responses.calls[0].request.method == "PATCH"
+
+
+def test_update_registered_api_includes_hidden_arguments(
+    gra, patch_update, subscription_option, subscription_id, tmp_path
+):
+    # Arrange
+    data_templates_path = tmp_path / "data_templates.json"
+    data_templates_path.write_text('{"data_templates": true}')
+    state_input_schema_path = tmp_path / "state_input_schema.json"
+    state_input_schema_path.write_text('{"state_input_schema": true}')
+
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    patch_update(
+        json={
+            "id": api_id,
+            "name": "Test",
+            "description": "",
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "updated_timestamp": "2025-01-01T01:00:00+00:00",
+            "edited_timestamp": None,
+        },
+    )
+
+    # Act
+    gra(
+        [
+            *("api", "update", api_id),
+            *("--data-templates", data_templates_path),
+            *("--state-input-schema", state_input_schema_path),
+        ]
+    )
+
+    # Assert
+    body = responses.calls[0].request.body
+    assert b'"data_templates": {"data_templates": true}' in body
+    assert b'"state_input_schema": {"state_input_schema": true}' in body
 
 
 def test_update_registered_api_not_found(gra, patch_update):
