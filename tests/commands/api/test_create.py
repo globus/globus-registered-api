@@ -45,7 +45,16 @@ def target_option(target_path):
     return ["--target", str(target_path)]
 
 
-def test_create_registered_api_text_format(gra, patch_create, target_option):
+def test_create_help(gra):
+    result = gra(["api", "create", "--help"])
+    assert "--help" in result.stdout  # Sanity check
+    assert "--data-templates" not in result.stdout
+    assert "--state-input-schema" not in result.stdout
+
+
+def test_create_registered_api_text_format(
+    gra, patch_create, target_option, subscription_option, subscription_id
+):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
     name, desc = "My API", "Test description"
@@ -54,6 +63,7 @@ def test_create_registered_api_text_format(gra, patch_create, target_option):
             "id": api_id,
             "name": name,
             "description": desc,
+            "subscription_id": subscription_id,
             "roles": {
                 "owners": ["urn:globus:auth:identity:user1"],
                 "administrators": [],
@@ -67,7 +77,17 @@ def test_create_registered_api_text_format(gra, patch_create, target_option):
     )
 
     # Act
-    result = gra(["api", "create", name, *target_option, "--description", desc])
+    result = gra(
+        [
+            "api",
+            "create",
+            name,
+            *target_option,
+            "--description",
+            desc,
+            *subscription_option,
+        ]
+    )
 
     # Assert
     assert result.exit_code == 0
@@ -79,7 +99,9 @@ def test_create_registered_api_text_format(gra, patch_create, target_option):
     assert desc in result.output
 
 
-def test_create_registered_api_json_format(gra, patch_create, target_option):
+def test_create_registered_api_json_format(
+    gra, patch_create, target_option, subscription_option, subscription_id
+):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
     name, desc = "My API", "Test description"
@@ -88,6 +110,7 @@ def test_create_registered_api_json_format(gra, patch_create, target_option):
             "id": api_id,
             "name": name,
             "description": desc,
+            "subscription_id": subscription_id,
             "roles": {
                 "owners": ["urn:globus:auth:identity:user1"],
                 "administrators": [],
@@ -101,7 +124,15 @@ def test_create_registered_api_json_format(gra, patch_create, target_option):
     )
 
     # Act
-    basic_command = ["api", "create", name, *target_option, "--description", desc]
+    basic_command = [
+        "api",
+        "create",
+        name,
+        *target_option,
+        "--description",
+        desc,
+        *subscription_option,
+    ]
     result = gra(basic_command + ["--format", "json"])
 
     # Assert
@@ -112,9 +143,20 @@ def test_create_registered_api_json_format(gra, patch_create, target_option):
     assert output["description"] == desc
 
 
-def test_create_registered_api_with_nonexistent_file_shows_error(gra):
+def test_create_registered_api_with_nonexistent_file_shows_error(
+    gra, subscription_option
+):
     # Act
-    cmd = ["api", "create", "My API", "--target", "/nope.json", "--description", "Test"]
+    cmd = [
+        "api",
+        "create",
+        "My API",
+        "--target",
+        "/nope.json",
+        "--description",
+        "Test",
+        *subscription_option,
+    ]
     result = gra(cmd)
 
     # Assert
@@ -122,7 +164,9 @@ def test_create_registered_api_with_nonexistent_file_shows_error(gra):
     assert "File '/nope.json' does not exist" in result.output
 
 
-def test_create_registered_api_calls_post_endpoint(gra, patch_create, target_option):
+def test_create_registered_api_calls_post_endpoint(
+    gra, patch_create, target_option, subscription_option, subscription_id
+):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
     name, desc = "My API", "Test Description"
@@ -131,6 +175,7 @@ def test_create_registered_api_calls_post_endpoint(gra, patch_create, target_opt
             "id": api_id,
             "name": name,
             "description": desc,
+            "subscription_id": subscription_id,
             "roles": {
                 "owners": ["urn:globus:auth:identity:user1"],
                 "administrators": [],
@@ -144,14 +189,75 @@ def test_create_registered_api_calls_post_endpoint(gra, patch_create, target_opt
     )
 
     # Act
-    result = gra(["api", "create", name, *target_option, "--description", desc])
+    result = gra(
+        [
+            "api",
+            "create",
+            name,
+            *target_option,
+            "--description",
+            desc,
+            *subscription_option,
+        ]
+    )
 
     # Assert
     assert result.exit_code == 0
     assert patched_create.call_count == 1
 
 
-def test_create_registered_api_api_error(gra, patch_create, target_option):
+def test_create_registered_api_includes_hidden_arguments(
+    gra, patch_create, target_option, subscription_option, subscription_id, tmp_path
+):
+    # Arrange
+    data_templates_path = tmp_path / "data_templates.json"
+    data_templates_path.write_text('{"data_templates": true}')
+    state_input_schema_path = tmp_path / "state_input_schema.json"
+    state_input_schema_path.write_text('{"state_input_schema": true}')
+
+    api_id = "12345678-1234-1234-1234-123456789abc"
+    name, desc = "My API", "Test Description"
+    patch_create(
+        json={
+            "id": api_id,
+            "name": name,
+            "description": desc,
+            "subscription_id": subscription_id,
+            "roles": {
+                "owners": ["urn:globus:auth:identity:user1"],
+                "administrators": [],
+                "viewers": [],
+            },
+            "created_timestamp": "2025-01-01T00:00:00+00:00",
+            "edited_timestamp": None,
+            "updated_timestamp": None,
+        },
+        status=201,
+    )
+
+    # Act
+    gra(
+        [
+            "api",
+            "create",
+            name,
+            *target_option,
+            *("--description", desc),
+            *subscription_option,
+            *("--data-templates", data_templates_path),
+            *("--state-input-schema", state_input_schema_path),
+        ]
+    )
+
+    # Assert
+    body = responses.calls[0].request.body
+    assert b'"data_templates": {"data_templates": true}' in body
+    assert b'"state_input_schema": {"state_input_schema": true}' in body
+
+
+def test_create_registered_api_api_error(
+    gra, patch_create, target_option, subscription_option
+):
     # Arrange
     patch_create(
         status=400,
@@ -164,7 +270,17 @@ def test_create_registered_api_api_error(gra, patch_create, target_option):
     )
 
     # Act
-    result = gra(["api", "create", "My API", *target_option, "--description", "Test"])
+    result = gra(
+        [
+            "api",
+            "create",
+            "My API",
+            *target_option,
+            "--description",
+            "Test",
+            *subscription_option,
+        ]
+    )
 
     # Assert
     assert result.exit_code != 0
@@ -175,27 +291,58 @@ def test_create_registered_api_api_error(gra, patch_create, target_option):
     "args,expected_error",
     [
         pytest.param(
-            ["api", "create", "--target", "$TARGET", "--description", "Test"],
+            [
+                "api",
+                "create",
+                "--target",
+                "$TARGET",
+                "--description",
+                "Test",
+                "--subscription-id",
+                "$SUBSCRIPTION_ID",
+            ],
             "Missing argument 'NAME'",
             id="missing-name",
         ),
         pytest.param(
-            ["api", "create", "My API", "--description", "Test"],
+            [
+                "api",
+                "create",
+                "My API",
+                "--description",
+                "Test",
+                "--subscription-id",
+                "$SUBSCRIPTION_ID",
+            ],
             "Missing option '--target'",
             id="missing-target",
         ),
         pytest.param(
-            ["api", "create", "My API", "--target", "$TARGET"],
+            [
+                "api",
+                "create",
+                "My API",
+                "--target",
+                "$TARGET",
+                "--subscription-id",
+                "$SUBSCRIPTION_ID",
+            ],
             "Missing option '--description'",
             id="missing-description",
+        ),
+        pytest.param(
+            ["api", "create", "My API", "--target", "$TARGET", "--description", "Test"],
+            "Missing option '--subscription-id'",
+            id="missing-subscription-id",
         ),
     ],
 )
 def test_create_registered_api_missing_required_param_shows_error(
-    gra, target_path, args, expected_error
+    gra, target_path, subscription_id, args, expected_error
 ):
     # Arrange
     args = [str(target_path) if arg == "$TARGET" else arg for arg in args]
+    args = [subscription_id if arg == "$SUBSCRIPTION_ID" else arg for arg in args]
 
     # Act
     result = gra(args)
@@ -206,7 +353,7 @@ def test_create_registered_api_missing_required_param_shows_error(
 
 
 def test_create_registered_api_with_single_owner_admin_and_viewer(
-    gra, patch_create, target_option
+    gra, patch_create, target_option, subscription_option, subscription_id
 ):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
@@ -221,6 +368,7 @@ def test_create_registered_api_with_single_owner_admin_and_viewer(
             "id": api_id,
             "name": name,
             "description": desc,
+            "subscription_id": subscription_id,
             "roles": {
                 "owners": [owner_urn],
                 "administrators": [admin_urn],
@@ -234,7 +382,15 @@ def test_create_registered_api_with_single_owner_admin_and_viewer(
     )
 
     # Act
-    basic_command = ["api", "create", name, *target_option, "--description", desc]
+    basic_command = [
+        "api",
+        "create",
+        name,
+        *target_option,
+        "--description",
+        desc,
+        *subscription_option,
+    ]
     result = gra(basic_command + ["--administrator", admin_urn, "--viewer", viewer_urn])
 
     assert result.exit_code == 0
@@ -247,7 +403,7 @@ def test_create_registered_api_with_single_owner_admin_and_viewer(
 
 
 def test_create_registered_api_with_multiple_owners_admins_and_viewers(
-    gra, patch_create, target_option
+    gra, patch_create, target_option, subscription_option, subscription_id
 ):
     # Arrange
     api_id = "12345678-1234-1234-1234-123456789abc"
@@ -271,6 +427,7 @@ def test_create_registered_api_with_multiple_owners_admins_and_viewers(
             "id": api_id,
             "name": name,
             "description": desc,
+            "subscription_id": subscription_id,
             "roles": {
                 "owners": owner_urns,
                 "administrators": admin_urns,
@@ -284,7 +441,15 @@ def test_create_registered_api_with_multiple_owners_admins_and_viewers(
     )
 
     # Act
-    basic_command = ["api", "create", name, *target_option, "--description", desc]
+    basic_command = [
+        "api",
+        "create",
+        name,
+        *target_option,
+        "--description",
+        desc,
+        *subscription_option,
+    ]
     result = gra(
         basic_command
         + ["--owner", owner_urns[0], "--owner", owner_urns[1]]

@@ -35,6 +35,7 @@ def config_with_targets_and_roles(openapi_schema):
     core = CoreConfig(
         base_url="https://api.example.com",
         specification=openapi_schema,
+        subscription_id="a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
     )
     targets = [
         TargetConfig(
@@ -595,3 +596,147 @@ def test_publish_partial_failure_saves_successful_ids(
     updated_config = RegisteredAPIConfig.load()
     assert updated_config.targets[0].registered_api_id == created_id
     assert updated_config.targets[1].registered_api_id is None
+
+
+def test_publish_update_excludes_data_templates_when_unspecified(
+    gra,
+    config_with_targets_and_roles,
+    manifest_for_config,
+    api_url_patterns,
+    prompt_patcher,
+):
+    # Arrange
+    existing_id = uuid4()
+    config_with_targets_and_roles.targets[0].registered_api_id = existing_id
+    config_with_targets_and_roles.commit()
+
+    # Add mock API response for update
+    responses.add(
+        responses.PATCH,
+        api_url_patterns.UPDATE,
+        json={"id": str(existing_id)},
+        status=200,
+    )
+
+    # Skip confirmation prompt
+    prompt_patcher.add_input("confirmation", True)
+
+    # Act - only update the first target by specifying alias
+    result = gra(["publish", "--target-alias", "get-example"])
+
+    # Assert
+    assert result.exit_code == 0
+
+    # Sanity check: the target shouldn't have a `data_templates` value by default.
+    assert config_with_targets_and_roles.targets[0].data_templates is None
+
+    # Confirm that the request doesn't include a `data_templates` key.
+    assert b'"data_templates":' not in responses.calls[0].request.body
+
+
+def test_publish_update_includes_data_templates_when_specified(
+    gra,
+    config_with_targets_and_roles,
+    manifest_for_config,
+    api_url_patterns,
+    prompt_patcher,
+):
+    # Arrange
+    existing_id = uuid4()
+    config_with_targets_and_roles.targets[0].registered_api_id = existing_id
+    config_with_targets_and_roles.targets[0].data_templates = {
+        "request": {},
+        "response": {"2XX": {}},
+    }
+    config_with_targets_and_roles.commit()
+
+    # Add mock API response for update
+    responses.add(
+        responses.PATCH,
+        api_url_patterns.UPDATE,
+        json={"id": str(existing_id)},
+        status=200,
+    )
+
+    # Skip confirmation prompt
+    prompt_patcher.add_input("confirmation", True)
+
+    # Act - only update the first target by specifying alias
+    result = gra(["publish", "--target-alias", "get-example"])
+
+    # Assert
+    assert result.exit_code == 0
+
+    # Confirm that the request includes a `data_templates` key.
+    assert b'"data_templates": {' in responses.calls[0].request.body
+    assert b'"response": {"2XX": {}}' in responses.calls[0].request.body
+
+
+def test_publish_create_excludes_data_templates_when_unspecified(
+    gra,
+    config_with_targets_and_roles,
+    manifest_for_config,
+    api_url_patterns,
+    prompt_patcher,
+):
+    # Arrange
+    config_with_targets_and_roles.commit()
+
+    # Add mock API response for update
+    responses.add(
+        responses.POST,
+        api_url_patterns.CREATE,
+        json={"id": str(uuid4())},
+        status=200,
+    )
+
+    # Skip confirmation prompt
+    prompt_patcher.add_input("confirmation", True)
+
+    # Act - only update the first target by specifying alias
+    result = gra(["publish", "--target-alias", "get-example"])
+
+    # Assert
+    assert result.exit_code == 0
+
+    # Sanity check: the target shouldn't have a `data_templates` value by default.
+    assert config_with_targets_and_roles.targets[0].data_templates is None
+
+    # Confirm that the request doesn't include a `data_templates` key.
+    assert b'"data_templates":' not in responses.calls[0].request.body
+
+
+def test_publish_create_includes_data_templates_when_specified(
+    gra,
+    config_with_targets_and_roles,
+    manifest_for_config,
+    api_url_patterns,
+    prompt_patcher,
+):
+    # Arrange
+    config_with_targets_and_roles.targets[0].data_templates = {
+        "request": {},
+        "response": {"2XX": {}},
+    }
+    config_with_targets_and_roles.commit()
+
+    # Add mock API response for update
+    responses.add(
+        responses.POST,
+        api_url_patterns.CREATE,
+        json={"id": str(uuid4())},
+        status=200,
+    )
+
+    # Skip confirmation prompt
+    prompt_patcher.add_input("confirmation", True)
+
+    # Act - only update the first target by specifying alias
+    result = gra(["publish", "--target-alias", "get-example"])
+
+    # Assert
+    assert result.exit_code == 0
+
+    # Confirm that the request includes a `data_templates` key.
+    assert b'"data_templates": {' in responses.calls[0].request.body
+    assert b'"response": {"2XX": {}}' in responses.calls[0].request.body

@@ -114,9 +114,12 @@ def _create_target(context: PublishContext, alias: str, target: TargetConfig) ->
         name=alias,
         description=description,
         target=target_def,
+        subscription_id=context.config.core.get_subscription_id(),
         owners=context.role_urns["owners"] or None,
         administrators=context.role_urns["administrators"] or None,
         viewers=context.role_urns["viewers"] or None,
+        data_templates=target.data_templates,
+        state_input_schema=target.state_input_schema,
     )
 
     # Store the returned ID back in config
@@ -147,9 +150,12 @@ def _update_target(context: PublishContext, alias: str, target: TargetConfig) ->
         name=alias,
         description=description,
         target=target_def,
+        subscription_id=context.config.core.get_subscription_id(),
         owners=context.role_urns["owners"] or None,
         administrators=context.role_urns["administrators"] or None,
         viewers=context.role_urns["viewers"] or None,
+        data_templates=target.data_templates,
+        state_input_schema=target.state_input_schema,
     )
 
     click.echo("  Updated successfully")

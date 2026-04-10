@@ -153,10 +153,24 @@ def test_target_management_display_target(
 ):
     # Add some targets to the config.
     get_target = TargetConfig(
-        path="/example", method="GET", alias="get-example", description="Get example"
+        path="/example",
+        method="GET",
+        alias="get-example",
+        description="Get example",
+        data_templates={
+            "request": {},
+            "response": {},
+        },
     )
     post_target = TargetConfig(
-        path="/example", method="POST", alias="post-example", description="Post example"
+        path="/example",
+        method="POST",
+        alias="post-example",
+        description="Post example",
+        data_templates={
+            "request": {},
+            "response": {},
+        },
     )
     config.targets = [get_target, post_target]
     config.commit()
@@ -171,6 +185,8 @@ def test_target_management_display_target(
     assert "path='/example'" in outstream
     assert "method='GET'" in outstream
     assert "alias='get-example'" in outstream
+
+    assert "templates" not in outstream.lower()
 
 
 def test_target_management_display_maintains_imputed_scope_ordering(

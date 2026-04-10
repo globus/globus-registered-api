@@ -16,9 +16,11 @@ from globus_registered_api.config import TargetConfig
 
 def test_load_config(config_path):
     config_dict = {
+        "document_version": "0.2",
         "core": {
             "base_url": "https://api.example.com",
             "specification": "https://api.example.com/openapi.json",
+            "subscription_id": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
         },
         "targets": [],
         "roles": [],
@@ -119,6 +121,11 @@ def test_target_config_registered_api_id_defaults_to_none():
     assert target.registered_api_id is None
 
 
+def test_target_config_data_templates_defaults_to_none():
+    target = TargetConfig(alias="test", path="/test", method="GET", description="Test")
+    assert target.data_templates is None
+
+
 def test_target_config_registered_api_id_accepts_uuid():
     test_uuid = UUID("12345678-1234-1234-1234-123456789abc")
     target = TargetConfig(
@@ -144,6 +151,30 @@ def test_target_config_serialization_includes_registered_api_id():
     assert serialized["registered_api_id"] == test_uuid
 
 
+def test_target_config_serialization_includes_data_templates_if_set():
+    data_templates = {"requests": {}, "responses": {"2XX": {}}}
+    target = TargetConfig(
+        alias="test",
+        path="/test",
+        method="GET",
+        description="Test",
+        data_templates=data_templates,
+    )
+    serialized = target.model_dump()
+    assert serialized["data_templates"] == data_templates
+
+
+def test_target_config_serialization_excludes_data_templates_if_unset():
+    target = TargetConfig(
+        alias="test",
+        path="/test",
+        method="GET",
+        description="Test",
+    )
+    serialized = target.model_dump()
+    assert "data_templates" not in serialized
+
+
 def test_role_config_auth_urn_for_identity():
     identity_id = UUID("550e8400-e29b-41d4-a716-446655440000")
     role = RoleConfig(type="identity", id=identity_id, access_level="owner")
@@ -154,6 +185,27 @@ def test_role_config_auth_urn_for_group():
     group_id = UUID("660e8400-e29b-41d4-a716-446655440001")
     role = RoleConfig(type="group", id=group_id, access_level="admin")
     assert role.auth_urn == f"urn:globus:groups:id:{group_id}"
+
+
+def test_load_config_v02_without_subscription_id_fails(config_path, capsys):
+    config_dict = {
+        "document_version": "0.2",
+        "core": {
+            "base_url": "https://api.example.com",
+            "specification": "https://api.example.com/openapi.json",
+        },
+        "targets": [],
+        "roles": [],
+    }
+    config_path.parent.mkdir()
+    with open(config_path, "w") as f:
+        json.dump(config_dict, f, indent=4)
+
+    with pytest.raises(click.Abort):
+        RegisteredAPIConfig.load()
+
+    captured = capsys.readouterr()
+    assert "Missing required field: subscription_id" in captured.err
 
 
 def test_target_config_requires_description():

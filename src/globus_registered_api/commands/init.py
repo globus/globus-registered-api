@@ -108,7 +108,7 @@ def init_command(ctx: CLIContext) -> None:
 
 
 def _prompt_for_inline_core_config() -> CoreConfig:
-    click.echo("No problem, I'll need 2 pieces of basic info about it then.")
+    click.echo("No problem, I'll need 3 pieces of basic info about it then.")
     click.echo("You can always update the OpenAPI spec later.")
     click.echo()
 
@@ -123,6 +123,11 @@ def _prompt_for_inline_core_config() -> CoreConfig:
     click.echo("This is the common http prefix for all of the API endpoints.")
     click.echo("For example, 'https://api.example.com'.")
     base_url = click.prompt("Base URL", type=ClickURLParam())
+    click.echo()
+
+    click.echo("3. What is your subscription ID?")
+    click.echo("A subscription is required to create registered APIs.")
+    subscription_id = click.prompt("Subscription ID", type=str)
 
     return CoreConfig(
         base_url=base_url,
@@ -131,6 +136,7 @@ def _prompt_for_inline_core_config() -> CoreConfig:
             info=oa.Info(title=name, version="-1"),
             paths={},
         ),
+        subscription_id=subscription_id,
     )
 
 
@@ -154,7 +160,15 @@ def _prompt_for_reference_core_config() -> CoreConfig:
         server = analysis.https_servers[0]
         click.echo(f"I found one HTTPS server in the specification: {server}.")
         if click.confirm("Should I use this as the base URL of your service?"):
-            return CoreConfig(base_url=server, specification=spec_path)
+            click.echo()
+            click.echo("What is your subscription ID?")
+            click.echo("A subscription is required to create registered APIs.")
+            subscription_id = click.prompt("Subscription ID", type=str)
+            return CoreConfig(
+                base_url=server,
+                specification=spec_path,
+                subscription_id=subscription_id,
+            )
         else:
             click.echo("No problem, I'll need you to tell me the base URL then.")
 
@@ -165,7 +179,15 @@ def _prompt_for_reference_core_config() -> CoreConfig:
         if click.confirm("Would you like to use one of these as the service base URL?"):
             server_options = [(server, server) for server in analysis.https_servers]
             selected_server = prompt_selection("Server", server_options)
-            return CoreConfig(base_url=selected_server, specification=spec_path)
+            click.echo()
+            click.echo("What is your subscription ID?")
+            click.echo("A subscription is required to create registered APIs.")
+            subscription_id = click.prompt("Subscription ID", type=str)
+            return CoreConfig(
+                base_url=selected_server,
+                specification=spec_path,
+                subscription_id=subscription_id,
+            )
         else:
             click.echo("No problem, I'll need you to tell me the base URL then.")
 
@@ -174,7 +196,13 @@ def _prompt_for_reference_core_config() -> CoreConfig:
         click.echo("Please enter the base URL manually.")
 
     base_url = click.prompt("Base URL", type=ClickURLParam())
-    return CoreConfig(base_url=base_url, specification=spec_path)
+    click.echo()
+    click.echo("What is your subscription ID?")
+    click.echo("A subscription is required to create registered APIs.")
+    subscription_id = click.prompt("Subscription ID", type=str)
+    return CoreConfig(
+        base_url=base_url, specification=spec_path, subscription_id=subscription_id
+    )
 
 
 class OpenAPISpecCompleter(Completer):
