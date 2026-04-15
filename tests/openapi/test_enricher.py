@@ -92,3 +92,36 @@ def test_enrichment_only_enriches_configured_targets(
 
     assert get_security == [{"GlobusAuth": ["my_service:read"]}]
     assert post_security is None
+
+
+def test_enrichment_without_paths(core_config, target_configs):
+    """Verify that a config with no listed paths doesn't crash.
+
+    This is a regression test; it ensures that the following error is fixed:
+
+        TypeError: Type Dict cannot be instantiated; use dict() instead
+
+    which occurred when `oa.Paths()` was instantiated directly.
+    """
+
+    # The bug was triggered when the following conditions are both true:
+    #
+    #   *   A target must be defined.
+    #       The crash did not occur if *targets* was an empty list.
+    #   *   The schema must have no *paths* defined.
+    #       When `oa.OpenAPI` is instantiated, *paths* is None by default.
+    #
+    config = RegisteredAPIConfig(
+        core=core_config,
+        targets=[target_configs.get_example],
+        roles=[],
+    )
+    schema = {
+        "info": {"title": "No OpenAPI spec", "version": "-1"},
+        "paths": None,
+    }
+    openapi_schema = oa.OpenAPI.model_validate(schema)
+
+    # Act
+    # The lack of a crash demonstrates that the bug has not regressed.
+    OpenAPIEnricher(config).enrich(openapi_schema)
