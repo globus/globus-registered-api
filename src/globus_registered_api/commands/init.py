@@ -92,10 +92,12 @@ def init_command(ctx: CLIContext) -> None:
     click.echo("For more information see: https://learn.openapis.org/")
     click.echo()
 
-    if click.confirm("Does your service have an OpenAPI specification?", default=True):
-        core_config = _prompt_for_reference_core_config()
-    else:
-        core_config = _prompt_for_inline_core_config()
+    # if click.confirm(
+    #     "Does your service have an OpenAPI specification?", default=True
+    # ):
+    core_config = _prompt_for_reference_core_config()
+    # else:
+    #     core_config = _prompt_for_inline_core_config()
 
     initial_role = RoleConfig(type="identity", id=identity_id, access_level="owner")
     config = RegisteredAPIConfig(core=core_config, targets=[], roles=[initial_role])
@@ -141,7 +143,8 @@ def _prompt_for_inline_core_config() -> CoreConfig:
 
 
 def _prompt_for_reference_core_config() -> CoreConfig:
-    click.echo("Great, where can I find this specification?")
+    # click.echo("Great, where can I find this specification?")
+    click.echo("Where can I find the OpenAPI specification?")
     click.echo("This may be either a URL or a local filesystem path.")
     click.echo()
 

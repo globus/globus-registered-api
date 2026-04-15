@@ -45,16 +45,17 @@ using the `gra init` command:
 gra init
 ```
 
-You'll be asked if your service has an existing OpenAPI specification.
-For the purposes of this tutorial, the answer is "yes".
-(Outside of this tutorial, you can respond "yes"
-if you have an OpenAPI specification in JSON or YAML format.)
+[//]: # (You'll be asked if your service has an existing OpenAPI specification.)
+[//]: # (For the purposes of this tutorial, the answer is "yes".)
+[//]: # (&#40;Outside of this tutorial, you can respond "yes")
+[//]: # (if you have an OpenAPI specification in JSON or YAML format.&#41;)
+[//]: # ()
+[//]: # (```text)
+[//]: # (Does your service have an OpenAPI specification? [Y/n]: y)
+[//]: # (```)
+[//]: # ()
+[//]: # (Type "y" and press Enter to affirm that you have an OpenAPI specification.)
 
-```text
-Does your service have an OpenAPI specification? [Y/n]: y
-```
-
-Type "y" and press Enter to affirm that you have an OpenAPI specification.
 Copy and paste this URL, which is the location of the Globus Flows service
 OpenAPI specification in JSON format:
 
