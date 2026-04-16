@@ -44,7 +44,9 @@ to generate OpenAPI specifications.
 
 ## Am I required to have OpenAPI specification document?
 
-No.
-If you don't have an OpenAPI specification document,
-the Globus Registered API CLI can still create and manage Registered APIs for you,
-though you will have to manually define targets.
+It is currently required to have an OpenAPI specification document.
+
+[//]: # (No.)
+[//]: # (If you don't have an OpenAPI specification document,)
+[//]: # (the Globus Registered API CLI can still create and manage Registered APIs for you,)
+[//]: # (though you will have to manually define targets.)
