@@ -38,11 +38,11 @@ class InjectSecuritySchemes(SchemaMutation):
         :returns: The existing or newly created Operation.
         """
         # Ensure that the 'paths' key exists on the top-level schema.
-        paths = schema.paths or oa.Paths()
-        schema.paths = paths
+        if schema.paths is None:
+            schema.paths = {}
 
         # Ensure that the specific path exists in the 'paths' dict.
-        path_item = paths.setdefault(specifier.path, oa.PathItem())
+        path_item = schema.paths.setdefault(specifier.path, oa.PathItem())
 
         # Ensure that the method exists for that path.
         method_key = specifier.method.lower()
