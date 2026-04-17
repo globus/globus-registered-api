@@ -140,7 +140,7 @@ class Selector(t.Generic[T]):
             show_numbers=True,
             container_style="class:input-selection",
             default_style="class:option",
-            selected_style="",
+            selected_style="class:bold",
             checked_style="class:selected-option",
             number_style="class:number",
             show_scrollbar=False,
