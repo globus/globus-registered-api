@@ -10,9 +10,9 @@ from uuid import uuid4
 
 import pytest
 
-from globus_registered_api.commands.manage.domain import ManageContext
+from globus_registered_api.commands.manage.context import ManageContext
 from globus_registered_api.commands.manage.roles import RoleConfigurator
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import RoleConfig
 
 
@@ -102,7 +102,7 @@ def test_role_management_add_group(prompt_patcher, role_configurator):
 
     # Verify we've added the expected role to the config and committed it.
     expected = RoleConfig(type="group", id=Group.Leos.id, access_level="owner")
-    assert RegisteredAPIConfig.load().roles == [expected]
+    assert GRAConfig.load().roles == [expected]
 
 
 def test_role_management_add_identity(prompt_patcher, role_configurator):
@@ -117,7 +117,7 @@ def test_role_management_add_identity(prompt_patcher, role_configurator):
 
     # Verify we've added the expected role to the config and committed it.
     expected = RoleConfig(type="identity", id=Identity.Alice.id, access_level="viewer")
-    assert RegisteredAPIConfig.load().roles == [expected]
+    assert GRAConfig.load().roles == [expected]
 
 
 def test_role_management_add_duplicate_identity_is_rejected(
@@ -138,7 +138,7 @@ def test_role_management_add_duplicate_identity_is_rejected(
 
     # Verify that Alice still has viewer access and that we printed a warning.
     expected = RoleConfig(type="identity", id=Identity.Alice.id, access_level="viewer")
-    assert RegisteredAPIConfig.load().roles == [expected]
+    assert GRAConfig.load().roles == [expected]
 
     outstream = capsys.readouterr().out
     assert "use the 'Modify Role' option instead" in outstream
@@ -158,7 +158,7 @@ def test_role_management_remove_role(prompt_patcher, role_configurator, config):
     role_configurator.remove_role()
 
     # Verify we've removed the role from the config and committed it.
-    assert RegisteredAPIConfig.load().roles == []
+    assert GRAConfig.load().roles == []
 
 
 def test_role_management_modify_role(prompt_patcher, role_configurator, config):
@@ -178,7 +178,7 @@ def test_role_management_modify_role(prompt_patcher, role_configurator, config):
     # Verify we've updated the role in the config and committed it.
     old_bob = RoleConfig(type="identity", id=Identity.Bob.id, access_level="viewer")
     expected_bob = RoleConfig(type="identity", id=Identity.Bob.id, access_level="admin")
-    committed_roles = RegisteredAPIConfig.load().roles
+    committed_roles = GRAConfig.load().roles
     assert expected_bob in committed_roles
     assert old_bob not in committed_roles
     assert leos in committed_roles

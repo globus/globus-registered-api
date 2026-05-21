@@ -5,16 +5,31 @@
 
 from dataclasses import dataclass
 
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
+from globus_registered_api.config import StageConfig
 from globus_registered_api.extended_flows_client import ExtendedFlowsClient
-from globus_registered_api.manifest import RegisteredAPIManifest
+from globus_registered_api.manifest import ComputedRegisteredAPI
+from globus_registered_api.manifest import GRAManifest
 
 
 @dataclass
 class PublishContext:
     """Context object for publish operations."""
 
-    config: RegisteredAPIConfig
-    manifest: RegisteredAPIManifest
-    flows_client: ExtendedFlowsClient
+    config: GRAConfig
+    manifest: GRAManifest
+    stage: str
     role_urns: dict[str, list[str]]
+
+    @property
+    def stage_config(self) -> StageConfig:
+        return self.config.stages[self.stage]
+
+    @property
+    def registered_apis(self) -> dict[str, ComputedRegisteredAPI]:
+        """
+        Access point for registered apis in the current stage.
+
+        :return: A mapping of API aliases to ComputedRegisteredAPIs
+        """
+        return self.manifest.registered_apis[self.stage]

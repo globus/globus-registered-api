@@ -3,6 +3,6 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-from .dispatch import manage_command
+from .main import manage_command
 
 __all__ = ("manage_command",)

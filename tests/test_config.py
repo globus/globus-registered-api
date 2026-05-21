@@ -9,7 +9,7 @@ from uuid import UUID
 import click
 import pytest
 
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import RoleConfig
 from globus_registered_api.config import TargetConfig
 
@@ -29,16 +29,14 @@ def test_load_config(config_path):
     with open(config_path, "w") as f:
         json.dump(config_dict, f, indent=4)
 
-    assert RegisteredAPIConfig.exists()
-    config = RegisteredAPIConfig.load()
-
+    config = GRAConfig.load()
     assert config.core.base_url == "https://api.example.com"
 
 
 def test_load_config_when_no_config_exists():
-    assert not RegisteredAPIConfig.exists()
+    GRAConfig.verify_nonexistence()
     with pytest.raises(click.Abort):
-        RegisteredAPIConfig.load()
+        GRAConfig.load()
 
 
 def test_load_config_when_version_mismatch(config_path, capsys):
@@ -56,7 +54,7 @@ def test_load_config_when_version_mismatch(config_path, capsys):
         json.dump(config_dict, f, indent=4)
 
     with pytest.raises(click.Abort):
-        RegisteredAPIConfig.load()
+        GRAConfig.load()
 
     err = capsys.readouterr().err
     assert "Out-of-date config version: 0.0." in err
@@ -202,7 +200,7 @@ def test_load_config_v02_without_subscription_id_fails(config_path, capsys):
         json.dump(config_dict, f, indent=4)
 
     with pytest.raises(click.Abort):
-        RegisteredAPIConfig.load()
+        GRAConfig.load()
 
     captured = capsys.readouterr()
     assert "Missing required field: subscription_id" in captured.err

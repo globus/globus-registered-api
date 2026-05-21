@@ -8,7 +8,7 @@ from uuid import UUID
 import pytest
 import responses
 
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import RoleConfig
 from globus_registered_api.openapi.loader import load_openapi_spec
 
@@ -36,7 +36,7 @@ def test_init_gives_the_caller_owner_permissions(gra, prompt_patcher, mock_auth_
     gra(["init"], catch_exceptions=False)
 
     expected = RoleConfig(type="identity", id=UUID(user_id), access_level="owner")
-    assert RegisteredAPIConfig.load().roles == [expected]
+    assert GRAConfig.load().roles == [expected]
 
 
 @pytest.mark.xfail(strict=True)
@@ -52,7 +52,7 @@ def test_init_service_without_openapi_spec(gra, prompt_patcher):
     assert result.exit_code == 0
     assert "Successfully initialized repository!" in result.output
 
-    RegisteredAPIConfig.load()
+    GRAConfig.load()
 
 
 def test_init_service_with_local_openapi_spec(gra, prompt_patcher, spec_path):
@@ -70,7 +70,7 @@ def test_init_service_with_local_openapi_spec(gra, prompt_patcher, spec_path):
     assert "Successfully initialized repository!" in result.output
 
     specification = load_openapi_spec(local_spec_path)
-    config = RegisteredAPIConfig.load()
+    config = GRAConfig.load()
     assert config.core.specification == local_spec_path
     assert config.core.base_url == specification.servers[0].url
 
@@ -94,7 +94,7 @@ def test_init_service_with_remote_openapi_spec(gra, prompt_patcher):
     assert result.exit_code == 0
     assert "Successfully initialized repository!" in result.output
 
-    config = RegisteredAPIConfig.load()
+    config = GRAConfig.load()
     assert config.core.specification == remote_spec_url
     assert config.core.base_url == "https://api.remote-service.com"
 
@@ -118,7 +118,7 @@ def test_init_service_with_remote_openapi_spec_and_whitespace(gra, prompt_patche
     assert result.exit_code == 0
     assert "Successfully initialized repository!" in result.output
 
-    config = RegisteredAPIConfig.load()
+    config = GRAConfig.load()
     assert config.core.specification == remote_spec_url
     assert config.core.base_url == "https://api.remote-service.com"
 
@@ -147,6 +147,6 @@ def test_init_service_with_multiple_servers(gra, prompt_patcher):
     assert result.exit_code == 0
     assert "Successfully initialized repository!" in result.output
 
-    config = RegisteredAPIConfig.load()
+    config = GRAConfig.load()
     assert config.core.specification == remote_spec_url
     assert config.core.base_url == "https://api.server2.com"

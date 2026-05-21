@@ -12,6 +12,7 @@ from globus_registered_api.clients import create_flows_client
 from globus_registered_api.commands.api._common import echo_registered_api
 from globus_registered_api.context import CLIContext
 from globus_registered_api.context import with_cli_context
+from globus_registered_api.repositories.clients import GlobusClientRepository
 
 
 @click.command("create")
@@ -70,9 +71,7 @@ from globus_registered_api.context import with_cli_context
 @click.option(
     "--format", "format_", type=click.Choice(["json", "text"]), default="text"
 )
-@with_cli_context
 def create_command(
-    ctx: CLIContext,
     target: pathlib.Path,
     name: str,
     description: str,
@@ -98,7 +97,7 @@ def create_command(
         gra api create "My API" --target ./target.json --description "My API" \\
             --subscription-id 00000000-e5f6-4a5b-8c9d-0e1f2a3b4c5d
     """
-    flows_client = create_flows_client(ctx.globus_app)
+    flows_client = GlobusClientRepository.instance().flows
 
     target_content = json.loads(target.read_text())
     data_templates = {}

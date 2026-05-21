@@ -3,6 +3,6 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-from .dispatch import build_command
+from .navigation import StageNavigationMenu
 
-__all__ = ("build_command",)
+__all__ = ("StageNavigationMenu",)

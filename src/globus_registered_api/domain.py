@@ -118,5 +118,5 @@ class TargetSpecifier:
 
     def __str__(self) -> str:
         if self.content_type == "*":
-            return f"{self.method} {self.path}"
-        return f"{self.method} {self.path} {self.content_type}"
+            return f"{self.path} ({self.method})"
+        return f"{self.path} ({self.method}, {self.content_type})"

@@ -15,11 +15,11 @@ import responses
 
 import globus_registered_api.manifest as manifest_module
 from globus_registered_api.config import CoreConfig
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import RoleConfig
 from globus_registered_api.config import TargetConfig
 from globus_registered_api.manifest import ComputedRegisteredAPI
-from globus_registered_api.manifest import RegisteredAPIManifest
+from globus_registered_api.manifest import GRAManifest
 from globus_registered_api.openapi.reducer import OpenAPITarget
 
 
@@ -68,7 +68,7 @@ def config_with_targets_and_roles(openapi_schema):
             access_level="viewer",
         ),
     ]
-    return RegisteredAPIConfig(core=core, targets=targets, roles=roles)
+    return GRAConfig(core=core, targets=targets, roles=roles)
 
 
 @pytest.fixture
@@ -91,7 +91,7 @@ def manifest_for_config(config_with_targets_and_roles, manifest_path):
             target=api_target, description=target.description
         )
 
-    manifest = RegisteredAPIManifest(
+    manifest = GRAManifest(
         build_timestamp=datetime.now(timezone.utc),
         registered_apis=registered_apis,
     )
@@ -162,7 +162,7 @@ def test_publish_creates_new_registered_api_when_no_id_exists(
     assert result.exit_code == 0
 
     # Assert - ID was written back to config
-    updated_config = RegisteredAPIConfig.load()
+    updated_config = GRAConfig.load()
     assert updated_config.targets[0].registered_api_id == created_id
 
 
@@ -196,7 +196,7 @@ def test_publish_updates_existing_registered_api_when_id_exists(
     assert result.exit_code == 0
 
     # Assert - ID is unchanged (update doesn't change the ID)
-    updated_config = RegisteredAPIConfig.load()
+    updated_config = GRAConfig.load()
     assert updated_config.targets[0].registered_api_id == existing_id
 
 
@@ -232,7 +232,7 @@ def test_publish_with_target_alias_filters_targets(
     assert len(responses.calls) == 1
 
     # Verify only the selected target got an ID
-    updated_config = RegisteredAPIConfig.load()
+    updated_config = GRAConfig.load()
     assert updated_config.targets[0].registered_api_id == created_id
     assert updated_config.targets[1].registered_api_id is None
 
@@ -278,7 +278,7 @@ def test_publish_with_multiple_target_aliases(
     assert len(responses.calls) == 2
 
     # Assert - both targets got IDs
-    updated_config = RegisteredAPIConfig.load()
+    updated_config = GRAConfig.load()
     assert updated_config.targets[0].registered_api_id == created_id_1
     assert updated_config.targets[1].registered_api_id == created_id_2
 
@@ -348,7 +348,7 @@ def test_publish_aborts_when_user_declines_confirmation(
     assert len(responses.calls) == 0
 
     # Assert - config unchanged
-    updated_config = RegisteredAPIConfig.load()
+    updated_config = GRAConfig.load()
     assert updated_config.targets[0].registered_api_id is None
     assert updated_config.targets[1].registered_api_id is None
 
@@ -441,7 +441,7 @@ def test_publish_without_target_alias_publishes_all_targets(
     assert len(responses.calls) == 2
 
     # Assert - IDs were written back to config
-    updated_config = RegisteredAPIConfig.load()
+    updated_config = GRAConfig.load()
     assert updated_config.targets[0].registered_api_id == created_id_1
     assert updated_config.targets[1].registered_api_id == created_id_2
 
@@ -593,7 +593,7 @@ def test_publish_partial_failure_saves_successful_ids(
 
     # Assert - first target ID should be saved despite overall failure
     # This validates that config is committed after each successful publish
-    updated_config = RegisteredAPIConfig.load()
+    updated_config = GRAConfig.load()
     assert updated_config.targets[0].registered_api_id == created_id
     assert updated_config.targets[1].registered_api_id is None
 

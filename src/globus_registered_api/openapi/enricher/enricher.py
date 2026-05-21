@@ -5,7 +5,7 @@
 
 import openapi_pydantic as oa
 
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 
 from .interface import SchemaMutation
 from .security_scheme import InjectSecuritySchemes
@@ -20,10 +20,10 @@ class OpenAPIEnricher:
     RegisteredAPI.
     """
 
-    def __init__(self, config: RegisteredAPIConfig) -> None:
+    def __init__(self, config: GRAConfig, stage: str) -> None:
         self.mutations: list[SchemaMutation] = [
             InjectSecuritySchemes(config),
-            InjectBaseUrl(config),
+            InjectBaseUrl(config.stages[stage]),
         ]
 
     def enrich(self, schema: oa.OpenAPI) -> oa.OpenAPI:

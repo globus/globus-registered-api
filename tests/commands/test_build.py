@@ -10,7 +10,7 @@ import pytest
 
 import globus_registered_api.manifest as manifest_module
 from globus_registered_api.config import CoreConfig
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import TargetConfig
 from globus_registered_api.domain import TargetSpecifier
 from globus_registered_api.openapi.loader import load_openapi_spec
@@ -44,7 +44,7 @@ def config_with_targets(openapi_schema):
             description="Create example resource",
         ),
     ]
-    return RegisteredAPIConfig(core=core, targets=targets, roles=[])
+    return GRAConfig(core=core, targets=targets, roles=[])
 
 
 def test_build_command_exists(gra):
@@ -397,7 +397,7 @@ def test_build_destination_url_slash_handling(
             description="Get example resource",
         ),
     ]
-    config = RegisteredAPIConfig(core=core, targets=targets, roles=[])
+    config = GRAConfig(core=core, targets=targets, roles=[])
     config.commit()
 
     # Act

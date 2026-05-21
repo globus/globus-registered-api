@@ -5,8 +5,8 @@
 
 from uuid import uuid4
 
-from globus_registered_api.commands.manage.domain import BACK_SENTINEL
-from globus_registered_api.commands.manage.domain import EXIT_SENTINEL
+from globus_registered_api.commands.manage.context import BACK_SENTINEL
+from globus_registered_api.commands.manage.context import EXIT_SENTINEL
 from globus_registered_api.config import RoleConfig
 
 

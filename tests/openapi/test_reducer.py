@@ -54,19 +54,6 @@ def test_reduce_to_target_includes_destination(spec_path):
     assert result.destination["url"] == "https://api.example.com/items"
 
 
-def test_reduce_to_target_transforms_is_none(spec_path):
-    # Arrange
-    spec = load_openapi_spec(spec_path("minimal.json"))
-    target = TargetSpecifier.create("get", "/items")
-    target_info = find_target(spec, target)
-
-    # Act
-    result = reduce_to_target(spec, target_info)
-
-    # Assert
-    assert result.transforms is None
-
-
 # --- Component collection ---
 
 
@@ -171,7 +158,6 @@ def test_reduce_to_target_to_dict_returns_correct_structure(spec_path):
     assert output["openapi_version"] == "3.1"
     assert "destination" in output
     assert "specification" in output
-    assert output["transforms"] is None
 
 
 def test_reduce_to_target_to_dict_includes_components_when_present(spec_path):

@@ -9,7 +9,7 @@ import openapi_pydantic as oa
 import pytest
 
 from globus_registered_api.config import CoreConfig
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import TargetConfig
 from globus_registered_api.openapi.enricher import OpenAPIEnricher
 
@@ -59,7 +59,7 @@ def target_configs() -> SimpleNamespace:
 
 
 def test_enrichment_inserts_target_scopes(openapi_schema, core_config, target_configs):
-    config = RegisteredAPIConfig(
+    config = GRAConfig(
         core=core_config,
         targets=[target_configs.get_example, target_configs.post_example],
         roles=[],
@@ -78,7 +78,7 @@ def test_enrichment_inserts_target_scopes(openapi_schema, core_config, target_co
 def test_enrichment_only_enriches_configured_targets(
     openapi_schema, core_config, target_configs
 ):
-    config = RegisteredAPIConfig(
+    config = GRAConfig(
         core=core_config,
         targets=[target_configs.get_example],
         roles=[],
@@ -111,7 +111,7 @@ def test_enrichment_without_paths(core_config, target_configs):
     #   *   The schema must have no *paths* defined.
     #       When `oa.OpenAPI` is instantiated, *paths* is None by default.
     #
-    config = RegisteredAPIConfig(
+    config = GRAConfig(
         core=core_config,
         targets=[target_configs.get_example],
         roles=[],

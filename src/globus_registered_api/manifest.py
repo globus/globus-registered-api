@@ -13,9 +13,12 @@ from pathlib import Path
 import click
 import openapi_pydantic as oa
 from pydantic import BaseModel
+from pydantic import Field
+from pydantic import PlainSerializer
 from pydantic import field_serializer
 from pydantic import field_validator
 
+from globus_registered_api.errors import GRACommandLineError
 from globus_registered_api.openapi.reducer import OpenAPITarget
 
 _MANIFEST_PATH = Path(".globus_registered_api/manifest.json")
@@ -31,6 +34,70 @@ _MANIFEST_COMMENT = [
     "Then re-generate using `globus-registered-api build`.",
     "===========================================================",
 ]
+
+
+_CURRENT_VERSION = "1.0"
+
+
+class GRAManifest(BaseModel):
+    """
+    Manifest file modeling all registered APIs in the repository.
+    """
+
+    document_version: str = Field(default=_CURRENT_VERSION)
+
+    build_timestamp: datetime
+    registered_apis: dict[str, dict[str, ComputedRegisteredAPI]]
+
+    @field_serializer("build_timestamp", mode="plain")
+    def serialize_timestamp(self, value: datetime) -> str:
+        return value.isoformat()
+
+    @field_validator("document_version", mode="before")
+    def validate_document_version(cls, v: t.Any) -> t.Any:
+        if isinstance(v, str) and v != _CURRENT_VERSION:
+            version_data = f"Version: {v}; Expected: {_CURRENT_VERSION}."
+            raise GRACommandLineError(
+                f"Out-of-date manifest document. {version_data}",
+                "Run `gra build` to regenerate a new manifest.",
+            )
+        return v
+
+    def commit(self) -> None:
+        """Write the manifest to disk at .globus_registered_api/manifest.json."""
+        _MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+        # Build the full manifest dict with comment header
+        manifest_dict = {
+            "_comment": _MANIFEST_COMMENT,
+            **self.model_dump(),
+        }
+
+        # Write with explicit formatting to ensure:
+        # - 4-space indentation (matches config.json)
+        # - Alphabetically sorted keys (for git diff)
+        # - Unicode characters preserved (emojis, em-dash)
+        with _MANIFEST_PATH.open("w", encoding="utf-8") as f:
+            json.dump(manifest_dict, f, indent=4, sort_keys=True, ensure_ascii=False)
+            f.write("\n")
+
+    @classmethod
+    def load(cls) -> GRAManifest:
+        """Load the manifest from disk."""
+        if not _MANIFEST_PATH.is_file():
+            raise GRACommandLineError(
+                "Missing repository manifest file.",
+                "Run 'gra build' first to generate a manifest.",
+            )
+
+        manifest_data = json.loads(_MANIFEST_PATH.read_text(encoding="utf-8"))
+        if "_comment" in manifest_data:
+            del manifest_data["_comment"]
+        return cls.model_validate(manifest_data)
+
+    @classmethod
+    def path(cls) -> Path:
+        return _MANIFEST_PATH
 
 
 class ComputedRegisteredAPI(BaseModel):
@@ -50,7 +117,6 @@ class ComputedRegisteredAPI(BaseModel):
                 operation=oa.Operation.model_validate(value["specification"]),
                 destination=value["destination"],
                 components=value.get("components"),
-                transforms=value.get("transforms"),
             )
 
         raise ValueError(f"Unrecognized target type: {type(value)}")
@@ -58,57 +124,3 @@ class ComputedRegisteredAPI(BaseModel):
     @field_serializer("target")
     def serialize_target(self, value: OpenAPITarget) -> dict[str, t.Any]:
         return value.to_dict()
-
-
-class RegisteredAPIManifest(BaseModel):
-    """
-    Manifest file modeling all registered APIs in the repository.
-    """
-
-    build_timestamp: datetime
-    registered_apis: dict[str, ComputedRegisteredAPI]
-
-    def commit(self) -> None:
-        """Write the manifest to disk at .globus_registered_api/manifest.json."""
-        _MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-        # Build the full manifest dict with comment header
-        manifest_dict = {
-            "_comment": _MANIFEST_COMMENT,
-            "build_timestamp": self.build_timestamp.isoformat(),
-            "registered-apis": {
-                alias: api.model_dump() for alias, api in self.registered_apis.items()
-            },
-        }
-
-        # Write with explicit formatting to ensure:
-        # - 4-space indentation (matches config.json)
-        # - Alphabetically sorted keys (for git diff)
-        # - Unicode characters preserved (emojis, em-dash)
-        with _MANIFEST_PATH.open("w", encoding="utf-8") as f:
-            json.dump(manifest_dict, f, indent=4, sort_keys=True, ensure_ascii=False)
-            f.write("\n")
-
-    @classmethod
-    def load(cls) -> RegisteredAPIManifest:
-        """Load the manifest from disk."""
-        if not cls.exists():
-            click.echo("Error: Missing repository manifest file.")
-            click.echo("Run 'gra build' first to generate a manifest.")
-            raise click.Abort()
-
-        manifest_data = json.loads(_MANIFEST_PATH.read_text(encoding="utf-8"))
-
-        # Extract the fields we care about (ignore _comment)
-        return cls(
-            build_timestamp=datetime.fromisoformat(manifest_data["build_timestamp"]),
-            registered_apis={
-                alias: ComputedRegisteredAPI(**api_data)
-                for alias, api_data in manifest_data["registered-apis"].items()
-            },
-        )
-
-    @classmethod
-    def exists(cls) -> bool:
-        """Check if a manifest file exists on disk."""
-        return _MANIFEST_PATH.is_file()

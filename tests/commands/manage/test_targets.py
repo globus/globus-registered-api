@@ -8,9 +8,9 @@ import pytest
 from rich.console import Console
 
 import globus_registered_api.commands.manage.targets as targets_module
-from globus_registered_api.commands.manage.domain import ManageContext
+from globus_registered_api.commands.manage.context import ManageContext
 from globus_registered_api.commands.manage.targets import TargetConfigurator
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import TargetConfig
 from globus_registered_api.openapi import OpenAPISpecAnalyzer
 
@@ -41,7 +41,7 @@ def test_target_management_add_target(prompt_patcher, target_configurator):
     expected = TargetConfig(
         path="/example", method="GET", alias="get-example", description="Get example"
     )
-    assert RegisteredAPIConfig.load().targets == [expected]
+    assert GRAConfig.load().targets == [expected]
 
 
 def test_target_management_add_target_with_manual_scope(
@@ -64,7 +64,7 @@ def test_target_management_add_target_with_manual_scope(
         description="Get example",
         security=TargetConfig.Security(globus_auth_scope="example:read"),
     )
-    assert RegisteredAPIConfig.load().targets == [expected]
+    assert GRAConfig.load().targets == [expected]
 
 
 def test_target_management_add_target_with_defined_scopes(
@@ -93,7 +93,7 @@ def test_target_management_add_target_with_defined_scopes(
     expected = TargetConfig(
         path="/example", method="GET", alias="get-example", description="Get example"
     )
-    assert RegisteredAPIConfig.load().targets == [expected]
+    assert GRAConfig.load().targets == [expected]
 
     # Spec-defined scopes are not committed to config, but are flagged as "imputed".
     outstream = capsys.readouterr().out
@@ -118,7 +118,7 @@ def test_target_management_add_manual_target(prompt_patcher, target_configurator
         alias="post-manual",
         description="post-manual: POST /manual",
     )
-    assert RegisteredAPIConfig.load().targets == [expected]
+    assert GRAConfig.load().targets == [expected]
 
 
 def test_target_management_list_targets(
@@ -244,7 +244,7 @@ def test_target_management_remove_target(prompt_patcher, config, target_configur
 
     target_configurator.remove_target()
 
-    assert RegisteredAPIConfig.load().targets == [post_target]
+    assert GRAConfig.load().targets == [post_target]
 
 
 def test_target_management_modify_target(prompt_patcher, config, target_configurator):
@@ -271,7 +271,7 @@ def test_target_management_modify_target(prompt_patcher, config, target_configur
         alias="get-example-updated",
         description="Updated description",
     )
-    assert RegisteredAPIConfig.load().targets == [expected]
+    assert GRAConfig.load().targets == [expected]
 
 
 def test_target_management_modify_target_remove_scope(
@@ -298,4 +298,4 @@ def test_target_management_modify_target_remove_scope(
     expected = TargetConfig(
         path="/example", method="GET", alias="get-example", description="Get example"
     )
-    assert RegisteredAPIConfig.load().targets == [expected]
+    assert GRAConfig.load().targets == [expected]

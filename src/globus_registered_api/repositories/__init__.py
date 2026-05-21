@@ -3,6 +3,6 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-from .main import publish_command
+from .subscriptions import SubscriptionRepository
 
-__all__ = ["publish_command"]
+__all__ = ("SubscriptionRepository",)

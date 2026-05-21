@@ -18,7 +18,7 @@ import globus_registered_api.cli as cli_module
 import globus_registered_api.rendering.prompt.selector as selector_module
 from globus_registered_api.cli import cli as root_gra_command
 from globus_registered_api.config import CoreConfig
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 
 
 @pytest.fixture
@@ -59,13 +59,13 @@ def openapi_schema() -> oa.OpenAPI:
 
 
 @pytest.fixture
-def config(openapi_schema, subscription_id) -> RegisteredAPIConfig:
+def config(openapi_schema, subscription_id) -> GRAConfig:
     core = CoreConfig(
         base_url="https://api.example.com",
         specification=openapi_schema,
         subscription_id=subscription_id,
     )
-    config = RegisteredAPIConfig(core=core, targets=[], roles=[])
+    config = GRAConfig(core=core, targets=[], roles=[])
     return config
 
 

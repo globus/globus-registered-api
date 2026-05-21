@@ -9,74 +9,53 @@ import typing as t
 from pathlib import Path
 from uuid import UUID
 
-import click
-import openapi_pydantic as oa
 import pydantic
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import field_validator
-from pydantic import model_validator
 
 from globus_registered_api.domain import HTTPMethod
 from globus_registered_api.domain import TargetSpecifier
+from globus_registered_api.errors import GRACommandLineError
 
 _CONFIG_PATH = Path(".globus_registered_api/config.json")
 
 
-_CURRENT_VERSION = "0.2"
+_CURRENT_VERSION = "1.0"
+GlobusEnvironment: t.TypeAlias = t.Literal[
+    "sandbox", "integration", "test", "preview", "staging", "production"
+]
+GLOBUS_ENVIRONMENTS = [
+    "sandbox",
+    "integration",
+    "test",
+    "preview",
+    "staging",
+    "production",
+]
+RoleAccessLevel = t.Literal["owner", "admin", "viewer"]
+ROLE_ACCESS_LEVELS: list[RoleAccessLevel] = ["owner", "admin", "viewer"]
 
 
-class RegisteredAPIConfig(BaseModel):
+class GRAConfig(BaseModel):
     document_version: str = Field(default=_CURRENT_VERSION)
 
-    # Central config, supplied at repository initialization time.
-    core: CoreConfig
+    # Target Configurations, indexed by a customer-defined "target alias" key.
+    # Each element configures a single api route (method + path).
+    targets: dict[str, TargetConfig] = Field(default_factory=dict)
 
-    # A list of target configurations.
-    # A target defines maps onto a Registered API to be synchronized via publish.
-    targets: list[TargetConfig]
-
-    # A list of roles, defining access control for identities and groups.
-    # Entities within this list must be unique (w.r.t their type and id).
-    roles: list[RoleConfig]
+    # Stage Configurations, indexed by a customer-defined "stage" key.
+    stages: dict[str, StageConfig] = Field(default_factory=dict)
 
     @field_validator("document_version", mode="before")
     def validate_document_version(cls, v: t.Any) -> t.Any:
         if isinstance(v, str) and v != _CURRENT_VERSION:
-            click.secho(f"Error: Out-of-date config version: {v}.", fg="red", err=True)
-            click.secho(
-                f"       Required version: {_CURRENT_VERSION}.", fg="red", err=True
+            version_data = f"Version: {v}; Expected: {_CURRENT_VERSION}."
+            raise GRACommandLineError(
+                f"Out-of-date config document. {version_data}",
+                "Check GRA's release notes for upgrade instructions.",
             )
-            click.secho(
-                "Please check the release notes for upgrade instructions.",
-                fg="yellow",
-                err=True,
-            )
-            raise click.Abort()
         return v
-
-    @model_validator(mode="after")
-    def validate_subscription_id(self) -> RegisteredAPIConfig:
-        """Ensure subscription_id is present for v0.2+ configs."""
-        if (
-            self.document_version == _CURRENT_VERSION
-            and self.core.subscription_id is None
-        ):
-            click.secho(
-                "Error: Missing required field: subscription_id.", fg="red", err=True
-            )
-            click.secho(
-                "       This field is required in config version 0.2.",
-                fg="red",
-                err=True,
-            )
-            click.secho(
-                "Please check the release notes for upgrade instructions.",
-                fg="yellow",
-                err=True,
-            )
-            raise click.Abort()
-        return self
 
     def commit(self) -> None:
         """
@@ -86,56 +65,32 @@ class RegisteredAPIConfig(BaseModel):
         _CONFIG_PATH.write_text(self.model_dump_json(indent=4) + "\n")
 
     @classmethod
-    def load(cls) -> RegisteredAPIConfig:
+    def load(cls) -> GRAConfig:
         """
         Read the config from disk, loading it into a RegisteredAPIConfig instance.
 
         :raises click.Abort: if no config file exists.
         :raises ValidationError: if the config data is malformed in some way.
         """
-        if not cls.exists():
-            click.echo("Error: Missing repository config file.")
-            click.echo("Run 'gra init' first to create a repository.")
-            raise click.Abort()
+        if not _CONFIG_PATH.is_file():
+            raise GRACommandLineError(
+                f"Missing config file at {_CONFIG_PATH.absolute()}",
+                "Run 'gra init' first to create a repository.",
+            )
 
         return cls.model_validate_json(_CONFIG_PATH.read_text())
 
     @classmethod
-    def exists(cls) -> bool:
-        """
-        :return: True if a config file exists on disk, False otherwise.
-        """
-        return _CONFIG_PATH.is_file()
-
-
-class CoreConfig(BaseModel):
-    """
-    A core config entry containing top-level service information.
-    """
-
-    # The common prefix URL for all API targets.
-    base_url: str
-
-    # The OpenAPI specification for this repository.
-    # This must be either an inline OpenAPI document or a file path/URL pointing to one.
-    specification: str | oa.OpenAPI
-
-    # Subscription ID that grants access to registered APIs.
-    # Required for v0.2+, but optional here to allow version validator to run first.
-    subscription_id: str | None = None
-
-    def get_subscription_id(self) -> str:
-        """
-        Get the subscription ID, raising an error if not set.
-
-        This also provides type-safe access after config validation.
-        """
-        if self.subscription_id is None:
-            raise ValueError(
-                "subscription_id is required but not set in config. "
-                "Please update your config to include a subscription_id."
+    def verify_nonexistence(cls) -> None:
+        if _CONFIG_PATH.is_file():
+            raise GRACommandLineError(
+                f"Config already exists at {_CONFIG_PATH.absolute()}",
+                "Use 'gra manage' instead to configure your repository.",
             )
-        return self.subscription_id
+
+    @classmethod
+    def path(cls) -> Path:
+        return _CONFIG_PATH
 
 
 class TargetConfig(BaseModel):
@@ -153,18 +108,15 @@ class TargetConfig(BaseModel):
     # The HTTP method for this target.
     method: HTTPMethod
 
-    # A persistent human-readable name for the target.
-    # E.g., create-resource
-    alias: str
-
     # Human-readable description of what this target does.
     description: str
 
     # Additional security configuration to be mixed in with an OpenAPI specification.
     security: Security = Field(default_factory=Security)
 
-    # The UUID of the registered API in Flows service, if published.
-    registered_api_id: UUID | None = None
+    # The stage(s) this target should be published to.
+    # Either a list of stages or, the default "*" to indicate all stages.
+    stages: t.Literal["*"] | list[str] = "*"
 
     data_templates: dict[str, t.Any] | None = pydantic.Field(
         default=None,
@@ -179,19 +131,37 @@ class TargetConfig(BaseModel):
     )
 
     @property
-    def sort_key(self) -> tuple[str, ...]:
-        # Sort by path then method, disambiguating duplicate targets by alias.
-        return self.path, self.method, self.alias
-
-    @property
     def specifier(self) -> TargetSpecifier:
         return TargetSpecifier.create(self.method, self.path)
 
-    def __str__(self) -> str:
-        return f"{self.alias} ({self.method} {self.path})"
 
+class StageConfig(BaseModel):
+    """
+    A configuration entry for a single stage within a Registered API service.
+    """
 
-RoleAccessLevel = t.Literal["owner", "admin", "viewer"]
+    # The common prefix URL for all API targets.
+    # Example: https://api.example.com
+    base_url: str
+
+    # Filepath or URL pointing to an OpenAPI JSON document.
+    # Ex: ./path/to/local
+    # Ex: https://api.example.com/openapi.json
+    specification: str
+
+    # Subscription ID that grants access to registered APIs.
+    subscription_id: str
+
+    # Flows environment to deploy APIs to.
+    # Only relevant for internal globus use.
+    globus_environment: GlobusEnvironment = "production"
+
+    # Mapping of alias -> registered api resource tracker.
+    registered_apis: dict[str, RegisteredAPIConfig] = Field(default_factory=dict)
+
+    # A list of roles, defining access control for identities and groups.
+    # Entities within this list must be unique (w.r.t their type and id).
+    roles: list[RoleConfig]
 
 
 class RoleConfig(BaseModel):
@@ -226,3 +196,7 @@ class RoleConfig(BaseModel):
             return f"urn:globus:groups:id:{self.id}"
         else:  # identity
             return f"urn:globus:auth:identity:{self.id}"
+
+
+class RegisteredAPIConfig(BaseModel):
+    registered_api_id: UUID
