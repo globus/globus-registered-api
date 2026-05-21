@@ -29,7 +29,7 @@ class GRACommandLineError(RuntimeError):
         message: str,
         fg: str | None = None,
         err: bool = True,
-    ):
+    ) -> None:
         content = (
             click.style(label, fg=fg, bold=True, underline=True)
             + ": "
@@ -42,7 +42,7 @@ class GRAArgumentError(GRACommandLineError):
     def __init__(
         self,
         error_message: str,
-        allowed_values: t.Sequence[str],
+        allowed_values: t.Iterable[str],
     ) -> None:
         super().__init__(error_message, None)
         self.allowed = ", ".join(sorted(allowed_values))

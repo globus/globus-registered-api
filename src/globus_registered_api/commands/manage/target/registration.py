@@ -57,13 +57,14 @@ class TargetRegistrationMenu(FormMenu):
             return self.builder.set_globus_scope, "Set Globus Scope"
 
     def _well_known_scopes_exist_in_openapi(self) -> bool:
-        analysis = self.analyzer.agg_target_analyses.get(self.builder.specifier)
+        if (specifier := self.builder.specifier) is None:
+            return False
+
+        analysis = self.analyzer.agg_target_analyses.get(specifier)
         return bool(analysis and analysis.well_known_scopes)
 
     def is_submittable(self) -> bool:
-        return bool(
-            self.builder.alias and self.builder.specifier and self.builder.description
-        )
+        return self.builder.is_buildable()
 
     def on_submit(self) -> None:
         alias, target_config = self.builder.build()
@@ -151,7 +152,7 @@ class TargetBuilder:
         if old_value != new_value:
             self.description = new_value
 
-    def set_globus_scope(self):
+    def set_globus_scope(self) -> None:
         old_value = self.globus_scope
 
         new_value = prompt_selection(
@@ -173,9 +174,15 @@ class TargetBuilder:
             self.globus_scope = new_value
 
     def print_openapi_scopes(self) -> None:
-        # TODO - error handling? This is gated by the usage site but that's a
-        #   bad code smell.
-        analysis = self._analyzer.agg_target_analyses[self.specifier]
+        """
+        Print globus scopes from the OpenAPI specification analysis.
+
+        :raises ValueError: if no specifier has been set yet.
+        """
+        if (specifier := self.specifier) is None:
+            raise ValueError("Cannot print scopes without a known specifier")
+
+        analysis = self._analyzer.agg_target_analyses[specifier]
         scopes = analysis.well_known_scopes
 
         s = "s" if len(scopes) > 1 else ""
@@ -193,15 +200,30 @@ class TargetBuilder:
                 all_known_scopes.add(scope)
         return all_known_scopes
 
-    def build(self) -> tuple[str, TargetConfig]:
-        target_config = TargetConfig(
-            path=self.specifier.path,
-            method=self.specifier.method,
-            description=self.description,
-        )
-        if self.globus_scope:
-            target_config.security = TargetConfig.Security(
-                globus_auth_scope=self.globus_scope
-            )
+    def is_buildable(self) -> bool:
+        """
+        :return: True if `build` is expected to succeed, False otherwise.
+        """
+        return bool(self.alias and self.specifier and self.description)
 
-        return self.alias, target_config
+    def build(self) -> tuple[str, TargetConfig]:
+        """
+        Construct an alias & TargetConfig from the internally tracked state.
+
+        :raises ValueError: if a field required for building was not populated.
+        :return: alias and TargetConfig tuple
+        """
+        # Type-verify that alias is set.
+        if (alias := self.alias) is None:
+            raise ValueError("Unset TargetBuilder.alias value.")
+
+        return alias, TargetConfig.model_validate(
+            {
+                "path": self.specifier.path if self.specifier else None,
+                "method": self.specifier.method if self.specifier else None,
+                "description": self.description,
+                "security": {
+                    "globus_auth_scope": self.globus_scope,
+                },
+            }
+        )

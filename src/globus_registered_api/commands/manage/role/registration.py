@@ -4,13 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import typing as t
-from uuid import UUID
 
 import click
 
 from globus_registered_api.commands.manage.context import ManageContext
 from globus_registered_api.commands.manage.role._name_resolution import RoleNameResolver
 from globus_registered_api.config import ROLE_ACCESS_LEVELS
+from globus_registered_api.config import ROLE_TYPES
 from globus_registered_api.config import RoleAccessLevel
 from globus_registered_api.config import RoleConfig
 from globus_registered_api.rendering import DataLabel
@@ -59,11 +59,7 @@ class RoleRegistrationMenu(FormMenu):
         ]
 
     def is_submittable(self) -> bool:
-        return bool(
-            self.builder.role_type
-            and self.builder.role_id
-            and self.builder.access_level
-        )
+        return self.builder.is_buildable()
 
     def on_submit(self) -> None:
         self.stage_config.roles.append(self.builder.build())
@@ -99,14 +95,14 @@ class RoleBuilder:
         old_value = self.role_type
         new_value = prompt_selection(
             "Role Type",
-            [("group", "Group"), ("identity", "Identity")],
+            [(rtype, rtype.capitalize()) for rtype in ROLE_TYPES],
             default=old_value,
         )
         if old_value != new_value:
             self.role_type = new_value
             self.role_id = None
 
-    def select_group(self):
+    def select_group(self) -> None:
         old_value = self.role_id if self.role_type == "group" else None
         group = self._prompt_group_selection()
 
@@ -153,9 +149,23 @@ class RoleBuilder:
         if old_value != new_value:
             self.access_level = new_value
 
+    def is_buildable(self) -> bool:
+        """
+        :return: True if `build` is expected to succeed, False otherwise.
+        """
+        return bool(self.role_type and self.role_id)
+
     def build(self) -> RoleConfig:
-        return RoleConfig(
-            type=self.role_type,
-            id=UUID(self.role_id),
-            access_level=self.access_level,
+        """
+        Construct a RoleConfig from the internally tracked state.
+
+        :raises ValueError: if a field required for building was not populated.
+        :return: RoleConfig instance.
+        """
+        return RoleConfig.model_validate(
+            {
+                "type": self.role_type,
+                "id": self.role_id,
+                "access_level": self.access_level,
+            }
         )

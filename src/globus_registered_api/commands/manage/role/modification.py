@@ -68,7 +68,7 @@ class RoleModifier:
             default=old_value,
         )
         if old_value != new_value:
-            self.role_config.access_level = new_value  # type: ignore[assignment]
+            self.role_config.access_level = new_value
             self.config.commit()
 
     def remove_role(self) -> ControlSignal | None:

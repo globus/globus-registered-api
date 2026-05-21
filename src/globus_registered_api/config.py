@@ -22,10 +22,11 @@ _CONFIG_PATH = Path(".globus_registered_api/config.json")
 
 
 _CURRENT_VERSION = "1.0"
+
 GlobusEnvironment: t.TypeAlias = t.Literal[
     "sandbox", "integration", "test", "preview", "staging", "production"
 ]
-GLOBUS_ENVIRONMENTS = [
+GLOBUS_ENVIRONMENTS: list[GlobusEnvironment] = [
     "sandbox",
     "integration",
     "test",
@@ -33,6 +34,10 @@ GLOBUS_ENVIRONMENTS = [
     "staging",
     "production",
 ]
+
+RoleType: t.TypeAlias = t.Literal["identity", "group"]
+ROLE_TYPES: list[RoleType] = ["identity", "group"]
+
 RoleAccessLevel = t.Literal["owner", "admin", "viewer"]
 ROLE_ACCESS_LEVELS: list[RoleAccessLevel] = ["owner", "admin", "viewer"]
 

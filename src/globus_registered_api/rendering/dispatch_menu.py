@@ -108,7 +108,7 @@ class MenuDispatcher:
 
     def __init__(self, root_menu: DispatchMenu) -> None:
         self.menu = root_menu
-        self.menu_default: t.Any = None
+        self.menu_default: DispatchOption = None
         # History of parent menus and selection paths
         self.breadcrumbs: list[tuple[DispatchMenu, DispatchOption]] = []
 
@@ -124,7 +124,7 @@ class MenuDispatcher:
             self._process_selection(selection, resolved)
 
     def _prompt_menu_selection(self) -> DispatchOption:
-        options = self.menu.options
+        options: LabeledDispatchOptions = self.menu.options
 
         # Insert control signals as necessary
         if isinstance(self.menu, FormMenu):

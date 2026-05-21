@@ -62,16 +62,11 @@ class InitMainMenu(FormMenu):
         ]
 
     def is_submittable(self) -> bool:
-        return bool(
-            self.builder.name
-            and self.builder.base_url
-            and self.builder.specification
-            and self.builder.globus_environment
-            and self.builder.subscription_id
-        )
+        return self.builder.is_buildable()
 
     def on_submit(self) -> None:
-        self.config.stages[self.builder.name] = self.builder.build()
+        stage_name, stage_config = self.builder.build()
+        self.config.stages[stage_name] = stage_config
         self.config.commit()
 
         click.echo("Successfully initialized GRA Repository at:")

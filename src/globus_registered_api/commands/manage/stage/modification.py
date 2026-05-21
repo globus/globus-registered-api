@@ -82,8 +82,8 @@ class StageModifier:
     def rename_stage(self) -> None:
         old_value = self.stage
 
-        # Disallow renaming a stage to another existing stage's name.
-        disallowed_names = list(self.stage_config.stages - {old_value})
+        # Disallow renaming a stage to different stage's name.
+        disallowed_names = list(self.config.stages.keys() - {old_value})
         new_value = click.prompt(
             "New Stage",
             type=ClickUniqueValueParam(disallowed_names),
@@ -112,7 +112,7 @@ class StageModifier:
             click.secho("Please add a new stage to delete this one", fg="yellow")
             return None
         elif not click.confirm(f"Do you want to remove '{self.stage}'?"):
-            click.sechod("Aborted stage removal", fg="yellow")
+            click.secho("Aborted stage removal", fg="yellow")
             return None
 
         del self.config.stages[self.stage]

@@ -79,12 +79,11 @@ def publish_target(context: PublishContext, alias: str) -> None:
     target_config = context.config.targets[alias]
 
     if alias not in context.stage_config.registered_apis:
-        # Create a Registered API, storing its ID back into config.
+        # Create a Registered API, storing the generated ID back into config.
         api_id = _create_target(context, alias, target_config)
-        context.stage_config.registered_apis[alias] = RegisteredAPIConfig(
-            registered_api_id=UUID(api_id),
-        )
+        new_config = RegisteredAPIConfig(registered_api_id=api_id)
 
+        context.stage_config.registered_apis[alias] = new_config
     else:
         # Modify the existing Registered API
         api_id = context.stage_config.registered_apis[alias].registered_api_id
@@ -98,7 +97,7 @@ def _create_target(
     context: PublishContext,
     alias: str,
     target: TargetConfig,
-) -> str:
+) -> UUID:
     """
     Create a new registered API in Flows service.
 
@@ -126,7 +125,7 @@ def _create_target(
     )
     click.echo(f"  Created with ID: {response['id']}")
 
-    return response["id"]
+    return UUID(response["id"])
 
 
 def _update_target(

@@ -63,21 +63,21 @@ class GlobusClientRepository:
     def auth(self) -> AuthClient:
         cache = self._client_cache[self.environment]
         if "auth" not in cache:
-            cache["auth"] = SearchClient(app=self.globus_app)
+            cache["auth"] = AuthClient(app=self.globus_app)
         return t.cast(AuthClient, cache["auth"])
 
     @property
     def flows(self) -> ExtendedFlowsClient:
         cache = self._client_cache[self.environment]
         if "flows" not in cache:
-            cache["flows"] = SearchClient(app=self.globus_app)
+            cache["flows"] = ExtendedFlowsClient(app=self.globus_app)
         return t.cast(ExtendedFlowsClient, cache["flows"])
 
     @property
     def groups(self) -> GroupsClient:
         cache = self._client_cache[self.environment]
         if "groups" not in cache:
-            cache["groups"] = SearchClient(app=self.globus_app)
+            cache["groups"] = GroupsClient(app=self.globus_app)
         return t.cast(GroupsClient, cache["groups"])
 
     @property

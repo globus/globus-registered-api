@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from globus_registered_api.config import RoleConfig
+from globus_registered_api.config import RoleType
 from globus_registered_api.repositories.groups import GroupRepository
 from globus_registered_api.repositories.identities import IdentityRepository
 
@@ -28,7 +29,10 @@ class RoleNameResolver:
         self._group_repository = GroupRepository.instance()
         self._identity_repository = IdentityRepository.instance()
 
-    def resolve_display_name(self, role: RoleConfig | tuple[str, str]) -> str:
+    def resolve_display_name(
+        self,
+        role: RoleConfig | tuple[RoleType, str],
+    ) -> str:
         """
         Resolve the display name for a given RoleConfig.
 

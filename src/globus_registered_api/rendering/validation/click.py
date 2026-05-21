@@ -46,7 +46,7 @@ class ClickUniqueValueParam(click.ParamType):
 
     def convert(
         self, value: t.Any, param: click.Parameter | None, ctx: click.Context | None
-    ) -> str:
+    ) -> t.Any:
         if value in self.existing_values:
             self.fail(f"{value!r} is already exists.", param, ctx)
         return value

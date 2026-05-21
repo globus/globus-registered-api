@@ -129,7 +129,7 @@ class TargetModifier:
         panel = Panel(Pretty(target_config, expand_all=True), title=self.alias)
         console.print(panel)
 
-    def remove_target(self) -> None | ControlSignal:
+    def remove_target(self) -> ControlSignal | None:
         # Warn if any stages have registered apis deployed for this target.
         existing_registered_apis = {}
         for stage, stage_config in self.config.stages.items():
@@ -149,7 +149,7 @@ class TargetModifier:
 
         if not click.confirm(f"Do you really want to remove '{self.alias}'?"):
             click.echo("Removal Aborted.\n")
-            return
+            return None
 
         # 1. Delete alias from target registry.
         del self.config.targets[self.alias]
@@ -222,9 +222,10 @@ class TargetModifier:
         self.config.commit()
 
     def print_openapi_scopes(self) -> None:
+        """
+        Print globus scopes from the OpenAPI specification analysis.
+        """
         specifier = self.target_config.specifier
-        # TODO - error handling? This is gated by the usage site but that's a
-        #   bad code smell.
         analysis = self.analyzer.agg_target_analyses[specifier]
         scopes = analysis.well_known_scopes
 

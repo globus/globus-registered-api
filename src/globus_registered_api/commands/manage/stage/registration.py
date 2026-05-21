@@ -13,7 +13,6 @@ import prompt_toolkit
 from globus_registered_api.commands.manage.context import ManageContext
 from globus_registered_api.config import GLOBUS_ENVIRONMENTS
 from globus_registered_api.config import GlobusEnvironment
-from globus_registered_api.config import RoleConfig
 from globus_registered_api.config import StageConfig
 from globus_registered_api.context import is_internal_globus_user
 from globus_registered_api.openapi import OpenAPISpecAnalyzer
@@ -83,16 +82,11 @@ class StageRegistrationMenu(FormMenu):
         ]
 
     def is_submittable(self) -> bool:
-        return bool(
-            self.builder.name
-            and self.builder.base_url
-            and self.builder.specification
-            and self.builder.globus_environment
-            and self.builder.subscription_id
-        )
+        return self.builder.is_buildable()
 
     def on_submit(self) -> None:
-        self.config.stages[self.builder.name] = self.builder.build()
+        stage_name, stage_config = self.builder.build()
+        self.config.stages[stage_name] = stage_config
         self.config.commit()
 
     def on_enter(self) -> None:
@@ -262,23 +256,39 @@ class StageBuilder:
             selection = SubscriptionInfo(id=str(resp), name=str(resp))
         self._subscription = selection
 
-    def required_fields_are_populated(self) -> bool:
+    def is_buildable(self) -> bool:
+        """
+        :return: True if `build` is expected to succeed, False otherwise.
+        """
         return bool(
-            self.name
-            and self.base_url
-            and self.specification
-            and self.globus_environment
-            and self._subscription
+            self.name and self.base_url and self.specification and self._subscription
         )
 
-    def build(self) -> StageConfig:
+    def build(self) -> tuple[str, StageConfig]:
+        """
+        Construct a name & Stage from the internally tracked state.
+
+        :raises ValueError: if a field required for building was not populated.
+        :return: name and StageConfig tuple
+        """
         identity_id = GlobusClientRepository.instance().auth.userinfo()["sub"]
 
-        # TODO - error if values are missing.
-        return StageConfig(
-            base_url=self.base_url,
-            specification=self.specification,
-            globus_environment=self.globus_environment,
-            subscription_id=self.subscription_id,
-            roles=[RoleConfig(type="identity", id=identity_id, access_level="owner")],
+        # Type-verify that name is set.
+        if (name := self.name) is None:
+            raise ValueError("Unset StageBuilder.name value.")
+
+        return name, StageConfig.model_validate(
+            {
+                "base_url": self.base_url,
+                "globus_environment": self.globus_environment,
+                "specification": self.specification,
+                "subscription_id": self.subscription_id,
+                "roles": [
+                    {
+                        "type": "identity",
+                        "id": identity_id,
+                        "access_level": "owner",
+                    }
+                ],
+            }
         )
