@@ -5,9 +5,7 @@
 
 import click
 
-from globus_registered_api.config import GLOBUS_ENVIRONMENTS
 from globus_registered_api.config import GlobusEnvironment
-from globus_registered_api.context import is_internal_globus_user
 from globus_registered_api.rendering import BACK_SENTINEL
 from globus_registered_api.rendering import ControlSignal
 from globus_registered_api.rendering import DataLabel
@@ -44,7 +42,7 @@ class StageModificationMenu(DispatchMenu):
             ),
             (
                 self.modifier.modify_subscription,
-                DataLabel("Modify Subscription", self.stage_config.subscription_id),
+                DataLabel("Modify Subscription", self.modifier.subscription_name),
             ),
             (
                 self.modifier.modify_base_url,
@@ -69,7 +67,17 @@ class StageModifier:
         self.stage_config = self.config.stages[self.stage]
 
         self._subscription_repository = SubscriptionRepository.instance()
+        self._subscription = self._subscription_repository.get_subscription(
+            self.stage_config.subscription_id
+        )
         self._globus = GlobusClientRepository.instance()
+
+    @property
+    def subscription_name(self) -> str:
+        if self._subscription:
+            return self._subscription.name
+
+        return self.stage_config.subscription_id
 
     def rename_stage(self) -> None:
         old_value = self.stage
@@ -87,7 +95,7 @@ class StageModifier:
         del self.config.stages[old_value]
 
         # 2. Update targets which explicitly specify this stage
-        for alias, target_config in self.config.targets.items():
+        for target_config in self.config.targets.values():
             if isinstance(target_config.stages, list):
                 target_config.stages = [
                     new_value if stage == old_value else stage
@@ -125,14 +133,7 @@ class StageModifier:
             self.config.commit()
 
     def modify_subscription(self) -> None:
-        # TODO - tune up this function, default selection isn't working (related to subscription poling it seems?)
-        #        we store the subscription id, not any name which is bad for
-        #        data labeling.
-        old_value = self.stage_config.subscription_id
-
         active_subs = self._subscription_repository.active_subscriptions()
-        matching_subs = [sub for sub in active_subs if sub.name == old_value]
-        old_sub = matching_subs[0] if matching_subs else None
 
         selection: SubscriptionInfo | None = None
         if active_subs:
@@ -142,14 +143,18 @@ class StageModifier:
                     *[(sub, f"{sub.name} ({sub.id})") for sub in active_subs],
                     (None, "<Enter Subscription ID Manually>"),
                 ],
-                default=old_sub,
+                default=self._subscription,
             )
 
         if not selection:
             resp = click.prompt(
                 "Subscription ID",
                 type=click.UUID,
-                default=self.subscription_id,
+                default=self.stage_config.subscription_id,
             )
             selection = SubscriptionInfo(id=str(resp), name=str(resp))
-        self.stage_config.subscription_id = selection.id
+
+        if selection.id != self.stage_config.subscription_id:
+            self._subscription = selection
+            self.stage_config.subscription_id = selection.id
+            self.config.commit()

@@ -12,7 +12,7 @@ import typing as t
 from prompt_toolkit import HTML
 from prompt_toolkit.formatted_text import AnyFormattedText
 
-from globus_registered_api.rendering import prompt_selection
+from globus_registered_api.rendering.prompt import prompt_selection
 
 
 # Menu Navigation Controls

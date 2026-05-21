@@ -7,9 +7,7 @@ import click
 
 from globus_registered_api.commands.manage.stage.registration import StageBuilder
 from globus_registered_api.config import GRAConfig
-from globus_registered_api.context import CLIContext
 from globus_registered_api.context import is_internal_globus_user
-from globus_registered_api.context import with_cli_context
 from globus_registered_api.rendering import DataLabel
 from globus_registered_api.rendering import FormMenu
 from globus_registered_api.rendering import LabeledDispatchOptions

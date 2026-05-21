@@ -173,7 +173,8 @@ class TargetBuilder:
             self.globus_scope = new_value
 
     def print_openapi_scopes(self) -> None:
-        # TODO - error handling? This is gated by the usage site but that's a bad code smell.
+        # TODO - error handling? This is gated by the usage site but that's a
+        #   bad code smell.
         analysis = self._analyzer.agg_target_analyses[self.specifier]
         scopes = analysis.well_known_scopes
 

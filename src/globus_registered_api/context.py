@@ -11,7 +11,6 @@ import typing as t
 from dataclasses import dataclass
 from uuid import UUID
 
-import click
 from globus_sdk import ClientApp
 from globus_sdk import GlobusApp
 from globus_sdk import GlobusAppConfig

@@ -5,7 +5,6 @@
 
 import openapi_pydantic as oa
 
-from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import StageConfig
 
 

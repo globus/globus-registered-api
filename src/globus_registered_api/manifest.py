@@ -10,11 +10,9 @@ import typing as t
 from datetime import datetime
 from pathlib import Path
 
-import click
 import openapi_pydantic as oa
 from pydantic import BaseModel
 from pydantic import Field
-from pydantic import PlainSerializer
 from pydantic import field_serializer
 from pydantic import field_validator
 

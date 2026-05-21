@@ -7,7 +7,6 @@ from dataclasses import dataclass
 
 from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import StageConfig
-from globus_registered_api.extended_flows_client import ExtendedFlowsClient
 from globus_registered_api.manifest import ComputedRegisteredAPI
 from globus_registered_api.manifest import GRAManifest
 

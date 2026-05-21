@@ -14,7 +14,7 @@ class GRACommandLineError(RuntimeError):
         error_message: str,
         resolution_message: str | None = None,
     ) -> None:
-        super().__init__(error_message)
+        super().__init__(error_message, resolution_message)
         self.error = error_message
         self.resolution = resolution_message
 
@@ -44,7 +44,7 @@ class GRAArgumentError(GRACommandLineError):
         error_message: str,
         allowed_values: t.Sequence[str],
     ) -> None:
-        super().__init__(error_message)
+        super().__init__(error_message, None)
         self.allowed = ", ".join(sorted(allowed_values))
 
     def click_echo(self) -> None:

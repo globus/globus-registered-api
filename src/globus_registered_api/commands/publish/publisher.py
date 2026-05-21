@@ -7,7 +7,6 @@ from uuid import UUID
 
 import click
 
-from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.config import RoleConfig
 from globus_registered_api.config import TargetConfig

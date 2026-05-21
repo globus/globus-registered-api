@@ -223,7 +223,8 @@ class TargetModifier:
 
     def print_openapi_scopes(self) -> None:
         specifier = self.target_config.specifier
-        # TODO - error handling? This is gated by the usage site but that's a bad code smell.
+        # TODO - error handling? This is gated by the usage site but that's a
+        #   bad code smell.
         analysis = self.analyzer.agg_target_analyses[specifier]
         scopes = analysis.well_known_scopes
 

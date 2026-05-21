@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-import functools
+import typing as t
+from collections import defaultdict
 from contextvars import ContextVar
 
 from globus_sdk import AuthClient
@@ -41,6 +42,12 @@ class GlobusClientRepository:
 
     environment: GlobusEnvironment | None = None
 
+    def __init__(self) -> None:
+        self._client_cache: dict[GlobusEnvironment | None, dict[str, BaseClient]] = (
+            defaultdict(dict)
+        )
+        self._globus_app_cache: dict[GlobusEnvironment | None, GlobusApp] = {}
+
     @classmethod
     def instance(cls) -> GlobusClientRepository:
         if _INSTANCE.get(None) is None:
@@ -54,52 +61,36 @@ class GlobusClientRepository:
 
     @property
     def auth(self) -> AuthClient:
-        return self._get_auth_client(self.environment)
+        cache = self._client_cache[self.environment]
+        if "auth" not in cache:
+            cache["auth"] = SearchClient(app=self.globus_app)
+        return t.cast(AuthClient, cache["auth"])
 
     @property
     def flows(self) -> ExtendedFlowsClient:
-        return self._get_flows_client(self.environment)
+        cache = self._client_cache[self.environment]
+        if "flows" not in cache:
+            cache["flows"] = SearchClient(app=self.globus_app)
+        return t.cast(ExtendedFlowsClient, cache["flows"])
 
     @property
     def groups(self) -> GroupsClient:
-        return self._get_groups_client(self.environment)
+        cache = self._client_cache[self.environment]
+        if "groups" not in cache:
+            cache["groups"] = SearchClient(app=self.globus_app)
+        return t.cast(GroupsClient, cache["groups"])
 
     @property
     def search(self) -> SearchClient:
-        return self._get_search_client(self.environment)
+        cache = self._client_cache[self.environment]
+        if "search" not in cache:
+            cache["search"] = SearchClient(app=self.globus_app)
+        return t.cast(SearchClient, cache["search"])
 
     @property
     def globus_app(self) -> GlobusApp:
-        return self._get_globus_app(self.environment)
+        if self.environment not in self._globus_app_cache:
+            globus_app = create_globus_app(self.environment)
+            self._globus_app_cache[self.environment] = globus_app
 
-    @functools.lru_cache(maxsize=7)
-    def _get_auth_client(
-        self,
-        environment: GlobusEnvironment | None,
-    ) -> AuthClient:
-        globus_app = self._get_globus_app(environment)
-        return AuthClient(app=globus_app)
-
-    @functools.lru_cache(maxsize=7)
-    def _get_flows_client(
-        self, environment: GlobusEnvironment | None
-    ) -> ExtendedFlowsClient:
-        app = self._get_globus_app(environment)
-        return ExtendedFlowsClient(app=app)
-
-    @functools.lru_cache(maxsize=7)
-    def _get_groups_client(self, environment: GlobusEnvironment | None) -> GroupsClient:
-        app = self._get_globus_app(environment)
-        return GroupsClient(app=app)
-
-    @functools.lru_cache(maxsize=7)
-    def _get_search_client(self, environment: GlobusEnvironment | None) -> SearchClient:
-        app = self._get_globus_app(environment)
-        return SearchClient(app=app)
-
-    @functools.lru_cache(maxsize=7)
-    def _get_globus_app(
-        self,
-        environment: GlobusEnvironment | None,
-    ) -> GlobusApp:
-        return create_globus_app(environment)
+        return self._globus_app_cache[self.environment]

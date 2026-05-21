@@ -8,10 +8,7 @@ import pathlib
 
 import click
 
-from globus_registered_api.clients import create_flows_client
 from globus_registered_api.commands.api._common import echo_registered_api
-from globus_registered_api.context import CLIContext
-from globus_registered_api.context import with_cli_context
 from globus_registered_api.repositories.clients import GlobusClientRepository
 
 
