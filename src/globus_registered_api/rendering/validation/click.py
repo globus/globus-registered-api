@@ -41,15 +41,36 @@ class ClickUniqueValueParam(click.ParamType):
 
     name: str = "unique-value"
 
-    def __init__(self, existing_values: t.Sequence[t.Any]) -> None:
+    def __init__(
+        self,
+        existing_values: t.Sequence[t.Any],
+    ) -> None:
         self.existing_values = existing_values
 
     def convert(
         self, value: t.Any, param: click.Parameter | None, ctx: click.Context | None
     ) -> t.Any:
         if value in self.existing_values:
-            self.fail(f"{value!r} is already exists.", param, ctx)
+            self.fail(f"{value!r} already exists.", param, ctx)
         return value
+
+
+class ClickUniqueUUIDParam(ClickUniqueValueParam):
+    """
+    Click ParamType
+
+    Fails if a value cannot be converted into a valid UUID.
+    Fails if a value already exists in a supplied value list.
+    Note: UUID conversion happens prior to uniqueness checking.
+    """
+
+    name: str = "unique-uuid"
+
+    def convert(
+        self, value: t.Any, param: click.Parameter | None, ctx: click.Context | None
+    ) -> t.Any:
+        value = click.UUID.convert(value, param, ctx)
+        return super().convert(value, param, ctx)
 
 
 class ClickAPIRoutePathParam(click.ParamType):

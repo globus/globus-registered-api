@@ -11,6 +11,7 @@ from unittest.mock import MagicMock
 import click
 import prompt_toolkit
 import pytest
+from click import BadParameter
 from click.testing import CliRunner
 from prompt_toolkit.formatted_text import AnyFormattedText
 from prompt_toolkit.formatted_text import to_plain_text
@@ -215,12 +216,21 @@ class PromptPatcher:
         responses: list[t.Any] = []
         response_idx = 0
 
+        name = f"{target.__name__}.{func_name}"
+
         def return_responses(*args, **kwargs):
             nonlocal response_idx
             if response_idx >= len(responses):
-                name = f"{target.__name__}.{func_name}"
                 raise AssertionError(f"Ran out of prompt inputs for function '{name}'")
             resp = responses[response_idx]
+
+            if name == "click.prompt":
+                if isinstance(param_type := kwargs.get("type"), click.ParamType):
+                    try:
+                        resp = param_type(resp)
+                    except BadParameter as e:
+                        msg = "click.prompt supplied input failed validation"
+                        raise AssertionError(msg) from e
 
             response_idx += 1
             return resp

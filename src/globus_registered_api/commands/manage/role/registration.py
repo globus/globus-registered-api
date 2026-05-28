@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import typing as t
+from uuid import UUID
 
 import click
 
@@ -17,6 +18,7 @@ from globus_registered_api.rendering import DataLabel
 from globus_registered_api.rendering import FormMenu
 from globus_registered_api.rendering import LabeledDispatchOptions
 from globus_registered_api.rendering import prompt_selection
+from globus_registered_api.rendering.validation.click import ClickUniqueUUIDParam
 from globus_registered_api.repositories.groups import Group
 from globus_registered_api.repositories.groups import GroupRepository
 
@@ -126,17 +128,26 @@ class RoleBuilder:
             ],
         )
         if selection is None:
-            group_id = str(click.prompt("Group ID", type=click.UUID))
-            return Group(id=group_id, name=group_id)
+            old_value = self.role_id if self.role_type == "group" else None
+            known_ids = [UUID(id_) for id_ in self._known_group_ids]
+            group_id = click.prompt(
+                "Group ID",
+                type=ClickUniqueUUIDParam(known_ids),
+                default=old_value,
+            )
+            return Group(id=str(group_id), name=str(group_id))
 
         return selection
 
     def select_identity(self) -> None:
         old_value = self.role_id if self.role_type == "identity" else None
-        new_value = str(click.prompt("Identity ID", type=click.UUID, default=old_value))
+        known_ids = [UUID(id_) for id_ in self._known_identity_ids]
+        new_value = click.prompt(
+            "Identity ID", type=ClickUniqueUUIDParam(known_ids), default=old_value
+        )
 
         self.role_type = "identity"
-        self.role_id = new_value
+        self.role_id = str(new_value)
 
     def set_access_level(self) -> None:
         old_value = self.access_level

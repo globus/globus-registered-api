@@ -6,6 +6,7 @@
 from types import SimpleNamespace
 from uuid import uuid4
 
+import click
 import pytest
 
 from globus_registered_api.commands.manage.role._name_resolution import RoleNameResolver
@@ -102,11 +103,7 @@ def test_role_management_add_identity(prompt_patcher, config, gra):
     assert GRAConfig.load().stages["production"].roles == [expected]
 
 
-def test_role_management_add_duplicate_identity_is_rejected(
-    prompt_patcher, config, gra, capsys
-):
-    # TODO - this is no longer the case, maybe change src?
-
+def test_role_management_duplicate_identity_is_rejected(prompt_patcher, config, gra):
     # Configure a role to be duplicated.
     role = RoleConfig(type="identity", id=IDENTITIES.Alice.id, access_level="viewer")
     config.stages["production"].roles = [role]
@@ -121,23 +118,35 @@ def test_role_management_add_duplicate_identity_is_rejected(
     prompt_patcher.add_selection("Select Identity")
     prompt_patcher.add_input("click_prompt", IDENTITIES.Alice.id)
 
-    prompt_patcher.add_selection("Set Access Level")
-    prompt_patcher.add_selection("Admin")
+    # Execute
+    with pytest.raises(AssertionError) as excinfo:
+        gra(["manage"], catch_exceptions=False)
 
-    prompt_patcher.add_selection("<Submit>")
-    prompt_patcher.add_selection("<Exit>")
+    err = excinfo.value.__cause__
+    assert isinstance(err, click.BadParameter)
+    assert f"UUID('{IDENTITIES.Alice.id}') already exists." == str(err)
+
+
+def test_role_management_duplicate_group_is_rejected(prompt_patcher, config, gra):
+    # Configure a role to be duplicated.
+    role = RoleConfig(type="group", id=GROUPS.Leos.id, access_level="viewer")
+    config.stages["production"].roles = [role]
+    config.commit()
+
+    # Set up a sequence of selections to be made by the mocked selector.
+    prompt_patcher.add_selection("Manage Roles")
+    prompt_patcher.add_selection("<Register a New Role>")
+
+    prompt_patcher.add_selections("Select Group", "<Manually Enter a Group ID>")
+    prompt_patcher.add_input("click_prompt", GROUPS.Leos.id)
 
     # Execute
-    gra(["manage"], catch_exceptions=False)
+    with pytest.raises(AssertionError) as excinfo:
+        gra(["manage"], catch_exceptions=False)
 
-    # Verify that Alice still has viewer access and that we printed a warning.
-    expected = RoleConfig(
-        type="identity", id=IDENTITIES.Alice.id, access_level="viewer"
-    )
-    assert GRAConfig.load().stages["production"].roles == [expected]
-
-    outstream = capsys.readouterr().out
-    assert "use the 'Modify Role' option instead" in outstream
+    err = excinfo.value.__cause__
+    assert isinstance(err, click.BadParameter)
+    assert f"UUID('{GROUPS.Leos.id}') already exists." == str(err)
 
 
 def test_role_management_remove_role(prompt_patcher, config, gra):
