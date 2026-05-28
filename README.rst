@@ -4,14 +4,9 @@
     Copyright 2025-2026 Globus <support@globus.org>
     SPDX-License-Identifier: Apache-2.0
 
-Globus Registered API
-#####################
+GRA is a CLI tool created to assist with the client-side management of
+Registered APIs in the Globus Flows service.
 
-    ⚠️ **NOTE** ⚠️
-
-    This software, and the feature it interacts with, is in a closed preview.
-
-    It is not generally available for public use.
-
-Documentation, including tutorials and interface references, may be found
-`here <docs/README.md#globus-registered-api>`_.
+Feature documentation, including tutorials and interface references, may be
+found on the central globus docs site
+`here <https://docs.globus.org/api/flows/registered-apis/>`_.
