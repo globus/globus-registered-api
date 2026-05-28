@@ -12,6 +12,7 @@ from contextvars import ContextVar
 from globus_sdk import AuthClient
 from globus_sdk import BaseClient
 from globus_sdk import GlobusApp
+from globus_sdk import GlobusAppConfig
 from globus_sdk import GroupsClient
 from globus_sdk import SearchClient
 
@@ -40,13 +41,12 @@ class GlobusClientRepository:
     call sites to use in their own internal caching of results from clients.
     """
 
-    environment: GlobusEnvironment | None = None
-
     def __init__(self) -> None:
-        self._client_cache: dict[GlobusEnvironment | None, dict[str, BaseClient]] = (
+        self.environment: GlobusEnvironment = GlobusAppConfig().environment
+        self._client_cache: dict[GlobusEnvironment, dict[str, BaseClient]] = (
             defaultdict(dict)
         )
-        self._globus_app_cache: dict[GlobusEnvironment | None, GlobusApp] = {}
+        self._globus_app_cache: dict[GlobusEnvironment, GlobusApp] = {}
 
     @classmethod
     def instance(cls) -> GlobusClientRepository:
@@ -56,41 +56,41 @@ class GlobusClientRepository:
         return _INSTANCE.get()
 
     @property
-    def cache_key(self) -> str:
-        return self.environment or "default-environment"
+    def cache_key(self) -> GlobusEnvironment:
+        return self.environment
 
     @property
     def auth(self) -> AuthClient:
-        cache = self._client_cache[self.environment]
+        cache = self._client_cache[self.cache_key]
         if "auth" not in cache:
             cache["auth"] = AuthClient(app=self.globus_app)
         return t.cast(AuthClient, cache["auth"])
 
     @property
     def flows(self) -> ExtendedFlowsClient:
-        cache = self._client_cache[self.environment]
+        cache = self._client_cache[self.cache_key]
         if "flows" not in cache:
             cache["flows"] = ExtendedFlowsClient(app=self.globus_app)
         return t.cast(ExtendedFlowsClient, cache["flows"])
 
     @property
     def groups(self) -> GroupsClient:
-        cache = self._client_cache[self.environment]
+        cache = self._client_cache[self.cache_key]
         if "groups" not in cache:
             cache["groups"] = GroupsClient(app=self.globus_app)
         return t.cast(GroupsClient, cache["groups"])
 
     @property
     def search(self) -> SearchClient:
-        cache = self._client_cache[self.environment]
+        cache = self._client_cache[self.cache_key]
         if "search" not in cache:
             cache["search"] = SearchClient(app=self.globus_app)
         return t.cast(SearchClient, cache["search"])
 
     @property
     def globus_app(self) -> GlobusApp:
-        if self.environment not in self._globus_app_cache:
+        if self.cache_key not in self._globus_app_cache:
             globus_app = create_globus_app(self.environment)
-            self._globus_app_cache[self.environment] = globus_app
+            self._globus_app_cache[self.cache_key] = globus_app
 
-        return self._globus_app_cache[self.environment]
+        return self._globus_app_cache[self.cache_key]

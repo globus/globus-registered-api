@@ -88,7 +88,7 @@ class TargetModificationMenu(DispatchMenu):
             return self.modifier.modify_scope, label
 
         elif self._well_known_scopes_exist_in_openapi():
-            return self.modifier.print_openapi_scopes, "Print Globus Scopes (OpenAPI)"
+            return self.modifier.print_openapi_scopes, "Print OpenAPI Globus Scopes"
 
         else:
             return self.modifier.modify_scope, "Add Globus Scope"

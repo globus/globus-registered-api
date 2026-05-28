@@ -28,14 +28,13 @@ class GRACommandLineError(RuntimeError):
         label: str,
         message: str,
         fg: str | None = None,
-        err: bool = True,
     ) -> None:
         content = (
             click.style(label, fg=fg, bold=True, underline=True)
             + ": "
             + click.style(message, fg=fg)
         )
-        click.secho(content, err=err)
+        click.secho(content, err=True)
 
 
 class GRAArgumentError(GRACommandLineError):
@@ -49,4 +48,4 @@ class GRAArgumentError(GRACommandLineError):
 
     def click_echo(self) -> None:
         super().click_echo()
-        self.labeled_echo("Allowed Values", self.allowed, fg="green", err=False)
+        self.labeled_echo("Allowed Values", self.allowed, fg="green")

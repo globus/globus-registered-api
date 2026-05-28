@@ -2,160 +2,151 @@
 # https://github.com/globus/globus-registered-api
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
-from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 from rich.console import Console
 
-import globus_registered_api.commands.manage.targets as targets_module
-from globus_registered_api.commands.manage.context import ManageContext
-from globus_registered_api.commands.manage.targets import TargetConfigurator
+from globus_registered_api.commands.manage.target import (
+    modification as modification_module,
+)
 from globus_registered_api.config import GRAConfig
+from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.config import TargetConfig
-from globus_registered_api.openapi import OpenAPISpecAnalyzer
 
 
 @pytest.fixture
 def rich_disabled_colors(monkeypatch):
-    monkeypatch.setattr(targets_module, "console", Console(color_system=None))
+    monkeypatch.setattr(modification_module, "console", Console(color_system=None))
 
 
-@pytest.fixture
-def target_configurator(config):
-    spec = config.core.specification
-    analysis = OpenAPISpecAnalyzer().analyze(spec)
-    ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
-    return TargetConfigurator(ctx)
+@pytest.fixture(autouse=True)
+def committed_config(config):
+    config.commit()
 
 
-def test_target_management_add_target(prompt_patcher, target_configurator):
+def test_target_management_add_target_no_scope(prompt_patcher, gra):
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", "/example (GET)")
-    prompt_patcher.add_input("click_prompt", "get-example")
-    prompt_patcher.add_input("click_prompt", "Get example")  # Description
-    prompt_patcher.add_input("confirmation", False)  # Skip scope configurations.
+    prompt_patcher.add_selections("Manage Targets", "<Register a New Target>")
 
-    target_configurator.add_target()
+    prompt_patcher.add_selections("Select Route", "/example (GET)")
+    prompt_patcher.add_selection("Set Alias")
+    prompt_patcher.add_input("click_prompt", "get-example")
+
+    prompt_patcher.add_selection("<Submit>")
+    prompt_patcher.add_selection("<Exit>")
+
+    gra(["manage"], catch_exceptions=False)
 
     # Verify we've added the expected target to the config and committed it.
-    expected = TargetConfig(
-        path="/example", method="GET", alias="get-example", description="Get example"
-    )
-    assert GRAConfig.load().targets == [expected]
+    expected = {
+        "get-example": TargetConfig(
+            path="/example",
+            method="GET",
+            description="Example GET endpoint",
+        )
+    }
+    assert GRAConfig.load().targets == expected
 
 
-def test_target_management_add_target_with_manual_scope(
-    prompt_patcher, target_configurator
-):
+def test_target_management_add_target_manual_scope(prompt_patcher, gra):
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", "/example (GET)")
-    prompt_patcher.add_input("click_prompt", "get-example")
-    prompt_patcher.add_input("click_prompt", "Get example")  # Description
-    prompt_patcher.add_input("confirmation", True)  # Configure scope.
-    prompt_patcher.add_input("selection", "example:read")
+    prompt_patcher.add_selections("Manage Targets", "<Register a New Target>")
 
-    target_configurator.add_target()
+    prompt_patcher.add_selections("Select Route", "/example (GET)")
+    prompt_patcher.add_selection("Set Alias")
+    prompt_patcher.add_input("click_prompt", "get-example")
+    prompt_patcher.add_selections("Set Globus Scope", "<Enter a scope string>")
+    prompt_patcher.add_input("click_prompt", "example:read")
+
+    prompt_patcher.add_selection("<Submit>")
+    prompt_patcher.add_selection("<Exit>")
+
+    gra(["manage"], catch_exceptions=False)
 
     # Verify we've added the expected target to the config and committed it.
-    expected = TargetConfig(
-        path="/example",
-        method="GET",
-        alias="get-example",
-        description="Get example",
-        security=TargetConfig.Security(globus_auth_scope="example:read"),
-    )
-    assert GRAConfig.load().targets == [expected]
+    expected = {
+        "get-example": TargetConfig(
+            path="/example",
+            method="GET",
+            description="Example GET endpoint",
+            security=TargetConfig.Security(globus_auth_scope="example:read"),
+        )
+    }
+    assert GRAConfig.load().targets == expected
 
 
-def test_target_management_add_target_with_defined_scopes(
-    prompt_patcher, config, capsys, rich_disabled_colors
+def test_target_management_add_target_openapi_scopes(
+    prompt_patcher, openapi_schema, gra
 ):
     # Update the spec to define scopes for a target.
-    config.core.specification.paths["/example"].get.security = [
+    openapi_schema["paths"]["/example"]["get"]["security"] = [
         {"GlobusAuth": ["example:read"]},
         {"GlobusAuth": ["example:write"]},
     ]
-    config.commit()
-
-    # Re-analyze the updated specification instead of using the fixture-provided one.
-    spec = config.core.specification
-    analysis = OpenAPISpecAnalyzer().analyze(spec)
-    ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
-    target_configurator = TargetConfigurator(ctx)
 
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", "/example (GET)")
+    prompt_patcher.add_selections("Manage Targets", "<Register a New Target>")
+
+    prompt_patcher.add_selections("Select Route", "/example (GET)")
+    prompt_patcher.add_selection("Set Alias")
     prompt_patcher.add_input("click_prompt", "get-example")
-    prompt_patcher.add_input("click_prompt", "Get example")  # Description
 
-    target_configurator.add_target()
+    prompt_patcher.add_selection("<Submit>")
+
+    prompt_patcher.add_selection("get-example")
+    prompt_patcher.add_selection("Print Target")
+
+    prompt_patcher.add_selection("<Exit>")
+
+    # Execute
+    result = gra(["manage"], catch_exceptions=False)
 
     expected = TargetConfig(
-        path="/example", method="GET", alias="get-example", description="Get example"
+        path="/example", method="GET", description="Example GET endpoint"
     )
-    assert GRAConfig.load().targets == [expected]
+    assert GRAConfig.load().targets == {"get-example": expected}
 
-    # Spec-defined scopes are not committed to config, but are flagged as "imputed".
-    outstream = capsys.readouterr().out
+    # Spec-defined scopes aren't committed to config, instead they are presented
+    # as "imputed".
     for keyword in ("Imputed", "example:read", "example:write"):
-        assert keyword in outstream
+        assert keyword in result.output
 
 
-def test_target_management_add_manual_target(prompt_patcher, target_configurator):
+def test_target_management_add_target_manual_route(prompt_patcher, gra):
+    """
+    Register a target whose route specifier doesn't exist in the openapi spec.
+    """
+
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", "<Enter custom path and method>")
-    prompt_patcher.add_input("click_prompt", "/manual")
-    prompt_patcher.add_input("selection", "POST")
-    prompt_patcher.add_input("click_prompt", "post-manual")
-    prompt_patcher.add_input("click_prompt", "post-manual: POST /manual")  # Description
-    prompt_patcher.add_input("confirmation", False)  # Skip scope configurations.
+    prompt_patcher.add_selections("Manage Targets", "<Register a New Target>")
 
-    target_configurator.add_target()
+    prompt_patcher.add_selection("Select Route")
+    prompt_patcher.add_selection("<Enter custom path and method>")
+    prompt_patcher.add_input("click_prompt", "/manual")
+    prompt_patcher.add_selection("POST")
+
+    prompt_patcher.add_selection("Set Alias")
+    prompt_patcher.add_input("click_prompt", "post-manual")
+
+    prompt_patcher.add_selection("<Submit>")
+    prompt_patcher.add_selection("<Exit>")
+
+    gra(["manage"], catch_exceptions=False)
 
     expected = TargetConfig(
-        path="/manual",
-        method="POST",
-        alias="post-manual",
-        description="post-manual: POST /manual",
+        path="/manual", method="POST", description="post-manual: POST /manual"
     )
-    assert GRAConfig.load().targets == [expected]
+    assert GRAConfig.load().targets == {"post-manual": expected}
 
 
-def test_target_management_list_targets(
-    prompt_patcher, config, target_configurator, capsys
-):
-    # Add some targets to the config.
-    config.targets = [
-        TargetConfig(
-            path="/example",
-            method="GET",
-            alias="get-example",
-            description="Get example",
-        ),
-        TargetConfig(
-            path="/example",
-            method="POST",
-            alias="post-example",
-            description="Post example",
-        ),
-    ]
-    config.commit()
-
-    target_configurator.list_targets()
-
-    outstream = capsys.readouterr().out
-    for key in ("/example", "GET", "POST", "get-example", "post-example"):
-        assert key in outstream
-
-
-def test_target_management_display_target(
-    prompt_patcher, config, target_configurator, rich_disabled_colors, capsys
+def test_target_management_print_target(
+    prompt_patcher, config, gra, rich_disabled_colors
 ):
     # Add some targets to the config.
     get_target = TargetConfig(
         path="/example",
         method="GET",
-        alias="get-example",
         description="Get example",
         data_templates={
             "request": {},
@@ -165,137 +156,130 @@ def test_target_management_display_target(
     post_target = TargetConfig(
         path="/example",
         method="POST",
-        alias="post-example",
         description="Post example",
         data_templates={
             "request": {},
             "response": {},
         },
     )
-    config.targets = [get_target, post_target]
+    config.targets = {"get-example": get_target, "post-example": post_target}
     config.commit()
 
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", get_target)
+    prompt_patcher.add_selection("Manage Targets")
 
-    target_configurator.display_target()
+    prompt_patcher.add_selections("get-example", "Print Target")
+    prompt_patcher.add_selection("<Exit>")
 
-    outstream = capsys.readouterr().out
-    assert "TargetConfig" in outstream
-    assert "path='/example'" in outstream
-    assert "method='GET'" in outstream
-    assert "alias='get-example'" in outstream
+    result = gra(["manage"], catch_exceptions=False)
 
-    assert "templates" not in outstream.lower()
+    assert "get-example" in result.output
+    assert "TargetConfig" in result.output
+    assert "path='/example'" in result.output
+    assert "method='GET'" in result.output
+    assert "templates" not in result.output.lower()
 
 
 def test_target_management_display_maintains_imputed_scope_ordering(
-    prompt_patcher, config, rich_disabled_colors, capsys
+    prompt_patcher, config, openapi_schema, gra, rich_disabled_colors
 ):
+    # TODO - this doesn't work, scopes are combined across stages in a set &
+    #     & re-ordered for the global target view.
+
     # Simulate a laundry list of scopes in the OpenAPI specification to make it
     #   unlikely we accidentally reorder them back into the same order.
     suffixes = ["read", "write", "delete", "admin", "superuser", "owner", "all"]
     scopes = [f"example:{suffix}" for suffix in suffixes]
     # Update the spec to define scopes for a target.
-    config.core.specification.paths["/example"].get.security = [
+    openapi_schema["paths"]["/example"]["get"]["security"] = [
         {"GlobusAuth": [f"example:{scope}"]} for scope in scopes
     ]
 
     # Add a target to the config which points at that spec endpoint.
-    target = TargetConfig(
-        path="/example", method="GET", alias="get-example", description="Get example"
-    )
-    config.targets = [target]
-    config.commit()
-
-    # Re-analyze the updated specification instead of using the fixture-provided one.
-    spec = config.core.specification
-    analysis = OpenAPISpecAnalyzer().analyze(spec)
-    ctx = ManageContext(config=config, analysis=analysis, globus_app=MagicMock())
-    target_configurator = TargetConfigurator(ctx)
-
+    target = TargetConfig(path="/example", method="GET", description="desc")
+    config.targets = {"get-example": target}
     config.commit()
 
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", target)
+    prompt_patcher.add_selection("Manage Targets")
+    prompt_patcher.add_selections("get-example", "Print Target")
+    prompt_patcher.add_selection("<Exit>")
 
-    target_configurator.display_target()
+    result = gra(["manage"], catch_exceptions=False)
 
-    outstream = capsys.readouterr().out
     # Verify that "order is maintained" by ensuring that the index of the output stream
     #   is increasing as we go through the list of scopes in their original order.
-    actual_order = sorted(scopes, key=lambda s: outstream.index(s))
+    actual_order = sorted(scopes, key=lambda s: result.output.index(s))
     assert actual_order == scopes
 
 
-def test_target_management_remove_target(prompt_patcher, config, target_configurator):
+def test_target_management_remove_target(prompt_patcher, config, gra):
     # Add some targets to the config.
-    get_target = TargetConfig(
-        path="/example", method="GET", alias="get-example", description="Get example"
-    )
-    post_target = TargetConfig(
-        path="/example", method="POST", alias="post-example", description="Post example"
-    )
-    config.targets = [get_target, post_target]
+    get_target = TargetConfig(path="/example", method="GET", description="d")
+    post_target = TargetConfig(path="/example", method="POST", description="d")
+    config.targets = {"get-example": get_target, "post-example": post_target}
     config.commit()
 
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", get_target)
+    prompt_patcher.add_selection("Manage Targets")
+    prompt_patcher.add_selections("get-example", "Remove Target", "<Exit>")
+    prompt_patcher.add_input("confirmation", True)
 
-    target_configurator.remove_target()
+    gra(["manage"], catch_exceptions=False)
 
-    assert GRAConfig.load().targets == [post_target]
+    assert GRAConfig.load().targets == {"post-example": post_target}
 
 
-def test_target_management_modify_target(prompt_patcher, config, target_configurator):
+def test_target_management_modify_target(prompt_patcher, config, gra):
     # Add a target to the config.
-    target = TargetConfig(
-        path="/example", method="GET", alias="get-example", description="Get example"
-    )
-    config.targets = [target]
+    target = TargetConfig(path="/example", method="GET", description="d")
+    config.targets = {"get-example": target}
+
+    # Add a registered api for the target
+    ra_config = RegisteredAPIConfig(registered_api_id=uuid4())
+    config.stages["production"].registered_apis["get-example"] = ra_config
     config.commit()
 
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", target)
-    prompt_patcher.add_input("click_prompt", "get-example-updated")  # Change the alias
-    prompt_patcher.add_input(
-        "click_prompt", "Updated description"
-    )  # Change the description
-    prompt_patcher.add_input("selection", None)  # Don't add a scope.
+    prompt_patcher.add_selections("Manage Targets", "get-example")
 
-    target_configurator.modify_target()
+    prompt_patcher.add_selection("Modify Alias")
+    prompt_patcher.add_input("click_prompt", "get-example-updated")
+    prompt_patcher.add_selection("Modify Description")
+    prompt_patcher.add_input("click_prompt", "Updated description")
 
+    prompt_patcher.add_selection("<Exit>")
+
+    gra(["manage"], catch_exceptions=False)
+
+    loaded_config = GRAConfig.load()
     expected = TargetConfig(
         path="/example",
         method="GET",
-        alias="get-example-updated",
         description="Updated description",
     )
-    assert GRAConfig.load().targets == [expected]
+    assert loaded_config.targets == {"get-example-updated": expected}
+    assert loaded_config.stages["production"].registered_apis == {
+        "get-example-updated": ra_config,
+    }
 
 
-def test_target_management_modify_target_remove_scope(
-    prompt_patcher, config, target_configurator
-):
-    target = TargetConfig(
+def test_target_management_remove_scope(prompt_patcher, config, gra):
+    get_target = TargetConfig(
         path="/example",
         method="GET",
-        alias="get-example",
-        description="Get example",
+        description="desc",
         security=TargetConfig.Security(globus_auth_scope="example:read"),
     )
-    config.targets = [target]
+    config.targets = {"get-example": get_target}
     config.commit()
 
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", target)
-    prompt_patcher.add_input("click_prompt", "get-example")  # Don't change the alias
-    prompt_patcher.add_input("click_prompt", "Get example")  # Keep the description
-    prompt_patcher.add_input("selection", None)  # Remove the scope.
+    prompt_patcher.add_selections("Manage Targets", "get-example")
+    prompt_patcher.add_selections("Modify Globus Scope", "<None>")
+    prompt_patcher.add_selection("<Exit>")
 
-    target_configurator.modify_target()
+    gra(["manage"], catch_exceptions=False)
 
-    expected = TargetConfig(
-        path="/example", method="GET", alias="get-example", description="Get example"
-    )
-    assert GRAConfig.load().targets == [expected]
+    expected = TargetConfig(path="/example", method="GET", description="desc")
+    assert GRAConfig.load().targets == {"get-example": expected}

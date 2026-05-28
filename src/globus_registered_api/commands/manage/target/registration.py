@@ -16,6 +16,7 @@ from globus_registered_api.rendering import DispatchOption
 from globus_registered_api.rendering import FormMenu
 from globus_registered_api.rendering import LabeledDispatchOptions
 from globus_registered_api.rendering import prompt_selection
+from globus_registered_api.rendering.validation.click import ClickAPIRoutePathParam
 from globus_registered_api.rendering.validation.click import ClickUniqueValueParam
 
 
@@ -51,7 +52,7 @@ class TargetRegistrationMenu(FormMenu):
             return self.builder.set_globus_scope, label
 
         elif self._well_known_scopes_exist_in_openapi():
-            return self.builder.print_openapi_scopes, "Print Globus Scopes (OpenAPI)"
+            return self.builder.print_openapi_scopes, "Print OpenAPI Globus Scopes"
 
         else:
             return self.builder.set_globus_scope, "Set Globus Scope"
@@ -123,7 +124,7 @@ class TargetBuilder:
         )
 
     def _prompt_specifier_manual(self) -> TargetSpecifier:
-        path = click.prompt("API Path", type=str)
+        path = click.prompt("API Path", type=ClickAPIRoutePathParam())
         method_options = [(m, m) for m in HTTP_METHODS]
         method = prompt_selection("HTTP Method", method_options)
         # TODO - prevent registering a duplicate here as well.

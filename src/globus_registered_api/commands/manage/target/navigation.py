@@ -17,9 +17,6 @@ from .modification import TargetModificationMenu
 from .registration import TargetRegistrationMenu
 
 
-class _ManualInput: ...
-
-
 class TargetNavigationMenu(DispatchMenu):
     """
     Dispatch menu for target selection.

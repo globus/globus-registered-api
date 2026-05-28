@@ -51,15 +51,11 @@ class DataLabel(HTML):
         self,
         label_text: str,
         value: t.Any | None = None,
-        # TODO - can this be removed (is it vestigial?)
-        key: str | None = None,
     ) -> None:
+        self.label_text = label_text
         label = label_text
         if value is not None:
-            label += " ("
-            if key is not None:
-                label += f"{key}: "
-            label += f"'<i>{value}</i>')"
+            label += f" ('<i>{value}</i>')"
 
         super().__init__(label)
 

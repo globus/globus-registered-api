@@ -37,18 +37,22 @@ class GroupRepository:
 
         # client cache key -> identity id -> Identity
         self._group_cache: dict[str, dict[str, Group | None]] = defaultdict(dict)
+        self._active_cache: dict[str, list[Group]] = {}
 
     def active_groups(self) -> list[Group]:
-        cache = self._group_cache[self._globus.cache_key]
+        if self._globus.cache_key not in self._active_cache:
+            cache = self._group_cache[self._globus.cache_key]
+            groups: list[Group] = []
+            for group_resp in self._globus.groups.get_my_groups():
+                group_id = group_resp["id"]
+                group = cache.get(group_id) or Group(
+                    id=group_id, name=group_resp["name"]
+                )
+                cache[group_id] = group
+                groups.append(group)
+            self._active_cache[self._globus.cache_key] = groups
 
-        groups: list[Group] = []
-        for group_resp in self._globus.groups.get_my_groups():
-            group_id = group_resp["id"]
-            group = cache.get(group_id) or Group(id=group_id, name=group_resp["name"])
-            cache[group_id] = group
-            groups.append(group)
-
-        return groups
+        return self._active_cache[self._globus.cache_key]
 
     def get_group(self, group_id: str) -> Group | None:
         """

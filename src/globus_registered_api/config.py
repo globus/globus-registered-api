@@ -55,9 +55,9 @@ class GRAConfig(BaseModel):
     @field_validator("document_version", mode="before")
     def validate_document_version(cls, v: t.Any) -> t.Any:
         if isinstance(v, str) and v != _CURRENT_VERSION:
-            version_data = f"Version: {v}; Expected: {_CURRENT_VERSION}."
+            expected = f"Expected: {_CURRENT_VERSION}."
             raise GRACommandLineError(
-                f"Out-of-date config document. {version_data}",
+                f"Out-of-date config version: {v}; {expected}",
                 "Check GRA's release notes for upgrade instructions.",
             )
         return v

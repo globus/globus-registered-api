@@ -23,7 +23,7 @@ class ExceptionHandlingGroup(click.Group):
             return super().invoke(ctx)
         except GlobusAPIError as err:
             _handle_globus_api_error(err)
-            return None
+            raise click.exceptions.Exit(code=1)
         except GRACommandLineError as err:
             err.click_echo()
             raise click.exceptions.Exit(code=1)
@@ -50,7 +50,6 @@ def _handle_globus_api_error(err: GlobusAPIError) -> None:
     else:
         msg = json.dumps(err.raw_json, indent=2)
         click.secho(msg, fg="yellow", err=True)
-    raise click.exceptions.Exit(code=1)
 
 
 # CLI commands

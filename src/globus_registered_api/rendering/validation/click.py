@@ -50,3 +50,21 @@ class ClickUniqueValueParam(click.ParamType):
         if value in self.existing_values:
             self.fail(f"{value!r} is already exists.", param, ctx)
         return value
+
+
+class ClickAPIRoutePathParam(click.ParamType):
+    """
+    Click ParamType
+
+    Fails if a value doesn't look like an API route path.
+    """
+
+    name: str = "http-route-path"
+
+    def convert(
+        self, value: t.Any, param: click.Parameter | None, ctx: click.Context | None
+    ) -> str:
+        if isinstance(value, str) and value.startswith("/"):
+            return value
+
+        self.fail(f"{value!r} is not an API route path.", param, ctx)

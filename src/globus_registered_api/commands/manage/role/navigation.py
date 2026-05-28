@@ -9,6 +9,7 @@ import functools
 import typing as t
 
 from globus_registered_api.config import GlobusEnvironment
+from globus_registered_api.rendering import DataLabel
 from globus_registered_api.rendering import DispatchMenu
 from globus_registered_api.rendering import LabeledDispatchOptions
 from globus_registered_api.repositories.clients import GlobusClientRepository
@@ -62,7 +63,8 @@ class RoleNavigationMenu(DispatchMenu):
             menu = RoleModificationMenu(self.context, self.stage, role)
             name, level = menu.modifier.role_name, role.access_level
 
-            _options.append((menu, f"Manage '{name}' ({level.capitalize()})"))
+            label = DataLabel(f"Manage '{name}'", level.capitalize())
+            _options.append((menu, label))
         return _options
 
     def _add_role_menu(self) -> t.Callable[[], DispatchMenu]:

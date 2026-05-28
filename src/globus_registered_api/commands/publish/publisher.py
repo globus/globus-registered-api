@@ -57,11 +57,12 @@ def validate_aliases(context: PublishContext, aliases: list[str]) -> None:
     manifest_aliases = set(context.registered_apis.keys())
     allowed_aliases = config_aliases & manifest_aliases
 
-    invalid_aliases = set(aliases) - allowed_aliases
+    invalid_aliases = sorted(set(aliases) - allowed_aliases)
 
     if invalid_aliases:
+        es = "" if len(invalid_aliases) == 1 else "es"
         raise GRAArgumentError(
-            f"Invalid target aliases: {', '.join(invalid_aliases)}",
+            f"Invalid target alias{es}: {', '.join(invalid_aliases)}",
             allowed_aliases,
         )
 

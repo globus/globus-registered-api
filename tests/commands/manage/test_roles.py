@@ -3,220 +3,212 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-import enum
-from unittest.mock import MagicMock
-from uuid import UUID
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 
-from globus_registered_api.commands.manage.context import ManageContext
-from globus_registered_api.commands.manage.roles import RoleConfigurator
+from globus_registered_api.commands.manage.role._name_resolution import RoleNameResolver
 from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import RoleConfig
-
-
-class Identity(enum.Enum):
-    """
-    The suite of identities to be "registered" in auth.
-
-    These are patched out in `setup_globus_responses` to be returned by
-    mocked `auth.get_identities` calls.
-    """
-
-    Alice = "alice@gmail.com"
-    Bob = "bob@hotmail.edu"
-    Carol = "carol@globus.org"
-
-    def __init__(self, username: str) -> None:
-        self.id = uuid4()
-        self.username = username
-        self.data = {"id": str(self.id), "username": username}
-
-    @classmethod
-    def get_identities(cls, ids: list[UUID]) -> dict[str, list[dict[str, str]]]:
-        return {"identities": [identity.data for identity in cls if identity.id in ids]}
-
-
-class Group(enum.Enum):
-    """
-    The suite of groups to be "registered" in groups.
-
-    These are patched out in `setup_globus_responses` to be returned by mocked
-    `groups.get_my_groups` and `search.post_search` calls.
-    (Only two are returned by `get_my_groups`)
-    """
-
-    Leos = "leos"
-    Pisceses = "pisceses"
-    Toruses = "toruses"
-
-    def __init__(self, name: str) -> None:
-        self.id = uuid4()
-        # Note: `name` is a protected attribute of Enum.
-        self.gname = name
-
-        self.data = {"id": str(self.id), "name": name}
-
-    @classmethod
-    def get_my_groups(cls) -> list[dict[str, str]]:
-        return [cls.Leos.data, cls.Pisceses.data]
-
-    @classmethod
-    def search_paginated_groups(cls, _: str, query: dict):
-        filter_ids = [UUID(gid) for gid in query["filters"][0]["values"]]
-        gmeta = [{"entries": [{"content": g.data}]} for g in cls if g.id in filter_ids]
-        resp = MagicMock()
-        resp.pages.return_value = [{"gmeta": gmeta}]
-        return resp
+from globus_registered_api.repositories.clients import GlobusClientRepository
+from globus_registered_api.repositories.groups import Group
+from globus_registered_api.repositories.groups import GroupRepository
+from globus_registered_api.repositories.identities import Identity
+from globus_registered_api.repositories.identities import IdentityRepository
 
 
 @pytest.fixture(autouse=True)
-def setup_globus_responses(mock_auth_client, mock_groups_client, mock_search_client):
-    """
-    Configure:
-      * auth-service -> response from `get_identities`
-      * groups-service -> response from `get_my_groups`
-      * search-service -> response from `post_search` against the groups index.
-    """
-    mock_auth_client.get_identities.side_effect = Identity.get_identities
-    mock_groups_client.get_my_groups.side_effect = Group.get_my_groups
+def patch_identity_repository(monkeypatch):
+    repository = IdentityRepository.instance()
+    globus = GlobusClientRepository.instance()
+    identity_cache = repository._identity_cache[globus.cache_key]
 
-    mock_search_client.paginated.post_search = Group.search_paginated_groups
+    for identity in (IDENTITIES.Alice, IDENTITIES.Bob, IDENTITIES.Carol):
+        identity_cache[identity.id] = identity
 
 
-@pytest.fixture
-def role_configurator(config):
-    ctx = ManageContext(config=config, analysis=MagicMock(), globus_app=MagicMock())
-    return RoleConfigurator(ctx)
+@pytest.fixture(autouse=True)
+def patch_group_repository(monkeypatch):
+    repository = GroupRepository.instance()
+    globus = GlobusClientRepository.instance()
+    group_cache = repository._group_cache[globus.cache_key]
+    active_cache = repository._active_cache
+
+    for group in (GROUPS.Leos, GROUPS.Pisceses, GROUPS.Toruses):
+        group_cache[group.id] = group
+
+    active_cache[globus.cache_key] = [GROUPS.Leos, GROUPS.Pisceses]
 
 
-def test_role_management_add_group(prompt_patcher, role_configurator):
-    # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", "Group")
-    prompt_patcher.add_input("selection", Group.Leos.id)
-    prompt_patcher.add_input("selection", "owner")
-
-    # Execute
-    role_configurator.add_role()
-
-    # Verify we've added the expected role to the config and committed it.
-    expected = RoleConfig(type="group", id=Group.Leos.id, access_level="owner")
-    assert GRAConfig.load().roles == [expected]
-
-
-def test_role_management_add_identity(prompt_patcher, role_configurator):
-    # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", "User")
-    prompt_patcher.add_input("click_prompt", Identity.Alice.id)
-    prompt_patcher.add_input("confirmation", True)
-    prompt_patcher.add_input("selection", "viewer")
-
-    # Execute
-    role_configurator.add_role()
-
-    # Verify we've added the expected role to the config and committed it.
-    expected = RoleConfig(type="identity", id=Identity.Alice.id, access_level="viewer")
-    assert GRAConfig.load().roles == [expected]
+# The suite of identities & groups to be cached in auth & group repositories.
+IDENTITIES = SimpleNamespace(
+    Alice=Identity(str(uuid4()), "alice@gmail.com"),
+    Bob=Identity(str(uuid4()), "bob@hotmail.edu"),
+    Carol=Identity(str(uuid4()), "carol@globus.org"),
+)
+GROUPS = SimpleNamespace(
+    Leos=Group(str(uuid4()), "Leos"),
+    Pisceses=Group(str(uuid4()), "Pisceses"),
+    Toruses=Group(str(uuid4()), "Toruses"),
+)
 
 
-def test_role_management_add_duplicate_identity_is_rejected(
-    prompt_patcher, role_configurator, config, capsys
-):
-    # Configure a role to be duplicated.
-    role = RoleConfig(type="identity", id=Identity.Alice.id, access_level="viewer")
-    config.roles = [role]
+def test_role_management_add_group(prompt_patcher, config, gra):
     config.commit()
 
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", "User")
-    prompt_patcher.add_input("click_prompt", Identity.Alice.id)
-    prompt_patcher.add_input("confirmation", True)
+    prompt_patcher.add_selection("Manage Roles")
+    prompt_patcher.add_selection("<Register a New Role>")
+
+    prompt_patcher.add_selection("Select Group")
+    prompt_patcher.add_selection(GROUPS.Leos.name)
+
+    prompt_patcher.add_selection("Set Access Level")
+    prompt_patcher.add_selection("Admin")
+
+    prompt_patcher.add_selection("<Submit>")
+    prompt_patcher.add_selection("<Exit>")
+
+    gra(["manage"], catch_exceptions=False)
+
+    # Verify we've added the expected role to the config and committed it.
+    expected = RoleConfig(type="group", id=GROUPS.Leos.id, access_level="admin")
+    assert GRAConfig.load().stages["production"].roles == [expected]
+
+
+def test_role_management_add_identity(prompt_patcher, config, gra):
+    config.commit()
+
+    # Set up a sequence of selections to be made by the mocked selector.
+    prompt_patcher.add_selection("Manage Roles")
+    prompt_patcher.add_selection("<Register a New Role>")
+
+    prompt_patcher.add_selection("Change Role Type")
+    prompt_patcher.add_selection("Identity")
+    prompt_patcher.add_selection("Select Identity")
+    prompt_patcher.add_input("click_prompt", IDENTITIES.Alice.id)
+
+    prompt_patcher.add_selection("Set Access Level")
+    prompt_patcher.add_selection("Admin")
+
+    prompt_patcher.add_selection("<Submit>")
+    prompt_patcher.add_selection("<Exit>")
+
+    gra(["manage"], catch_exceptions=False)
+
+    # Verify we've added the expected role to the config and committed it.
+    expected = RoleConfig(type="identity", id=IDENTITIES.Alice.id, access_level="admin")
+    assert GRAConfig.load().stages["production"].roles == [expected]
+
+
+def test_role_management_add_duplicate_identity_is_rejected(
+    prompt_patcher, config, gra, capsys
+):
+    # TODO - this is no longer the case, maybe change src?
+
+    # Configure a role to be duplicated.
+    role = RoleConfig(type="identity", id=IDENTITIES.Alice.id, access_level="viewer")
+    config.stages["production"].roles = [role]
+    config.commit()
+
+    # Set up a sequence of selections to be made by the mocked selector.
+    prompt_patcher.add_selection("Manage Roles")
+    prompt_patcher.add_selection("<Register a New Role>")
+
+    prompt_patcher.add_selection("Change Role Type")
+    prompt_patcher.add_selection("Identity")
+    prompt_patcher.add_selection("Select Identity")
+    prompt_patcher.add_input("click_prompt", IDENTITIES.Alice.id)
+
+    prompt_patcher.add_selection("Set Access Level")
+    prompt_patcher.add_selection("Admin")
+
+    prompt_patcher.add_selection("<Submit>")
+    prompt_patcher.add_selection("<Exit>")
 
     # Execute
-    role_configurator.add_role()
+    gra(["manage"], catch_exceptions=False)
 
     # Verify that Alice still has viewer access and that we printed a warning.
-    expected = RoleConfig(type="identity", id=Identity.Alice.id, access_level="viewer")
-    assert GRAConfig.load().roles == [expected]
+    expected = RoleConfig(
+        type="identity", id=IDENTITIES.Alice.id, access_level="viewer"
+    )
+    assert GRAConfig.load().stages["production"].roles == [expected]
 
     outstream = capsys.readouterr().out
     assert "use the 'Modify Role' option instead" in outstream
 
 
-def test_role_management_remove_role(prompt_patcher, role_configurator, config):
+def test_role_management_remove_role(prompt_patcher, config, gra):
     # Configure a role to be removed.
-    initial_role = RoleConfig(type="group", id=Group.Pisceses.id, access_level="viewer")
-    config.roles = [initial_role]
+    initial_role = RoleConfig(
+        type="group", id=GROUPS.Pisceses.id, access_level="viewer"
+    )
+    config.stages["production"].roles = [initial_role]
     config.commit()
 
     # Set up a sequence of selections to be made by the mocked selector.
-    prompt_patcher.add_input("selection", initial_role)
+    prompt_patcher.add_selection("Manage Roles")
+    prompt_patcher.add_selection(f"Manage '{GROUPS.Pisceses.name}'")
+    prompt_patcher.add_selection("Remove Role")
     prompt_patcher.add_input("confirmation", True)
+    prompt_patcher.add_selection("<Exit>")
 
     # Execute
-    role_configurator.remove_role()
+    gra(["manage"], catch_exceptions=False)
 
     # Verify we've removed the role from the config and committed it.
-    assert GRAConfig.load().roles == []
+    assert GRAConfig.load().stages["production"].roles == []
 
 
-def test_role_management_modify_role(prompt_patcher, role_configurator, config):
+def test_role_management_modify_access_level(prompt_patcher, config, gra):
     # Configure some roles to be displayed.
-    leos = RoleConfig(type="group", id=Group.Leos.id, access_level="owner")
-    bob = RoleConfig(type="identity", id=Identity.Bob.id, access_level="viewer")
-    config.roles = [leos, bob]
+    leos = RoleConfig(type="group", id=GROUPS.Leos.id, access_level="owner")
+    bob = RoleConfig(type="identity", id=IDENTITIES.Bob.id, access_level="viewer")
+    config.stages["production"].roles = [leos, bob]
     config.commit()
 
     # Set up a selection to be made by the mocked selector.
-    prompt_patcher.add_input("selection", bob)
-    prompt_patcher.add_input("selection", "admin")
+    prompt_patcher.add_selection("Manage Roles")
+    prompt_patcher.add_selection(f"Manage '{IDENTITIES.Bob.username}'")
+    prompt_patcher.add_selection("Modify Access Level")
+    prompt_patcher.add_selection("Admin")
+    prompt_patcher.add_selection("<Exit>")
 
     # Execute
-    role_configurator.modify_role()
+    gra(["manage"], catch_exceptions=False)
 
     # Verify we've updated the role in the config and committed it.
-    old_bob = RoleConfig(type="identity", id=Identity.Bob.id, access_level="viewer")
-    expected_bob = RoleConfig(type="identity", id=Identity.Bob.id, access_level="admin")
-    committed_roles = GRAConfig.load().roles
+    old_bob = RoleConfig(type="identity", id=IDENTITIES.Bob.id, access_level="viewer")
+    expected_bob = RoleConfig(
+        type="identity", id=IDENTITIES.Bob.id, access_level="admin"
+    )
+    committed_roles = GRAConfig.load().stages["production"].roles
     assert expected_bob in committed_roles
     assert old_bob not in committed_roles
     assert leos in committed_roles
 
 
-def test_role_management_list_roles_group_resolution(role_configurator, config, capsys):
-    # Configure some roles to be displayed.
-    leos = RoleConfig(type="group", id=Group.Leos.id, access_level="owner")
-    toruses = RoleConfig(type="group", id=Group.Toruses.id, access_level="viewer")
-    other = RoleConfig(type="group", id=uuid4(), access_level="admin")
-    config.roles = [leos, toruses, other]
-    config.commit()
-
-    # Execute
-    role_configurator.list_roles()
-
-    # Verify that known groups were rendered with names and unknown ones with IDs.
-    outstream = capsys.readouterr().out
-    assert str(other.id) in outstream
-    for group in (Group.Leos, Group.Toruses):
-        assert group.gname in outstream
-        assert str(group.id) not in outstream
+_RANDOM_UUID = uuid4()
 
 
-def test_role_management_list_roles_identity_resolution(
-    role_configurator, config, capsys
+@pytest.mark.parametrize(
+    "role_type,role_id,expected",
+    (
+        # Known Identities
+        ("identity", IDENTITIES.Alice.id, IDENTITIES.Alice.username),
+        ("identity", IDENTITIES.Bob.id, IDENTITIES.Bob.username),
+        # Known Groups
+        ("group", GROUPS.Pisceses.id, GROUPS.Pisceses.name),
+        ("group", GROUPS.Leos.id, GROUPS.Leos.name),
+        # Unknown Entities
+        ("identity", _RANDOM_UUID, f"{_RANDOM_UUID} (Identity)"),
+        ("group", _RANDOM_UUID, f"{_RANDOM_UUID} (Group)"),
+    ),
+)
+def test_role_management_name_resolution(
+    role_type, role_id, expected, prompt_patcher, config
 ):
-    # Configure some roles to be displayed.
-    alice = RoleConfig(type="identity", id=Identity.Alice.id, access_level="owner")
-    other = RoleConfig(type="identity", id=uuid4(), access_level="viewer")
-    config.roles = [alice, other]
-    config.commit()
-
-    # Execute
-    role_configurator.list_roles()
-
-    # Verify that known users were rendered with usernames and unknown ones with IDs.
-    outstream = capsys.readouterr().out
-    assert str(other.id) in outstream
-    assert Identity.Alice.username in outstream
-    assert str(Identity.Alice.id) not in outstream
+    resolver = RoleNameResolver()
+    assert resolver.resolve_display_name((role_type, str(role_id))) == expected
