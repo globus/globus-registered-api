@@ -42,7 +42,7 @@ class GlobusClientRepository:
     """
 
     def __init__(self) -> None:
-        self.environment: GlobusEnvironment = GlobusAppConfig().environment
+        self.environment: GlobusEnvironment = GlobusAppConfig().environment  # type: ignore[assignment]
         self._client_cache: dict[GlobusEnvironment, dict[str, BaseClient]] = (
             defaultdict(dict)
         )

@@ -38,17 +38,17 @@ class RoleNavigationMenu(DispatchMenu):
         self.stage_config = context.config.stages[stage]
         self.stage = stage
 
+        self._globus = GlobusClientRepository.instance()
         self._saved_environment: GlobusEnvironment | None = None
 
     def on_enter(self) -> None:
-        globus = GlobusClientRepository.instance()
-
-        self._saved_environment = globus.environment
-        globus.environment = self.stage_config.globus_environment
+        self._saved_environment = self._globus.environment
+        self._globus.environment = self.stage_config.globus_environment
 
     def on_exit(self) -> None:
-        GlobusClientRepository.instance().environment = self._saved_environment
-        self._saved_environment = None
+        if self._saved_environment is not None:
+            self._globus.environment = self._saved_environment
+            self._saved_environment = None
 
     @property
     def menu_title(self) -> str:

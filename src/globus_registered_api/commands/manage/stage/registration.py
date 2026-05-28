@@ -93,7 +93,8 @@ class StageRegistrationMenu(FormMenu):
         self._saved_environment = self._globus.environment
 
     def on_exit(self) -> None:
-        self._globus.environment = self._saved_environment
+        if self._saved_environment:
+            self._globus.environment = self._saved_environment
 
 
 class StageBuilder:
