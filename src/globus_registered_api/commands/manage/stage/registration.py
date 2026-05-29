@@ -16,7 +16,7 @@ from globus_registered_api.config import GlobusEnvironment
 from globus_registered_api.config import StageConfig
 from globus_registered_api.context import is_internal_globus_user
 from globus_registered_api.openapi import OpenAPISpecAnalyzer
-from globus_registered_api.openapi import SpecAnalysis
+from globus_registered_api.openapi import StageAnalysis
 from globus_registered_api.openapi.loader import load_openapi_spec
 from globus_registered_api.rendering import DataLabel
 from globus_registered_api.rendering import FormMenu
@@ -42,6 +42,7 @@ class StageRegistrationMenu(FormMenu):
 
     def __init__(self, context: ManageContext) -> None:
         self._globus = GlobusClientRepository.instance()
+        self.context = context
         self.config = context.config
 
         stages = list(self.config.stages.keys())
@@ -88,6 +89,7 @@ class StageRegistrationMenu(FormMenu):
         stage_name, stage_config = self.builder.build()
         self.config.stages[stage_name] = stage_config
         self.config.commit()
+        self.context.analyzer.analyze_stage(stage_name, stage_config)
 
     def on_enter(self) -> None:
         self._saved_environment = self._globus.environment
@@ -108,7 +110,7 @@ class StageBuilder:
         self._subscription_repository = SubscriptionRepository.instance()
 
         self._spec_analyzer = OpenAPISpecAnalyzer()
-        self._spec_analysis: SpecAnalysis | None = None
+        self._stage_analysis: StageAnalysis | None = None
 
         self.name = name
         self.base_url: str | None = None
@@ -145,7 +147,7 @@ class StageBuilder:
         if old_value := self.base_url:
             options = [old_value]
 
-        options.extend(self._base_url_options_from_spec_analysis())
+        options.extend(self._base_url_options_from_stage_analysis())
         options.extend(self._base_url_options_from_spec_url())
 
         selection = prompt_selection(
@@ -203,8 +205,8 @@ class StageBuilder:
 
         return base_urls
 
-    def _base_url_options_from_spec_analysis(self) -> list[str]:
-        if not (analysis := self._spec_analysis):
+    def _base_url_options_from_stage_analysis(self) -> list[str]:
+        if not (analysis := self._stage_analysis):
             return []
 
         return analysis.https_servers
@@ -220,7 +222,7 @@ class StageBuilder:
 
         self.specification = new_value
         if old_value != new_value:
-            self._spec_analysis = self._spec_analyzer.analyze_specification(
+            self._stage_analysis = self._spec_analyzer.analyze_specification(
                 load_openapi_spec(new_value)
             )
 

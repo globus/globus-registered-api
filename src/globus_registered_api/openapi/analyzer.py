@@ -19,7 +19,7 @@ from globus_registered_api.openapi.loader import load_openapi_spec
 
 
 @dataclass
-class SpecAnalysis:
+class StageAnalysis:
     target_analyses: dict[TargetSpecifier, TargetAnalysis]
     https_servers: list[str]
 
@@ -41,7 +41,7 @@ class OpenAPISpecAnalyzer:
 
     def __init__(self) -> None:
         # Mapping of stage ->
-        self._spec_analyses: dict[str, SpecAnalysis] = {}
+        self.stage_analyses: dict[str, StageAnalysis] = {}
         self.agg_target_analyses: dict[TargetSpecifier, AggTargetAnalysis] = {}
         self.agg_well_known_scopes: set[str] = set()
 
@@ -53,9 +53,9 @@ class OpenAPISpecAnalyzer:
 
     def analyze_stage(self, stage: str, config: StageConfig) -> None:
         spec = load_openapi_spec(config.specification)
-        self._spec_analyses[stage] = self.analyze_specification(spec)
+        self.stage_analyses[stage] = self.analyze_specification(spec)
 
-    def analyze_specification(self, spec: oa.OpenAPI) -> SpecAnalysis:
+    def analyze_specification(self, spec: oa.OpenAPI) -> StageAnalysis:
         target_analyses: dict[TargetSpecifier, TargetAnalysis] = {}
 
         for path, path_schema in (spec.paths or {}).items():
@@ -83,7 +83,7 @@ class OpenAPISpecAnalyzer:
             if urlparse(server.url).scheme == "https"
         ]
 
-        return SpecAnalysis(
+        return StageAnalysis(
             target_analyses=target_analyses,
             https_servers=https_servers,
         )
@@ -92,7 +92,7 @@ class OpenAPISpecAnalyzer:
         self.agg_target_analyses = {}
         self.agg_well_known_scopes = set()
 
-        for stage, spec_analysis in self._spec_analyses.items():
+        for stage, spec_analysis in self.stage_analyses.items():
             for specifier, target_analysis in spec_analysis.target_analyses.items():
                 well_known_scopes = set(target_analysis.well_known_scopes)
                 self.agg_well_known_scopes.update(well_known_scopes)
@@ -109,19 +109,19 @@ class OpenAPISpecAnalyzer:
                         stages={stage},
                     )
 
-        all_stages = self._spec_analyses.keys()
+        all_stages = self.stage_analyses.keys()
         for agg_target_analysis in self.agg_target_analyses.values():
             if agg_target_analysis.stages == all_stages:
                 agg_target_analysis.stages = "*"
 
     def remove(self, stage: str) -> None:
-        self._spec_analyses.pop(stage, None)
+        self.stage_analyses.pop(stage, None)
 
     def rename_stage(self, original_stage: str, new_stage: str) -> None:
-        if original_stage not in self._spec_analyses:
+        if original_stage not in self.stage_analyses:
             raise RuntimeError(f"'{original_stage}' is not an analyzed stage.")
-        elif new_stage in self._spec_analyses:
+        elif new_stage in self.stage_analyses:
             raise RuntimeError(f"'{new_stage}' is a duplicate stage analysis.")
 
-        self._spec_analyses[new_stage] = self._spec_analyses[original_stage]
-        self._spec_analyses.pop(original_stage, None)
+        self.stage_analyses[new_stage] = self.stage_analyses[original_stage]
+        self.stage_analyses.pop(original_stage, None)

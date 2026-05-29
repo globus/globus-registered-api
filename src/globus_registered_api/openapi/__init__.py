@@ -10,7 +10,7 @@ from globus_registered_api.openapi.selector import AmbiguousContentTypeError
 from globus_registered_api.openapi.selector import TargetNotFoundError
 
 from .analyzer import OpenAPISpecAnalyzer
-from .analyzer import SpecAnalysis
+from .analyzer import StageAnalysis
 
 __all__ = [
     "OpenAPILoadError",
@@ -19,5 +19,5 @@ __all__ = [
     "AmbiguousContentTypeError",
     "TargetNotFoundError",
     "OpenAPISpecAnalyzer",
-    "SpecAnalysis",
+    "StageAnalysis",
 ]

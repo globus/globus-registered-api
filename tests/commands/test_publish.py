@@ -471,7 +471,7 @@ def test_publish_update_excludes_data_templates_when_unspecified(
     # Act - only update the first target by specifying alias
     gra(["publish", "--target-alias", "get-example", "--yes"], catch_exceptions=False)
 
-    # Assert - no data template was imputed in config or request.
+    # Assert - no data template was included in config or request.
     assert populated_config.targets["get-example"].data_templates is None
     assert b'"data_templates":' not in responses.calls[0].request.body
 
@@ -532,7 +532,7 @@ def test_publish_create_excludes_data_templates_when_unspecified(
         catch_exceptions=False,
     )
 
-    # Assert - no data template was imputed in config or request.
+    # Assert - no data template was included in config or request.
     assert populated_config.targets["get-example"].data_templates is None
     assert b'"data_templates":' not in responses.calls[0].request.body
 

@@ -3,8 +3,6 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
-from dataclasses import dataclass
-
 import click
 from prompt_toolkit.formatted_text import AnyFormattedText
 from rich.console import Console
@@ -20,6 +18,7 @@ from globus_registered_api.rendering import LabeledDispatchOptions
 from globus_registered_api.rendering import prompt_selection
 
 from ..context import ManageContext
+from ._security import SecurityExplorer
 
 console = Console()
 
@@ -27,28 +26,17 @@ console = Console()
 class _ManualInput: ...
 
 
-@dataclass
-class ImputedSecurity:
-    """
-    Dynamic override of TargetSecurityConfig for display purposes.
-
-    Represents a security definition imputed from the OpenAPI spec, not defined in
-    the config.
-    """
-
-    globus_auth_scopes: list[str]
-
-
 class TargetModificationMenu(DispatchMenu):
     """
     Dispatch menu for a single selected target.
 
     Menu Options:
-      * Print Target
+      * Display Target
       * Modify Alias
       * Modify Description
-      * Modify Globus Scope (<-- inclusion & wording depends on the state of the
-            config and OpenAPI specification)
+      * Modify/Add Globus Scope
+        * Note: if the OpenAPI spec has discoverable globus security already,
+                this is replaced by a "Display Discovered Security" option.
       * Remove Target
     """
 
@@ -74,7 +62,7 @@ class TargetModificationMenu(DispatchMenu):
         modify_desc_label = DataLabel("Modify Description", description)
 
         return [
-            (self.modifier.print_target, "Print Target"),
+            (self.modifier.display_target, "Display Target"),
             (self.modifier.modify_alias, modify_alias_label),
             (self.modifier.modify_description, modify_desc_label),
             self._scope_option(),
@@ -87,8 +75,11 @@ class TargetModificationMenu(DispatchMenu):
             label = DataLabel("Modify Globus Scope", scope)
             return self.modifier.modify_scope, label
 
-        elif self._well_known_scopes_exist_in_openapi():
-            return self.modifier.print_openapi_scopes, "Print OpenAPI Globus Scopes"
+        elif self.modifier.security_explorer.has_discoverable_security():
+            return (
+                self.modifier.display_discovered_security,
+                "Display Discovered Security",
+            )
 
         else:
             return self.modifier.modify_scope, "Add Globus Scope"
@@ -110,21 +101,20 @@ class TargetModifier:
         self.config = context.config
         self.alias = alias
         self.target_config = self.config.targets[alias]
+        self.security_explorer = SecurityExplorer.for_config(
+            context, self.target_config
+        )
 
-    def print_target(self) -> None:
+    def display_target(self) -> None:
+        """
+        Print a 'pretty' version of the target to stdout.
+        """
         target_config = self.target_config
         if not target_config.security.globus_auth_scope:
-            specifier = target_config.specifier
-            analysis = self.context.analyzer.agg_target_analyses.get(specifier)
-
-            # If a target's scope is imputed in any stage's openapi
-            #   specification, display it.
-            # TODO - distinguish between 'these 3 scopes live in stage A & B' vs
-            #    'these 2 scopes live in stage A, this 1 lives in B'
-            if analysis and (scopes := analysis.well_known_scopes):
-                target_config = target_config.model_copy()
-                security = ImputedSecurity(globus_auth_scopes=list(scopes))
-                target_config.security = security  # type: ignore
+            if self.security_explorer.has_discoverable_security():
+                target_config = target_config.model_copy(deep=True)
+                security = self.security_explorer.rich_discovered_security
+                target_config.security = security
 
         panel = Panel(Pretty(target_config, expand_all=True), title=self.alias)
         console.print(panel)
@@ -221,19 +211,16 @@ class TargetModifier:
         self.target_config.security.globus_auth_scope = new_value
         self.config.commit()
 
-    def print_openapi_scopes(self) -> None:
+    def display_discovered_security(self) -> None:
         """
-        Print globus scopes from the OpenAPI specification analysis.
+        Print a 'pretty' version of the discovered security (globus auth scopes)
+        to stdout.
         """
-        specifier = self.target_config.specifier
-        analysis = self.analyzer.agg_target_analyses[specifier]
-        scopes = analysis.well_known_scopes
-
-        s = "s" if len(scopes) > 1 else ""
-        click.echo(f"The OpenAPI Specification defines {len(scopes)} Globus Scope{s}:")
-        for scope in scopes:
-            click.echo(f"  - {scope}")
-        click.echo()
+        panel = Panel(
+            Pretty(self.security_explorer.rich_discovered_security),
+            title=f"{self.alias} security",
+        )
+        console.print(panel)
 
     def _all_known_scopes(self) -> set[str]:
         #   openapi-analyses and

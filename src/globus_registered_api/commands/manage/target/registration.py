@@ -5,6 +5,9 @@
 
 import click
 from prompt_toolkit.formatted_text import AnyFormattedText
+from rich.console import Console
+from rich.panel import Panel
+from rich.pretty import Pretty
 
 from globus_registered_api.commands.manage.context import ManageContext
 from globus_registered_api.commands.manage.target.modification import _ManualInput
@@ -18,6 +21,10 @@ from globus_registered_api.rendering import LabeledDispatchOptions
 from globus_registered_api.rendering import prompt_selection
 from globus_registered_api.rendering.validation.click import ClickAPIRoutePathParam
 from globus_registered_api.rendering.validation.click import ClickUniqueValueParam
+
+from ._security import SecurityExplorer
+
+console = Console()
 
 
 class TargetRegistrationMenu(FormMenu):
@@ -51,18 +58,14 @@ class TargetRegistrationMenu(FormMenu):
             label = DataLabel("Set Globus Scope", scope)
             return self.builder.set_globus_scope, label
 
-        elif self._well_known_scopes_exist_in_openapi():
-            return self.builder.print_openapi_scopes, "Print OpenAPI Globus Scopes"
+        elif self.builder.has_discoverable_security():
+            return (
+                self.builder.display_discovered_security,
+                "Display Discovered Security",
+            )
 
         else:
             return self.builder.set_globus_scope, "Set Globus Scope"
-
-    def _well_known_scopes_exist_in_openapi(self) -> bool:
-        if (specifier := self.builder.specifier) is None:
-            return False
-
-        analysis = self.analyzer.agg_target_analyses.get(specifier)
-        return bool(analysis and analysis.well_known_scopes)
 
     def is_submittable(self) -> bool:
         return self.builder.is_buildable()
@@ -76,6 +79,7 @@ class TargetRegistrationMenu(FormMenu):
 class TargetBuilder:
 
     def __init__(self, context: ManageContext) -> None:
+        self._context = context
         self._analyzer = context.analyzer
         self._config = context.config
 
@@ -83,6 +87,8 @@ class TargetBuilder:
         self.specifier: TargetSpecifier | None = None
         self.description: str | None = None
         self.globus_scope: str | None = None
+
+        self._security_explorer: SecurityExplorer | None = None
 
     def set_alias(self) -> None:
         old_value = self.alias
@@ -98,27 +104,28 @@ class TargetBuilder:
     def set_specifier(self) -> None:
         old_value = self.specifier
 
-        new_value = self._prompt_specifier_from_imputed()
+        new_value = self._prompt_specifier_from_discovered()
         if new_value is None:
             new_value = self._prompt_specifier_manual()
 
         if old_value != new_value:
             self.specifier = new_value
             self._evaluate_default_description()
+            self._security_explorer = SecurityExplorer(self._context, new_value)
 
-    def _prompt_specifier_from_imputed(self) -> TargetSpecifier | None:
-        imputed = self._analyzer.agg_target_analyses.keys()
+    def _prompt_specifier_from_discovered(self) -> TargetSpecifier | None:
+        discovered = self._analyzer.agg_target_analyses.keys()
         existing = {tar.specifier for tar in self._config.targets.values()}
 
-        new_imputed = sorted(imputed - existing, key=str)
-        if not new_imputed:
+        new_discovered = sorted(discovered - existing, key=str)
+        if not new_discovered:
             return None
 
         return prompt_selection(
             "API Route",
             [
                 (None, "<Enter custom path and method>"),
-                *[(specifier, str(specifier)) for specifier in new_imputed],
+                *[(specifier, str(specifier)) for specifier in new_discovered],
             ],
             default=self.specifier,
         )
@@ -174,23 +181,23 @@ class TargetBuilder:
         if new_value != old_value:
             self.globus_scope = new_value
 
-    def print_openapi_scopes(self) -> None:
+    def has_discoverable_security(self) -> bool:
+        return (
+            self._security_explorer is not None
+            and self._security_explorer.has_discoverable_security()
+        )
+
+    def display_discovered_security(self) -> None:
         """
         Print globus scopes from the OpenAPI specification analysis.
 
         :raises ValueError: if no specifier has been set yet.
         """
-        if (specifier := self.specifier) is None:
-            raise ValueError("Cannot print scopes without a known specifier")
+        if self._security_explorer is None:
+            raise RuntimeError("Requested security discovery without a route")
 
-        analysis = self._analyzer.agg_target_analyses[specifier]
-        scopes = analysis.well_known_scopes
-
-        s = "s" if len(scopes) > 1 else ""
-        click.echo(f"The OpenAPI Specification defines {len(scopes)} Globus Scope{s}:")
-        for scope in scopes:
-            click.echo(f"  - {scope}")
-        click.echo()
+        panel = Panel(Pretty(self._security_explorer.rich_discovered_security))
+        console.print(panel)
 
     def _all_known_scopes(self) -> set[str]:
         #   openapi-analyses and

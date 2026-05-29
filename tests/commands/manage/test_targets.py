@@ -2,6 +2,7 @@
 # https://github.com/globus/globus-registered-api
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
+import json
 from uuid import uuid4
 
 import pytest
@@ -95,7 +96,7 @@ def test_target_management_add_target_openapi_scopes(
     prompt_patcher.add_selection("<Submit>")
 
     prompt_patcher.add_selection("get-example")
-    prompt_patcher.add_selection("Print Target")
+    prompt_patcher.add_selection("Display Target")
 
     prompt_patcher.add_selection("<Exit>")
 
@@ -108,8 +109,8 @@ def test_target_management_add_target_openapi_scopes(
     assert GRAConfig.load().targets == {"get-example": expected}
 
     # Spec-defined scopes aren't committed to config, instead they are presented
-    # as "imputed".
-    for keyword in ("Imputed", "example:read", "example:write"):
+    # as "discovered".
+    for keyword in ("Discovered", "example:read", "example:write"):
         assert keyword in result.output
 
 
@@ -168,7 +169,7 @@ def test_target_management_print_target(
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_selection("Manage Targets")
 
-    prompt_patcher.add_selections("get-example", "Print Target")
+    prompt_patcher.add_selections("get-example", "Display Target")
     prompt_patcher.add_selection("<Exit>")
 
     result = gra(["manage"], catch_exceptions=False)
@@ -180,12 +181,9 @@ def test_target_management_print_target(
     assert "templates" not in result.output.lower()
 
 
-def test_target_management_display_maintains_imputed_scope_ordering(
+def test_target_management_display_maintains_discovered_scope_ordering(
     prompt_patcher, config, openapi_schema, gra, rich_disabled_colors
 ):
-    # TODO - this doesn't work, scopes are combined across stages in a set &
-    #     & re-ordered for the global target view.
-
     # Simulate a laundry list of scopes in the OpenAPI specification to make it
     #   unlikely we accidentally reorder them back into the same order.
     suffixes = ["read", "write", "delete", "admin", "superuser", "owner", "all"]
@@ -202,7 +200,7 @@ def test_target_management_display_maintains_imputed_scope_ordering(
 
     # Set up a sequence of selections to be made by the mocked selector.
     prompt_patcher.add_selection("Manage Targets")
-    prompt_patcher.add_selections("get-example", "Print Target")
+    prompt_patcher.add_selections("get-example", "Display Target")
     prompt_patcher.add_selection("<Exit>")
 
     result = gra(["manage"], catch_exceptions=False)
@@ -211,6 +209,72 @@ def test_target_management_display_maintains_imputed_scope_ordering(
     #   is increasing as we go through the list of scopes in their original order.
     actual_order = sorted(scopes, key=lambda s: result.output.index(s))
     assert actual_order == scopes
+
+
+@pytest.mark.parametrize(
+    "display_selection",
+    ("Display Target", "Display Discovered Security"),
+)
+def test_target_management_distinguishes_between_specs_with_different_scopes(
+    prompt_patcher,
+    config,
+    gra,
+    tmp_path,
+    rich_disabled_colors,
+    display_selection,
+):
+    """
+    Different stages can have different scopes attached to the same route.
+    This test ensures that this nuance is included in the 'display' options.
+    """
+    # Configure a repository with two stages (beta & prod) that have the same
+    #   route, but with different scopes.
+    _base_schema = {
+        "openapi": "3.1.0",
+        "info": {"title": "Minimal API", "version": "1.0.0"},
+    }
+    prod_schema = {
+        **_base_schema,
+        "paths": {
+            "/example": {
+                "get": {"security": [{"GlobusAuth": ["example:read"]}]},
+            }
+        },
+    }
+    beta_schema = {
+        **_base_schema,
+        "paths": {
+            "/example": {
+                "get": {"security": [{"GlobusAuth": ["example:all"]}]},
+            }
+        },
+    }
+    prod_schema_path = tmp_path / "prod_schema.json"
+    with open(prod_schema_path, "w") as f:
+        json.dump(prod_schema, f)
+    beta_schema_path = tmp_path / "beta_schema.json"
+    with open(beta_schema_path, "w") as f:
+        json.dump(beta_schema, f)
+
+    config.stages["production"].specification = str(prod_schema_path.absolute())
+    config.stages["beta"] = config.stages["production"].model_copy(deep=True)
+    config.stages["beta"].specification = str(beta_schema_path.absolute())
+
+    # Add that target & commit.
+    config.targets = {
+        "get-example": TargetConfig(path="/example", method="GET", description="d")
+    }
+    config.commit()
+
+    # Set up a sequence of selections to be made by the mocked selector.
+    prompt_patcher.add_selection("Manage Targets")
+    prompt_patcher.add_selections("get-example", display_selection)
+    prompt_patcher.add_selections("<Exit>")
+
+    result = gra(["manage"], catch_exceptions=False)
+
+    assert "beta='example:all'" in result.output
+    assert "production='example:read'" in result.output
 
 
 def test_target_management_remove_target(prompt_patcher, config, gra):
