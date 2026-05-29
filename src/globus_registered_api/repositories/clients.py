@@ -17,8 +17,10 @@ from globus_sdk import GroupsClient
 from globus_sdk import SearchClient
 
 from globus_registered_api import ExtendedFlowsClient
+from globus_registered_api.config import GLOBUS_ENVIRONMENTS
 from globus_registered_api.config import GlobusEnvironment
 from globus_registered_api.context import create_globus_app
+from globus_registered_api.errors import GRAArgumentError
 
 _INSTANCE: ContextVar[GlobusClientRepository] = ContextVar(
     "globus_client_repository_instance"
@@ -42,6 +44,14 @@ class GlobusClientRepository:
     """
 
     def __init__(self) -> None:
+        default_env = GlobusAppConfig().environment
+        if default_env not in GLOBUS_ENVIRONMENTS:
+            raise GRAArgumentError(
+                f"Unrecognized GLOBUS_SDK_ENVIRONMENT value: {default_env}",
+                GLOBUS_ENVIRONMENTS,
+                autosort=False,
+            )
+
         self.environment: GlobusEnvironment = GlobusAppConfig().environment  # type: ignore[assignment]
         self._client_cache: dict[GlobusEnvironment, dict[str, BaseClient]] = (
             defaultdict(dict)

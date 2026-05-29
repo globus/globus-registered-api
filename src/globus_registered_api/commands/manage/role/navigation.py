@@ -15,6 +15,7 @@ from globus_registered_api.rendering import LabeledDispatchOptions
 from globus_registered_api.repositories.clients import GlobusClientRepository
 
 from ..context import ManageContext
+from ._name_resolution import RoleNameResolver
 from .modification import RoleModificationMenu
 from .registration import RoleRegistrationMenu
 
@@ -37,6 +38,7 @@ class RoleNavigationMenu(DispatchMenu):
         self.context = context
         self.stage_config = context.config.stages[stage]
         self.stage = stage
+        self._name_resolver = RoleNameResolver()
 
         self._globus = GlobusClientRepository.instance()
         self._saved_environment: GlobusEnvironment | None = None
@@ -59,6 +61,9 @@ class RoleNavigationMenu(DispatchMenu):
         _options: LabeledDispatchOptions = [
             (self._add_role_menu(), "<Register a New Role>")
         ]
+
+        # Cache every role name display in a batch.
+        self._name_resolver.batch_resolve_display_names(self.stage_config.roles)
         for role in self.stage_config.roles:
             menu = RoleModificationMenu(self.context, self.stage, role)
             name, level = menu.modifier.role_name, role.access_level

@@ -38,13 +38,17 @@ class GRACommandLineError(RuntimeError):
 
 
 class GRAArgumentError(GRACommandLineError):
-    def __init__(
+    def __init__(  # noqa: B042
         self,
         error_message: str,
         allowed_values: t.Iterable[str],
+        autosort: bool = True,
     ) -> None:
         super().__init__(error_message, None)
-        self.allowed = ", ".join(sorted(allowed_values))
+        if autosort:
+            allowed_values = sorted(allowed_values)
+
+        self.allowed = ", ".join(allowed_values)
 
     def click_echo(self) -> None:
         super().click_echo()

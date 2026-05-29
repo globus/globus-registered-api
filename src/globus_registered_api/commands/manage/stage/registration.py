@@ -143,23 +143,22 @@ class StageBuilder:
         )
 
     def set_base_url(self) -> None:
-        options = []
-        if old_value := self.base_url:
-            options = [old_value]
+        options = [
+            *self._base_url_options_from_stage_analysis(),
+            *self._base_url_options_from_spec_url(),
+        ]
+        if self.base_url and self.base_url not in options:
+            options.insert(0, self.base_url)
 
-        options.extend(self._base_url_options_from_stage_analysis())
-        options.extend(self._base_url_options_from_spec_url())
-
+        manual_option = [(None, "<Enter url manually>")]
         selection = prompt_selection(
             "Base Url",
-            [(option, option) for option in options]
-            + [
-                (None, "<Enter url manually>"),
-            ],
+            [(option, option) for option in options] + manual_option,
+            default=self.base_url,
         )
         if not selection:
             selection = click.prompt(
-                "Base Url", type=ClickURLParam(), default=old_value
+                "Base Url", type=ClickURLParam(), default=self.base_url
             )
         self.base_url = selection
 
