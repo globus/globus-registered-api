@@ -19,6 +19,7 @@ from globus_registered_api.rendering import DispatchOption
 from globus_registered_api.rendering import FormMenu
 from globus_registered_api.rendering import LabeledDispatchOptions
 from globus_registered_api.rendering import prompt_selection
+from globus_registered_api.rendering.click_utils import em
 from globus_registered_api.rendering.validation.click import ClickAPIRoutePathParam
 from globus_registered_api.rendering.validation.click import ClickUniqueValueParam
 
@@ -108,7 +109,18 @@ class TargetBuilder:
         if new_value is None:
             new_value = self._prompt_specifier_manual()
 
-        if old_value != new_value:
+        alias_by_specifier = {
+            target_config.specifier: alias
+            for alias, target_config in self._config.targets.items()
+        }
+        if (alias := alias_by_specifier.get(new_value)) is not None:
+            route = click.style(new_value, bold=True)
+            error = f"A target already exists for the route '{em(route)}'."
+            click.secho(error, fg="red")
+            res = f"To modify it, select {em('<Cancel>')} then {em(alias)}.\n"
+            click.echo(click.style(res, fg="yellow"))
+
+        elif old_value != new_value:
             self.specifier = new_value
             self._evaluate_default_description()
             self._security_explorer = SecurityExplorer(self._context, new_value)
@@ -134,7 +146,6 @@ class TargetBuilder:
         path = click.prompt("API Path", type=ClickAPIRoutePathParam())
         method_options = [(m, m) for m in HTTP_METHODS]
         method = prompt_selection("HTTP Method", method_options)
-        # TODO - prevent registering a duplicate here as well.
         return TargetSpecifier(path=path, method=method)
 
     def _evaluate_default_description(self) -> None:
