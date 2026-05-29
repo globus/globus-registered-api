@@ -114,7 +114,7 @@ class OpenAPISpecAnalyzer:
             if agg_target_analysis.stages == all_stages:
                 agg_target_analysis.stages = "*"
 
-    def remove(self, stage: str) -> None:
+    def remove_stage(self, stage: str) -> None:
         self.stage_analyses.pop(stage, None)
 
     def rename_stage(self, original_stage: str, new_stage: str) -> None:

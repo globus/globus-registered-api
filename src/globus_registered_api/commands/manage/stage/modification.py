@@ -119,6 +119,8 @@ class StageModifier:
         del self.config.stages[self.stage]
         self.config.commit()
         click.echo(f"Removed '{self.stage}'")
+
+        self.analyzer.remove_stage(self.stage)
         return BACK_SENTINEL
 
     def modify_base_url(self) -> None:
