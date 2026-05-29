@@ -41,8 +41,8 @@ def _create_manage_context() -> ManageContext:
     config = GRAConfig.load()
 
     # Create an analyzer & analyze the current config.
-    # If additional stages with distinct openapi specifications are added
-    #   mid-execution additional analysis will be performed as needed.
+    # If an stage is added or removed during command usage, it will be
+    # automatically analyzed or removed from the analyzer's state.
     analyzer = OpenAPISpecAnalyzer()
     analyzer.analyze(config)
 

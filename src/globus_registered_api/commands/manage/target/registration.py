@@ -156,14 +156,17 @@ class TargetBuilder:
         :return: Default description string
         """
         alias, specifier, desc = self.alias, self.specifier, self.description
-        if desc is not None or not (alias and specifier):
+        if desc is not None:
             return
 
-        analysis = self._analyzer.agg_target_analyses.get(specifier)
-        if analysis and (description := analysis.description):
-            self.description = description
-        else:
-            self.description = f"{alias}: {specifier.method} {specifier.path}"
+        elif specifier:
+            analysis = self._analyzer.agg_target_analyses.get(specifier)
+            if analysis and (description := analysis.description):
+                self.description = description
+
+            elif alias is not None:
+                alias_default = f"{alias}: {specifier.method} {specifier.path}"
+                self.description = alias_default
 
     def set_description(self) -> None:
         old_value = self.description

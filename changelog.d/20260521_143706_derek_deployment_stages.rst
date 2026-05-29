@@ -10,7 +10,7 @@ Added
 *   Add support for "stages", a new concept to represent different phases
     of the same deployed service.
 
-    Examples: [alpha, beta, prod], [sandbox, staging production], etc.
+    Examples: [alpha, beta, prod], [sandbox, staging, production], etc.
 
 Changed
 -------

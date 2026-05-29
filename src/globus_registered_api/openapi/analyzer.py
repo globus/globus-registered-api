@@ -40,7 +40,6 @@ class AggTargetAnalysis:
 class OpenAPISpecAnalyzer:
 
     def __init__(self) -> None:
-        # Mapping of stage ->
         self.stage_analyses: dict[str, StageAnalysis] = {}
         self.agg_target_analyses: dict[TargetSpecifier, AggTargetAnalysis] = {}
         self.agg_well_known_scopes: set[str] = set()
