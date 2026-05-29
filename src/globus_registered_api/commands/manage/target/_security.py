@@ -51,7 +51,7 @@ class SecurityExplorer:
         #   for every stage this target applies to.
         scopes_by_stage = self._discovered_security_by_stage
         if len(scopes_by_stage) == 0:
-            raise RuntimeError("No discoverable scope stages")
+            raise RuntimeError("No discovered scope stages")
 
         random_scope = next(iter(scopes_by_stage.values()))
         if all(scope == random_scope for scope in scopes_by_stage.values()):
