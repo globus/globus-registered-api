@@ -45,7 +45,7 @@ class StageNavigationMenu(DispatchMenu):
             (self._add_stage_menu, "<Register a New Stage>"),
             *[
                 (self._stage_menu(stage), f"Manage '{stage}'")
-                for stage in self.config.stages
+                for stage in sorted(self.config.stages)
             ],
         ]
 

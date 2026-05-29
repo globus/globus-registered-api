@@ -68,6 +68,7 @@ class OpenAPISpecAnalyzer:
                             len(requirement) == 1
                             and (globus_auth_scopes := requirement.get("GlobusAuth"))
                             and len(globus_auth_scopes) == 1
+                            and globus_auth_scopes[0] not in well_known_scopes
                         ):
                             well_known_scopes.append(globus_auth_scopes[0])
 

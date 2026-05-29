@@ -121,7 +121,6 @@ class RoleBuilder:
 
         selection = prompt_selection(
             "Group",
-            #
             [
                 (None, "<Manually Enter a Group ID>"),
                 *[(group, group.name) for group in groups],
