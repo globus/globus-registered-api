@@ -153,7 +153,7 @@ class StageBuilder:
         manual_option = [(None, "<Enter url manually>")]
         selection = prompt_selection(
             "Base Url",
-            [(option, option) for option in options] + manual_option,
+            [*[(option, option) for option in options], *manual_option],
             default=self.base_url,
         )
         if not selection:
