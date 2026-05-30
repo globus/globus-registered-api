@@ -2,6 +2,7 @@
 # https://github.com/globus/globus-registered-api
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import click
 from prompt_toolkit.formatted_text import AnyFormattedText
@@ -84,10 +85,26 @@ class TargetModificationMenu(DispatchMenu):
         else:
             return self.modifier.modify_scope, "Add Globus Scope"
 
-    def _well_known_scopes_exist_in_openapi(self) -> bool:
-        specifier = self.target_config.specifier
-        analysis = self.analyzer.agg_target_analyses.get(specifier)
-        return bool(analysis and analysis.well_known_scopes)
+    class LazyLoader:
+        """
+        Target Modification Menu lazy loader.
+
+        Customizes equality checks without actually instantiating the menu.
+        Custom equality matching is required for DispatchMenu breadcrumbs.
+        """
+
+        def __init__(self, context: ManageContext, alias: str) -> None:
+            self._context = context
+            self.alias = alias
+
+        def __call__(self) -> TargetModificationMenu:
+            return TargetModificationMenu(self._context, self.alias)
+
+        def __eq__(self, other: object) -> bool:
+            return (
+                isinstance(other, TargetModificationMenu.LazyLoader)
+                and self.alias == other.alias
+            )
 
 
 class TargetModifier:

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import functools
-import typing as t
 
 from globus_registered_api.rendering import DispatchMenu
 from globus_registered_api.rendering import LabeledDispatchOptions
@@ -44,10 +43,10 @@ class StageNavigationMenu(DispatchMenu):
         return [
             (self._add_stage_menu, "<Register a New Stage>"),
             *[
-                (self._stage_menu(stage), f"Manage '{stage}'")
+                (
+                    StageModificationMenu.LazyLoader(self.context, stage),
+                    f"Manage '{stage}'",
+                )
                 for stage in sorted(self.config.stages)
             ],
         ]
-
-    def _stage_menu(self, stage: str) -> t.Callable[[], StageModificationMenu]:
-        return functools.partial(StageModificationMenu, self.context, stage)

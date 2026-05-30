@@ -8,7 +8,6 @@ import click
 from globus_registered_api.config import GRAConfig
 from globus_registered_api.openapi import OpenAPISpecAnalyzer
 from globus_registered_api.rendering import DispatchMenu
-from globus_registered_api.rendering import DispatchOption
 from globus_registered_api.rendering import LabeledDispatchOptions
 from globus_registered_api.rendering import MenuDispatcher
 from globus_registered_api.rendering import prompt_selection
@@ -55,24 +54,20 @@ class ManageMainMenu(DispatchMenu):
     def __init__(self, context: ManageContext) -> None:
         self.context = context
 
+        self._manage_targets_menu = TargetNavigationMenu(self.context)
+        self._manage_stages_menu = StageNavigationMenu(self.context)
+
     @property
     def options(self) -> LabeledDispatchOptions:
         return [
-            (TargetNavigationMenu(self.context), "Manage Targets"),
-            (self._role_navigation_menu(), "Manage Roles"),
-            (StageNavigationMenu(self.context), "Manage Stages"),
+            (self._manage_targets_menu, "Manage Targets"),
+            (self._select_role_menu_by_stage, "Manage Roles"),
+            (self._manage_stages_menu, "Manage Stages"),
         ]
 
-    def _role_navigation_menu(self) -> DispatchOption:
-        if len(self.context.config.stages) == 1:
-            only_stage = next(iter(self.context.config.stages.keys()))
-            return RoleNavigationMenu(self.context, only_stage)
-
-        def _select_role_stage() -> DispatchMenu:
-            stage = prompt_selection(
-                "Stage",
-                [(stage, stage) for stage in sorted(self.context.config.stages.keys())],
-            )
-            return RoleNavigationMenu(self.context, stage)
-
-        return _select_role_stage
+    def _select_role_menu_by_stage(self) -> DispatchMenu:
+        stages = sorted(self.context.config.stages.keys())
+        stage_options = [(stage, stage) for stage in stages]
+        # Note - this will not actually prompt if there is only one stage.
+        stage = prompt_selection("Stage", stage_options)
+        return RoleNavigationMenu(self.context, stage)

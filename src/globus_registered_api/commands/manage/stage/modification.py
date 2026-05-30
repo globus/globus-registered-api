@@ -3,6 +3,8 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import click
 
 from globus_registered_api.config import GlobusEnvironment
@@ -58,6 +60,27 @@ class StageModificationMenu(DispatchMenu):
     def on_exit(self) -> None:
         if self._saved_environment:
             self._globus.environment = self._saved_environment
+
+    class LazyLoader:
+        """
+        Stage Modification Menu Lazy Loader
+
+        Customizes equality checks without actually instantiating the menu.
+        Custom equality matching is required for DispatchMenu breadcrumbs.
+        """
+
+        def __init__(self, context: ManageContext, stage: str) -> None:
+            self._context = context
+            self.stage = stage
+
+        def __call__(self) -> StageModificationMenu:
+            return StageModificationMenu(self._context, self.stage)
+
+        def __eq__(self, other: object) -> bool:
+            return (
+                isinstance(other, StageModificationMenu.LazyLoader)
+                and self.stage == other.stage
+            )
 
 
 class StageModifier:

@@ -5,9 +5,6 @@
 
 from __future__ import annotations
 
-import functools
-import typing as t
-
 from globus_registered_api.rendering import DataLabel
 from globus_registered_api.rendering import DispatchMenu
 from globus_registered_api.rendering import LabeledDispatchOptions
@@ -38,15 +35,14 @@ class TargetNavigationMenu(DispatchMenu):
     def options(self) -> LabeledDispatchOptions:
         alias_options: LabeledDispatchOptions = []
         for alias in sorted(self.config.targets.keys()):
+            print(alias)
+            menu = TargetModificationMenu.LazyLoader(self.context, alias)
+
             target_config = self.config.targets[alias]
             route = f"{target_config.method} {target_config.path}"
-            option = (self._target_menu(alias), DataLabel(alias, route))
-            alias_options.append(option)
+            alias_options.append((menu, DataLabel(alias, route)))
 
         return [
             (TargetRegistrationMenu(self.context), "<Register a New Target>"),
             *alias_options,
         ]
-
-    def _target_menu(self, alias: str) -> t.Callable[[], DispatchMenu]:
-        return functools.partial(TargetModificationMenu, self.context, alias)

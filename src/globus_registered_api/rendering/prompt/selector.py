@@ -56,6 +56,13 @@ def prompt_selection(
     if message is None:
         n = "n" if option_type[0] in "aeiouAEIOU" else ""
         message = f"Select a{n} {option_type}:"
+
+    if len(options) == 0:
+        raise RuntimeError("No selection options.")
+    if len(options) == 1:
+        # Short circuit - if only one option is given, select it without prompt.
+        return options[0][0]
+
     selector = Selector(
         message=message,
         options=options,

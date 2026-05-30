@@ -43,6 +43,12 @@ class RoleModificationMenu(DispatchMenu):
             (self.modifier.remove_role, "Remove Role"),
         ]
 
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, RoleModificationMenu)
+            and self.role_config.sort_key == other.role_config.sort_key
+        )
+
 
 class RoleModifier:
     """

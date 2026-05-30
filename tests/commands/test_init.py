@@ -54,7 +54,7 @@ def test_init_service_with_local_openapi_spec(prompt_patcher, gra, openapi_schem
     prompt_patcher.add_selection("Set OpenAPI Location")
     prompt_patcher.add_input("prompt_toolkit_prompt", "./dummy.json")
 
-    prompt_patcher.add_selections("Set Base URL", "<Enter url manually>")
+    prompt_patcher.add_selection("Set Base URL")
     prompt_patcher.add_input("click_prompt", "https://api.example.com")
 
     prompt_patcher.add_selection("<Submit>")
@@ -105,7 +105,7 @@ def test_init_gives_the_caller_owner_permissions(
     prompt_patcher.add_selection("Set OpenAPI Location")
     prompt_patcher.add_input("prompt_toolkit_prompt", "./dummy.json")
 
-    prompt_patcher.add_selections("Set Base URL", "<Enter url manually>")
+    prompt_patcher.add_selection("Set Base URL")
     prompt_patcher.add_input("click_prompt", "https://api.example.com")
 
     prompt_patcher.add_selection("<Submit>")
