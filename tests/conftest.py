@@ -13,9 +13,10 @@ import globus_sdk.transport
 import pytest
 import responses
 
-import globus_registered_api.clients as src_clients
-import globus_registered_api.config
 from globus_registered_api import ExtendedFlowsClient
+from globus_registered_api import config as config_module
+from globus_registered_api import manifest as manifest_module
+from globus_registered_api.repositories.clients import GlobusClientRepository
 
 
 @pytest.fixture(scope="session")
@@ -98,17 +99,23 @@ def config_path(monkeypatch, tmp_path):
 
     Ensure that tests don't write to the runners invocation directory.
     """
-    new_path = tmp_path / ".globus_registered_api/config.json"
-    monkeypatch.setattr(globus_registered_api.config, "_CONFIG_PATH", new_path)
+    new_path = tmp_path / ".globus_registered_api" / "config.json"
+    monkeypatch.setattr(config_module, "_CONFIG_PATH", new_path)
 
     yield new_path
 
 
 @pytest.fixture(autouse=True)
-def mock_auth_client(monkeypatch):
+def manifest_path(monkeypatch, tmp_path):
+    new_path = tmp_path / ".globus_registered_api" / "manifest.json"
+    monkeypatch.setattr(manifest_module, "_MANIFEST_PATH", new_path)
+    yield new_path
+
+
+@pytest.fixture(autouse=True)
+def mock_auth_client(monkeypatch_client):
     """Fixture that patches create_auth_client and returns a configured MagicMock."""
     client = MagicMock()
-    monkeypatch.setattr(src_clients, "AuthClient", lambda *_, **__: client)
 
     # Set up a default userinfo response.
     resp = {
@@ -117,27 +124,24 @@ def mock_auth_client(monkeypatch):
         "sub": "00000000-0000-0000-0000-000000000000",
     }
     client.userinfo.return_value = MockResponse(resp)
-    return client
+
+    return monkeypatch_client("auth", client)
 
 
 @pytest.fixture(autouse=True)
-def mock_groups_client(monkeypatch):
+def mock_groups_client(monkeypatch_client):
     """Fixture that patches create_groups_client and returns a configured MagicMock."""
-    client = MagicMock()
-    monkeypatch.setattr(src_clients, "GroupsClient", lambda *_, **__: client)
-    return client
+    return monkeypatch_client("groups", MagicMock())
 
 
 @pytest.fixture(autouse=True)
-def mock_search_client(monkeypatch):
+def mock_search_client(monkeypatch_client):
     """Fixture that patches create_search_client and returns a configured MagicMock."""
-    client = MagicMock()
-    monkeypatch.setattr(src_clients, "SearchClient", lambda *_, **__: client)
-    return client
+    return monkeypatch_client("search", MagicMock())
 
 
 @pytest.fixture(autouse=True)
-def mock_flows_client(monkeypatch):
+def mock_flows_client(monkeypatch_client):
     """
     Fixture that patches ExtendedFlowsClient with a pre-initialized instance.
 
@@ -148,8 +152,19 @@ def mock_flows_client(monkeypatch):
 
     retry_config = globus_sdk.transport.RetryConfig(max_retries=0)
     client = ExtendedFlowsClient(retry_config=retry_config)
-    monkeypatch.setattr(src_clients, "ExtendedFlowsClient", lambda *_, **__: client)
-    return client
+
+    return monkeypatch_client("flows", client)
+
+
+@pytest.fixture
+def monkeypatch_client(monkeypatch):
+    def _monkeypatch_client(client_name, client):
+        globus = GlobusClientRepository.instance()
+        cache = globus._client_cache[globus.cache_key]
+        monkeypatch.setitem(cache, client_name, client)
+        return client
+
+    return _monkeypatch_client
 
 
 @pytest.fixture

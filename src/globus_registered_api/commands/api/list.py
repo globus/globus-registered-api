@@ -7,9 +7,7 @@ import json
 
 import click
 
-from globus_registered_api.clients import create_flows_client
-from globus_registered_api.context import CLIContext
-from globus_registered_api.context import with_cli_context
+from globus_registered_api.repositories.clients import GlobusClientRepository
 
 
 @click.command("list")
@@ -26,14 +24,11 @@ from globus_registered_api.context import with_cli_context
     help="Number of results per page (max 100)",
 )
 @click.option("--format", type=click.Choice(["json", "text"]), default="text")
-@with_cli_context
-def list_command(
-    ctx: CLIContext, filter_roles: tuple[str, ...], per_page: int, format: str
-) -> None:
+def list_command(filter_roles: tuple[str, ...], per_page: int, format: str) -> None:
     """
     List registered APIs for which the caller has a role.
     """
-    flows_client = create_flows_client(ctx.globus_app)
+    flows_client = GlobusClientRepository.instance().flows
 
     paginator = flows_client.paginated.list_registered_apis(
         filter_roles=filter_roles if filter_roles else None, per_page=per_page

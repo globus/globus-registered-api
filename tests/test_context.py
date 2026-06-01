@@ -7,7 +7,7 @@ import pytest
 from globus_sdk import ClientApp
 from globus_sdk import UserApp
 
-from globus_registered_api.cli import _create_globus_app
+from globus_registered_api.context import create_globus_app
 
 
 @pytest.mark.parametrize(
@@ -25,7 +25,7 @@ def test_create_globus_app_without_required_env_vars_failure(
 
     # Act
     with pytest.raises(ValueError) as excinfo:
-        _ = _create_globus_app()
+        create_globus_app()
 
     # Assert
     assert (
@@ -38,7 +38,7 @@ def test_create_globus_app_returns_client_app_when_env_vars_set(
     monkeypatch, mock_client_env
 ):
     # Act
-    app = _create_globus_app()
+    app = create_globus_app()
 
     # Assert
     assert isinstance(app, ClientApp)
@@ -50,7 +50,7 @@ def test_create_globus_app_returns_user_app_when_env_vars_not_set(monkeypatch):
     monkeypatch.delenv("GLOBUS_REGISTERED_API_CLIENT_SECRET", raising=False)
 
     # Act
-    app = _create_globus_app()
+    app = create_globus_app()
 
     # Assert
     assert isinstance(app, UserApp)

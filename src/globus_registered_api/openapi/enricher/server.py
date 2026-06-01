@@ -5,7 +5,7 @@
 
 import openapi_pydantic as oa
 
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import StageConfig
 
 
 class InjectBaseUrl:
@@ -17,8 +17,8 @@ class InjectBaseUrl:
     as absolute URLs rather than relative paths.
     """
 
-    def __init__(self, config: RegisteredAPIConfig) -> None:
-        self._config = config
+    def __init__(self, stage_config: StageConfig) -> None:
+        self._stage_config = stage_config
 
     def mutate(self, schema: oa.OpenAPI) -> None:
         """
@@ -26,4 +26,4 @@ class InjectBaseUrl:
 
         :param schema: The OpenAPI schema to mutate
         """
-        schema.servers = [oa.Server(url=self._config.core.base_url)]
+        schema.servers = [oa.Server(url=self._stage_config.base_url)]

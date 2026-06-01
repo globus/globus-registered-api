@@ -7,9 +7,9 @@ import json
 
 import click
 
-from globus_registered_api.clients import create_auth_client
 from globus_registered_api.context import CLIContext
 from globus_registered_api.context import with_cli_context
+from globus_registered_api.repositories.clients import GlobusClientRepository
 
 
 @click.command()
@@ -21,7 +21,7 @@ def whoami_command(ctx: CLIContext, format: str) -> None:
 
     When GLOBUS_PROFILE is set, shows the active profile name.
     """
-    auth_client = create_auth_client(ctx.globus_app)
+    auth_client = GlobusClientRepository.instance().auth
     profile = ctx.profile
 
     userinfo = auth_client.userinfo()

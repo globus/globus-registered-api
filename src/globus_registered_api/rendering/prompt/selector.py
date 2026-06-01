@@ -29,6 +29,7 @@ def prompt_selection(
     *,
     default: T | None = None,
     show_selection: bool = True,
+    message: str | None = None,
 ) -> T:
     """
     Prompt the user to select a single option from a supplied list.
@@ -48,15 +49,26 @@ def prompt_selection(
     :param default: The value of the option to start as 'selected'. If None, the
         first option will be selected by default.
     :param show_selection: Whether to print the selected option after selection.
+    :param message: An optional text to be displayed to the user during selection.
+        If omitted, a default will be constructed from the option type.
     :returns: The value of the user's selected option.
     """
-    n = "n" if option_type[0] in "aeiouAEIOU" else ""
-    message = f"Select a{n} {option_type}:"
+    if message is None:
+        n = "n" if option_type[0] in "aeiouAEIOU" else ""
+        message = f"Select a{n} {option_type}:"
+
+    if len(options) == 0:
+        raise RuntimeError("No selection options.")
+    if len(options) == 1:
+        # Short circuit - if only one option is given, select it without prompt.
+        return options[0][0]
+
     selector = Selector(
         message=message,
         options=options,
         default=default,
         show_selection=show_selection,
+        option_type=option_type,
     )
     return selector.prompt()
 
@@ -69,11 +81,13 @@ class Selector(t.Generic[T]):
         options: t.Sequence[tuple[T, AnyFormattedText]],
         default: T | None = None,
         show_selection: bool = True,
+        option_type: str,
     ) -> None:
         self.message = message
         self.options = options
         self.default = default
         self.show_selection = show_selection
+        self.option_type = option_type
 
     def prompt(self) -> T:
         return self._create_selection_application().run()
@@ -113,7 +127,7 @@ class Selector(t.Generic[T]):
         def _accept_input(event: KeyPressEvent) -> None:
             """Accept input when enter has been pressed."""
             current_key = radio_list.values[radio_list._selected_index][1]
-            selection_label.text = f"Selected: {current_key}\n"
+            selection_label.text = f"Selected {self.option_type}: {current_key}\n"
             event.app.exit(result=radio_list.current_value, style="class:accepted")
 
         @kb.add("c-c")

@@ -22,8 +22,8 @@ test:
     tox run --color=yes
 
 # Type check the project with mypy.
-mypy:
-    tox -e mypy-py3.12 -- ./src
+mypy filepath="./src":
+    tox -e mypy-py3.12 -- {{filepath}}
 
 # Rebuild the project's documentation locally (at ./`build`).
 docs:

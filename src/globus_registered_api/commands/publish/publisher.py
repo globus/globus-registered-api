@@ -10,25 +10,10 @@ import click
 from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.config import RoleConfig
 from globus_registered_api.config import TargetConfig
+from globus_registered_api.errors import GRAArgumentError
+from globus_registered_api.repositories.clients import GlobusClientRepository
 
 from .domain import PublishContext
-
-
-def _get_target_by_alias(config: RegisteredAPIConfig, alias: str) -> TargetConfig:
-    """
-    Get target by alias or raise RuntimeError if not found.
-
-    :param config: RegisteredAPIConfig to search
-    :param alias: Target alias to find
-    :return: TargetConfig matching the alias
-    :raises RuntimeError: If alias not found in config
-    """
-    target = next((t for t in config.targets if t.alias == alias), None)
-    if target is None:
-        raise RuntimeError(
-            f"Internal error: Target alias '{alias}' not found in config"
-        )
-    return target
 
 
 def prepare_role_urns(roles: list[RoleConfig]) -> dict[str, list[str]]:
@@ -64,16 +49,22 @@ def validate_aliases(context: PublishContext, aliases: list[str]) -> None:
     :param aliases: List of target aliases to validate
     :raises click.Abort: If any alias is not found
     """
-    config_aliases = {target.alias for target in context.config.targets}
-    manifest_aliases = set(context.manifest.registered_apis.keys())
+    config_aliases = {
+        alias
+        for alias, target_config in context.config.targets.items()
+        if target_config.stages == "*" or context.stage in target_config.stages
+    }
+    manifest_aliases = set(context.registered_apis.keys())
+    allowed_aliases = config_aliases & manifest_aliases
 
-    invalid_aliases = set(aliases) - (config_aliases & manifest_aliases)
+    invalid_aliases = sorted(set(aliases) - allowed_aliases)
 
     if invalid_aliases:
-        click.echo("Error: The following target aliases are not configured:")
-        for alias in sorted(invalid_aliases):
-            click.echo(f"  - {alias}")
-        raise click.Abort()
+        es = "" if len(invalid_aliases) == 1 else "es"
+        raise GRAArgumentError(
+            f"Invalid target alias{es}: {', '.join(invalid_aliases)}",
+            allowed_aliases,
+        )
 
 
 def publish_target(context: PublishContext, alias: str) -> None:
@@ -86,18 +77,28 @@ def publish_target(context: PublishContext, alias: str) -> None:
     :param context: PublishContext with client and data
     :param alias: The alias of the target to publish
     """
-    target = _get_target_by_alias(context.config, alias)
+    target_config = context.config.targets[alias]
 
-    if target.registered_api_id is None:
-        _create_target(context, alias, target)
+    if alias not in context.stage_config.registered_apis:
+        # Create a Registered API, storing the generated ID back into config.
+        api_id = _create_target(context, alias, target_config)
+        new_config = RegisteredAPIConfig(registered_api_id=api_id)
+
+        context.stage_config.registered_apis[alias] = new_config
     else:
-        _update_target(context, alias, target)
+        # Modify the existing Registered API
+        api_id = context.stage_config.registered_apis[alias].registered_api_id
+        _update_target(context, api_id, alias, target_config)
 
     # Commit immediately after each successful publish
     context.config.commit()
 
 
-def _create_target(context: PublishContext, alias: str, target: TargetConfig) -> None:
+def _create_target(
+    context: PublishContext,
+    alias: str,
+    target: TargetConfig,
+) -> UUID:
     """
     Create a new registered API in Flows service.
 
@@ -105,52 +106,56 @@ def _create_target(context: PublishContext, alias: str, target: TargetConfig) ->
     :param alias: The alias of the target
     :param target: The target configuration
     """
-    click.echo(f"Creating registered API for {alias}...")
+    click.echo(f"Creating '{alias}'...")
 
-    target_def = context.manifest.registered_apis[alias].target.to_dict()
-    description = context.manifest.registered_apis[alias].description
+    # TODO - source other metadata from the manifest, not the config.
+    target_def = context.registered_apis[alias].target.to_dict()
+    description = context.registered_apis[alias].description
 
-    response = context.flows_client.create_registered_api(
+    flows_client = GlobusClientRepository.instance().flows
+    response = flows_client.create_registered_api(
         name=alias,
         description=description,
         target=target_def,
-        subscription_id=context.config.core.get_subscription_id(),
+        subscription_id=context.stage_config.subscription_id,
         owners=context.role_urns["owners"] or None,
         administrators=context.role_urns["administrators"] or None,
         viewers=context.role_urns["viewers"] or None,
         data_templates=target.data_templates,
         state_input_schema=target.state_input_schema,
     )
-
-    # Store the returned ID back in config
-    target.registered_api_id = UUID(response["id"])
     click.echo(f"  Created with ID: {response['id']}")
 
+    return UUID(response["id"])
 
-def _update_target(context: PublishContext, alias: str, target: TargetConfig) -> None:
+
+def _update_target(
+    context: PublishContext,
+    registered_api_id: UUID,
+    alias: str,
+    target: TargetConfig,
+) -> None:
     """
     Update an existing registered API in Flows service.
 
     :param context: PublishContext with client and data
+    :param registered_api_id: The registered API ID
     :param alias: The alias of the target
     :param target: The target configuration
     """
-    if target.registered_api_id is None:
-        raise RuntimeError(f"Cannot update {alias}: registered_api_id is None")
+    click.echo(f"Updating '{alias}' (ID: {str(registered_api_id)})...")
 
-    click.echo(
-        f"Updating registered API for {alias} (ID: {target.registered_api_id})..."
-    )
+    # TODO - source other metadata from the manifest, not the config.
+    target_def = context.registered_apis[alias].target.to_dict()
+    description = context.registered_apis[alias].description
 
-    target_def = context.manifest.registered_apis[alias].target.to_dict()
-    description = context.manifest.registered_apis[alias].description
-
-    context.flows_client.update_registered_api(
-        target.registered_api_id,
+    flows_client = GlobusClientRepository.instance().flows
+    flows_client.update_registered_api(
+        str(registered_api_id),
         name=alias,
         description=description,
         target=target_def,
-        subscription_id=context.config.core.get_subscription_id(),
+        subscription_id=context.stage_config.subscription_id,
         owners=context.role_urns["owners"] or None,
         administrators=context.role_urns["administrators"] or None,
         viewers=context.role_urns["viewers"] or None,

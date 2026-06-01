@@ -3,74 +3,125 @@
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import typing as t
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
 import openapi_pydantic as oa
 
+from globus_registered_api.config import GRAConfig
+from globus_registered_api.config import StageConfig
 from globus_registered_api.domain import HTTP_METHODS
 from globus_registered_api.domain import TargetSpecifier
+from globus_registered_api.openapi.loader import load_openapi_spec
 
 
 @dataclass
-class SpecAnalysis:
-    # A list of all targets defined in the specification
-    targets: list[TargetSpecifier]
-
-    # A list of all unique scope strings used in operations across the specification.
-    # Note: these only include "well-formed" scopes in the shape
-    #   `{"GlobusAuth": [scope_string]}` with a single scope string in the list.
-    scope_strings: list[str]
-
-    # A mapping of targets and scopes, identifying well-defined scopes per target.
-    scopes_by_target: dict[TargetSpecifier, list[str]]
-
-    # A mapping of targets to their descriptions
-    # (from operation.summary or operation.description).
-    descriptions_by_target: dict[TargetSpecifier, str | None]
-
-    # All servers defined in the specification with an HTTPS scheme.
+class StageAnalysis:
+    target_analyses: dict[TargetSpecifier, TargetAnalysis]
     https_servers: list[str]
 
 
+@dataclass
+class TargetAnalysis:
+    description: str | None
+    well_known_scopes: list[str]
+
+
+@dataclass
+class AggTargetAnalysis:
+    description: str | None
+    well_known_scopes: set[str]
+    stages: t.Literal["*"] | set[str]
+
+
 class OpenAPISpecAnalyzer:
-    def analyze(self, spec: oa.OpenAPI) -> SpecAnalysis:
-        targets: list[TargetSpecifier] = []
-        scopes: t.Set[str] = set()
-        scopes_by_target: dict[TargetSpecifier, list[str]] = {}
-        descriptions_by_target: dict[TargetSpecifier, str | None] = {}
+
+    def __init__(self) -> None:
+        self.stage_analyses: dict[str, StageAnalysis] = {}
+        self.agg_target_analyses: dict[TargetSpecifier, AggTargetAnalysis] = {}
+        self.agg_well_known_scopes: set[str] = set()
+
+    def analyze(self, config: GRAConfig) -> None:
+        for stage, stage_config in config.stages.items():
+            self.analyze_stage(stage, stage_config)
+
+        self._compute_aggregates()
+
+    def analyze_stage(self, stage: str, config: StageConfig) -> None:
+        spec = load_openapi_spec(config.specification)
+        self.stage_analyses[stage] = self.analyze_specification(spec)
+
+    def analyze_specification(self, spec: oa.OpenAPI) -> StageAnalysis:
+        target_analyses: dict[TargetSpecifier, TargetAnalysis] = {}
 
         for path, path_schema in (spec.paths or {}).items():
             for method in HTTP_METHODS:
                 if operation := getattr(path_schema, method.lower(), None):
-                    target = TargetSpecifier.create(method, path)
-                    targets.append(target)
-                    scopes_by_target[target] = []
+                    specifier = TargetSpecifier.create(method, path)
 
-                    descriptions_by_target[target] = (
-                        operation.summary or operation.description
-                    )
-
+                    well_known_scopes = []
                     for requirement in operation.security or []:
                         if (
                             len(requirement) == 1
                             and (globus_auth_scopes := requirement.get("GlobusAuth"))
                             and len(globus_auth_scopes) == 1
+                            and globus_auth_scopes[0] not in well_known_scopes
                         ):
-                            scopes.add(globus_auth_scopes[0])
-                            scopes_by_target[target].append(globus_auth_scopes[0])
+                            well_known_scopes.append(globus_auth_scopes[0])
 
-        https_servers: list[str] = [
+                    target_analyses[specifier] = TargetAnalysis(
+                        description=operation.summary or operation.description,
+                        well_known_scopes=well_known_scopes,
+                    )
+
+        https_servers = [
             server.url
             for server in spec.servers
             if urlparse(server.url).scheme == "https"
         ]
 
-        return SpecAnalysis(
-            targets=targets,
-            scope_strings=sorted(scopes),
-            scopes_by_target=scopes_by_target,
-            descriptions_by_target=descriptions_by_target,
+        return StageAnalysis(
+            target_analyses=target_analyses,
             https_servers=https_servers,
         )
+
+    def _compute_aggregates(self) -> None:
+        self.agg_target_analyses = {}
+        self.agg_well_known_scopes = set()
+
+        for stage, spec_analysis in self.stage_analyses.items():
+            for specifier, target_analysis in spec_analysis.target_analyses.items():
+                well_known_scopes = set(target_analysis.well_known_scopes)
+                self.agg_well_known_scopes.update(well_known_scopes)
+
+                if analysis := self.agg_target_analyses.get(specifier, None):
+                    if isinstance(analysis.stages, set):
+                        analysis.stages.add(stage)
+                    analysis.well_known_scopes.update(well_known_scopes)
+
+                else:
+                    self.agg_target_analyses[specifier] = AggTargetAnalysis(
+                        description=target_analysis.description,
+                        well_known_scopes=well_known_scopes,
+                        stages={stage},
+                    )
+
+        all_stages = self.stage_analyses.keys()
+        for agg_target_analysis in self.agg_target_analyses.values():
+            if agg_target_analysis.stages == all_stages:
+                agg_target_analysis.stages = "*"
+
+    def remove_stage(self, stage: str) -> None:
+        self.stage_analyses.pop(stage, None)
+
+    def rename_stage(self, original_stage: str, new_stage: str) -> None:
+        if original_stage not in self.stage_analyses:
+            raise RuntimeError(f"'{original_stage}' is not an analyzed stage.")
+        elif new_stage in self.stage_analyses:
+            raise RuntimeError(f"'{new_stage}' is a duplicate stage analysis.")
+
+        self.stage_analyses[new_stage] = self.stage_analyses[original_stage]
+        self.stage_analyses.pop(original_stage, None)
