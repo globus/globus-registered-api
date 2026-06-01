@@ -5,11 +5,11 @@
 
 from unittest.mock import MagicMock
 
-import click.exceptions
-import pytest
 from globus_sdk import GlobusAPIError
 
 from globus_registered_api.cli import _handle_globus_api_error
+from globus_registered_api.errors import GRAArgumentError
+from globus_registered_api.errors import GRACommandLineError
 
 
 def _make_api_error(code: str) -> GlobusAPIError:
@@ -26,11 +26,9 @@ def _make_api_error(code: str) -> GlobusAPIError:
 def test_handle_auth_error_exits_with_message(capsys):
     err = _make_api_error("AUTHENTICATION_ERROR")
 
-    with pytest.raises(click.exceptions.Exit) as exc_info:
-        _handle_globus_api_error(err)
-
-    assert exc_info.value.exit_code == 1
+    _handle_globus_api_error(err)
     captured = capsys.readouterr()
+
     assert "Authentication Error" in captured.err
     assert "globus-registered-api logout" in captured.err
     assert "globus-registered-api whoami" in captured.err
@@ -39,10 +37,28 @@ def test_handle_auth_error_exits_with_message(capsys):
 def test_handle_non_auth_error_reraises(capsys):
     err = _make_api_error("NOT_FOUND")
 
-    with pytest.raises(click.exceptions.Exit) as exc_info:
-        _handle_globus_api_error(err)
+    _handle_globus_api_error(err)
 
-    assert exc_info.value.exit_code == 1
     captured = capsys.readouterr()
     assert err.code in captured.err
     assert err.message in captured.err
+
+
+def test_handle_gra_commandline_error(capsys):
+    error = GRACommandLineError("my error", "my resolution")
+
+    error.click_echo()
+
+    captured = capsys.readouterr()
+    assert "Error: my error" in captured.err
+    assert "Resolution: my resolution" in captured.err
+
+
+def test_handle_gra_argument_error(capsys):
+    error = GRAArgumentError("my error", ["b", "a"])
+
+    error.click_echo()
+
+    captured = capsys.readouterr()
+    assert "Error: my error" in captured.err
+    assert "Allowed Values: a, b" in captured.err

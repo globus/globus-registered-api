@@ -10,10 +10,8 @@ from uuid import UUID
 
 import click
 
-from globus_registered_api.clients import create_flows_client
 from globus_registered_api.commands.api._common import echo_registered_api
-from globus_registered_api.context import CLIContext
-from globus_registered_api.context import with_cli_context
+from globus_registered_api.repositories.clients import GlobusClientRepository
 
 
 @click.command("update")
@@ -73,9 +71,7 @@ from globus_registered_api.context import with_cli_context
 @click.option(
     "--format", "format_", type=click.Choice(["json", "text"]), default="text"
 )
-@with_cli_context
 def update_command(
-    ctx: CLIContext,
     registered_api_id: UUID,
     name: str | None,
     description: str | None,
@@ -95,7 +91,7 @@ def update_command(
     Use this command to modify the name, description, roles, or target
     definition of an existing registered API.
     """
-    flows_client = create_flows_client(ctx.globus_app)
+    flows_client = GlobusClientRepository.instance().flows
 
     # Validate mutually exclusive options
     if administrators and no_administrators:

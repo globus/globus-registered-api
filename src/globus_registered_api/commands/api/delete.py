@@ -9,9 +9,7 @@ from uuid import UUID
 
 import click
 
-from globus_registered_api.clients import create_flows_client
-from globus_registered_api.context import CLIContext
-from globus_registered_api.context import with_cli_context
+from globus_registered_api.repositories.clients import GlobusClientRepository
 
 
 def _format_deletion_date(timestamp_str: str) -> str:
@@ -26,9 +24,7 @@ def _format_deletion_date(timestamp_str: str) -> str:
 @click.command("delete")
 @click.argument("registered_api_id", type=click.UUID)
 @click.option("--format", type=click.Choice(["json", "text"]), default="text")
-@with_cli_context
 def delete_command(
-    ctx: CLIContext,
     registered_api_id: UUID,
     format: str,
 ) -> None:
@@ -40,7 +36,7 @@ def delete_command(
 
     Only owners can delete a registered API.
     """
-    flows_client = create_flows_client(ctx.globus_app)
+    flows_client = GlobusClientRepository.instance().flows
 
     res = flows_client.delete_registered_api(registered_api_id)
 

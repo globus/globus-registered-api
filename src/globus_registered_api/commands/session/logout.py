@@ -7,6 +7,7 @@ import click
 
 from globus_registered_api.context import CLIContext
 from globus_registered_api.context import with_cli_context
+from globus_registered_api.repositories.clients import GlobusClientRepository
 
 
 @click.command()
@@ -17,7 +18,7 @@ def logout_command(ctx: CLIContext) -> None:
 
     When GLOBUS_PROFILE is set, only logs out from the active profile.
     """
-    ctx.globus_app.logout()
+    GlobusClientRepository.instance().globus_app.logout()
 
     if profile := ctx.profile:
         click.echo(f"Logged out successfully from profile '{profile}'.")

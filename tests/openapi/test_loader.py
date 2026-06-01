@@ -2,6 +2,7 @@
 # https://github.com/globus/globus-registered-api
 # Copyright 2025-2026 Globus <support@globus.org>
 # SPDX-License-Identifier: Apache-2.0
+import textwrap
 
 import openapi_pydantic as oa
 import pytest
@@ -99,13 +100,13 @@ def test_load_openapi_spec_accepts_string_path(spec_path):
 
 def test_load_openapi_spec_with_yml_extension_works(temp_spec_file):
     # Arrange
-    content = """
-openapi: "3.1.0"
-info:
-    title: YML Test
-    version: "1.0.0"
-paths: {}
-"""
+    content = textwrap.dedent("""
+        openapi: "3.1.0"
+        info:
+            title: YML Test
+            version: "1.0.0"
+        paths: {}
+        """)
     path = temp_spec_file("test.yml", content)
 
     # Act

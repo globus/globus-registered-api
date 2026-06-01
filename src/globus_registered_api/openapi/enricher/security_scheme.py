@@ -5,7 +5,7 @@
 
 import openapi_pydantic as oa
 
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import TargetConfig
 from globus_registered_api.domain import TargetSpecifier
 
@@ -20,11 +20,11 @@ class InjectSecuritySchemes(SchemaMutation):
         *   Operation-level "GlobusAuth" security requirements with configured scopes.
     """
 
-    def __init__(self, config: RegisteredAPIConfig) -> None:
+    def __init__(self, config: GRAConfig) -> None:
         self._config = config
 
     def mutate(self, schema: oa.OpenAPI) -> None:
-        for target in self._config.targets:
+        for target in self._config.targets.values():
             operation = self._ensure_exists(schema, target.specifier)
             self._validate_and_update_operation(operation, target)
 
@@ -38,11 +38,11 @@ class InjectSecuritySchemes(SchemaMutation):
         :returns: The existing or newly created Operation.
         """
         # Ensure that the 'paths' key exists on the top-level schema.
-        paths = schema.paths or oa.Paths()
-        schema.paths = paths
+        if schema.paths is None:
+            schema.paths = {}
 
         # Ensure that the specific path exists in the 'paths' dict.
-        path_item = paths.setdefault(specifier.path, oa.PathItem())
+        path_item = schema.paths.setdefault(specifier.path, oa.PathItem())
 
         # Ensure that the method exists for that path.
         method_key = specifier.method.lower()

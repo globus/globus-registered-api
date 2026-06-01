@@ -6,42 +6,44 @@
 import json
 from uuid import UUID
 
-import click
 import pytest
 
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import RoleConfig
 from globus_registered_api.config import TargetConfig
+from globus_registered_api.errors import GRACommandLineError
 
 
 def test_load_config(config_path):
     config_dict = {
-        "document_version": "0.2",
-        "core": {
-            "base_url": "https://api.example.com",
-            "specification": "https://api.example.com/openapi.json",
-            "subscription_id": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
+        "document_version": "1.0",
+        "targets": {},
+        "stages": {
+            "production": {
+                "base_url": "https://api.example.com",
+                "specification": "https://api.example.com/openapi.json",
+                "subscription_id": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
+                "globus_environment": "production",
+                "registered_apis": {},
+                "roles": [],
+            }
         },
-        "targets": [],
-        "roles": [],
     }
     config_path.parent.mkdir()
     with open(config_path, "w") as f:
         json.dump(config_dict, f, indent=4)
 
-    assert RegisteredAPIConfig.exists()
-    config = RegisteredAPIConfig.load()
-
-    assert config.core.base_url == "https://api.example.com"
+    config = GRAConfig.load()
+    assert config.stages["production"].base_url == "https://api.example.com"
 
 
 def test_load_config_when_no_config_exists():
-    assert not RegisteredAPIConfig.exists()
-    with pytest.raises(click.Abort):
-        RegisteredAPIConfig.load()
+    GRAConfig.verify_nonexistence()
+    with pytest.raises(GRACommandLineError):
+        GRAConfig.load()
 
 
-def test_load_config_when_version_mismatch(config_path, capsys):
+def test_load_config_when_version_mismatch(config_path):
     config_dict = {
         "document_version": "0.0",
         "core": {
@@ -55,39 +57,12 @@ def test_load_config_when_version_mismatch(config_path, capsys):
     with open(config_path, "w") as f:
         json.dump(config_dict, f, indent=4)
 
-    with pytest.raises(click.Abort):
-        RegisteredAPIConfig.load()
+    with pytest.raises(GRACommandLineError) as excinfo:
+        GRAConfig.load()
 
-    err = capsys.readouterr().err
-    assert "Out-of-date config version: 0.0." in err
-    assert "Required version:" in err
-
-
-@pytest.mark.parametrize(
-    "first_config,second_config",
-    [
-        (
-            # Path is the highest sort precedence
-            TargetConfig(alias="b", path="a", method="POST", description="Test"),
-            TargetConfig(alias="a", path="b", method="GET", description="Test"),
-        ),
-        (
-            # Then method
-            TargetConfig(alias="b", path="a", method="GET", description="Test"),
-            TargetConfig(alias="a", path="a", method="POST", description="Test"),
-        ),
-        (
-            # Then alias
-            TargetConfig(alias="a", path="a", method="GET", description="Test"),
-            TargetConfig(alias="b", path="a", method="GET", description="Test"),
-        ),
-    ],
-)
-def test_target_config_sort_precedence(first_config, second_config):
-    configs = [second_config, first_config]
-    configs = sorted(configs, key=lambda config: config.sort_key)
-    assert configs[0] == first_config
-    assert configs[1] == second_config
+    err = excinfo.value
+    assert "Out-of-date config version: 0.0" in err.error
+    assert "Check GRA's release notes" in err.resolution
 
 
 uuid0 = UUID("00000000-0000-0000-0000-000000000000")
@@ -116,45 +91,14 @@ def test_role_config_sort_precedence(first_config, second_config):
     assert configs[1] == second_config
 
 
-def test_target_config_registered_api_id_defaults_to_none():
-    target = TargetConfig(alias="test", path="/test", method="GET", description="Test")
-    assert target.registered_api_id is None
-
-
 def test_target_config_data_templates_defaults_to_none():
-    target = TargetConfig(alias="test", path="/test", method="GET", description="Test")
+    target = TargetConfig(path="/test", method="GET", description="Test")
     assert target.data_templates is None
-
-
-def test_target_config_registered_api_id_accepts_uuid():
-    test_uuid = UUID("12345678-1234-1234-1234-123456789abc")
-    target = TargetConfig(
-        alias="test",
-        path="/test",
-        method="GET",
-        description="Test",
-        registered_api_id=test_uuid,
-    )
-    assert target.registered_api_id == test_uuid
-
-
-def test_target_config_serialization_includes_registered_api_id():
-    test_uuid = UUID("12345678-1234-1234-1234-123456789abc")
-    target = TargetConfig(
-        alias="test",
-        path="/test",
-        method="GET",
-        description="Test",
-        registered_api_id=test_uuid,
-    )
-    serialized = target.model_dump()
-    assert serialized["registered_api_id"] == test_uuid
 
 
 def test_target_config_serialization_includes_data_templates_if_set():
     data_templates = {"requests": {}, "responses": {"2XX": {}}}
     target = TargetConfig(
-        alias="test",
         path="/test",
         method="GET",
         description="Test",
@@ -166,7 +110,6 @@ def test_target_config_serialization_includes_data_templates_if_set():
 
 def test_target_config_serialization_excludes_data_templates_if_unset():
     target = TargetConfig(
-        alias="test",
         path="/test",
         method="GET",
         description="Test",
@@ -187,29 +130,6 @@ def test_role_config_auth_urn_for_group():
     assert role.auth_urn == f"urn:globus:groups:id:{group_id}"
 
 
-def test_load_config_v02_without_subscription_id_fails(config_path, capsys):
-    config_dict = {
-        "document_version": "0.2",
-        "core": {
-            "base_url": "https://api.example.com",
-            "specification": "https://api.example.com/openapi.json",
-        },
-        "targets": [],
-        "roles": [],
-    }
-    config_path.parent.mkdir()
-    with open(config_path, "w") as f:
-        json.dump(config_dict, f, indent=4)
-
-    with pytest.raises(click.Abort):
-        RegisteredAPIConfig.load()
-
-    captured = capsys.readouterr()
-    assert "Missing required field: subscription_id" in captured.err
-
-
 def test_target_config_requires_description():
-    target = TargetConfig(
-        alias="test", path="/test", method="GET", description="Test endpoint"
-    )
-    assert target.description == "Test endpoint"
+    target = TargetConfig(path="/test", method="GET", description="My Endpoint")
+    assert target.description == "My Endpoint"

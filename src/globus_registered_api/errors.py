@@ -1,0 +1,55 @@
+# This file is a part of globus-registered-api.
+# https://github.com/globus/globus-registered-api
+# Copyright 2025-2026 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
+
+import typing as t
+
+import click
+
+
+class GRACommandLineError(RuntimeError):
+    def __init__(
+        self,
+        error_message: str,
+        resolution_message: str | None = None,
+    ) -> None:
+        super().__init__(error_message, resolution_message)
+        self.error = error_message
+        self.resolution = resolution_message
+
+    def click_echo(self) -> None:
+        self.labeled_echo("Error", self.error, fg="red")
+        if self.resolution:
+            self.labeled_echo("Resolution", self.resolution, fg="yellow")
+
+    @staticmethod
+    def labeled_echo(
+        label: str,
+        message: str,
+        fg: str | None = None,
+    ) -> None:
+        content = (
+            click.style(label, fg=fg, bold=True, underline=True)
+            + ": "
+            + click.style(message, fg=fg)
+        )
+        click.secho(content, err=True)
+
+
+class GRAArgumentError(GRACommandLineError):
+    def __init__(  # noqa: B042
+        self,
+        error_message: str,
+        allowed_values: t.Iterable[str],
+        autosort: bool = True,
+    ) -> None:
+        super().__init__(error_message, None)
+        if autosort:
+            allowed_values = sorted(allowed_values)
+
+        self.allowed = ", ".join(allowed_values)
+
+    def click_echo(self) -> None:
+        super().click_echo()
+        self.labeled_echo("Allowed Values", self.allowed, fg="green")

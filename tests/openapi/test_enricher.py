@@ -8,14 +8,14 @@ from types import SimpleNamespace
 import openapi_pydantic as oa
 import pytest
 
-from globus_registered_api.config import CoreConfig
-from globus_registered_api.config import RegisteredAPIConfig
+from globus_registered_api.config import GRAConfig
+from globus_registered_api.config import StageConfig
 from globus_registered_api.config import TargetConfig
 from globus_registered_api.openapi.enricher import OpenAPIEnricher
 
 
 @pytest.fixture
-def openapi_schema() -> oa.OpenAPI:
+def openapi_schema(monkeypatch) -> oa.OpenAPI:
     schema = {
         "openapi": "3.1.0",
         "info": {"title": "Minimal API", "version": "1.0.0"},
@@ -30,11 +30,12 @@ def openapi_schema() -> oa.OpenAPI:
 
 
 @pytest.fixture
-def core_config(openapi_schema) -> CoreConfig:
-    return CoreConfig(
+def stage_config(openapi_schema) -> StageConfig:
+    return StageConfig(
         base_url="https://api.example.com",
-        specification=openapi_schema,
+        specification="dummy_path.json",
         subscription_id="a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
+        roles=[],
     )
 
 
@@ -42,14 +43,12 @@ def core_config(openapi_schema) -> CoreConfig:
 def target_configs() -> SimpleNamespace:
     return SimpleNamespace(
         get_example=TargetConfig(
-            alias="get-example",
             path="/example",
             method="GET",
             description="Example GET endpoint",
             security=TargetConfig.Security(globus_auth_scope="my_service:read"),
         ),
         post_example=TargetConfig(
-            alias="post-example",
             path="/example",
             method="POST",
             description="Example POST endpoint",
@@ -58,14 +57,16 @@ def target_configs() -> SimpleNamespace:
     )
 
 
-def test_enrichment_inserts_target_scopes(openapi_schema, core_config, target_configs):
-    config = RegisteredAPIConfig(
-        core=core_config,
-        targets=[target_configs.get_example, target_configs.post_example],
-        roles=[],
+def test_enrichment_inserts_target_scopes(openapi_schema, stage_config, target_configs):
+    config = GRAConfig(
+        targets={
+            "get-example": target_configs.get_example,
+            "post-example": target_configs.post_example,
+        },
+        stages={"production": stage_config},
     )
 
-    enricher = OpenAPIEnricher(config)
+    enricher = OpenAPIEnricher(config, "production")
     enriched = enricher.enrich(openapi_schema)
 
     get_security = enriched.paths["/example"].get.security
@@ -76,15 +77,14 @@ def test_enrichment_inserts_target_scopes(openapi_schema, core_config, target_co
 
 
 def test_enrichment_only_enriches_configured_targets(
-    openapi_schema, core_config, target_configs
+    openapi_schema, stage_config, target_configs
 ):
-    config = RegisteredAPIConfig(
-        core=core_config,
-        targets=[target_configs.get_example],
-        roles=[],
+    config = GRAConfig(
+        targets={"get-example": target_configs.get_example},
+        stages={"production": stage_config},
     )
 
-    enricher = OpenAPIEnricher(config)
+    enricher = OpenAPIEnricher(config, "production")
     enriched = enricher.enrich(openapi_schema)
 
     get_security = enriched.paths["/example"].get.security
@@ -92,3 +92,36 @@ def test_enrichment_only_enriches_configured_targets(
 
     assert get_security == [{"GlobusAuth": ["my_service:read"]}]
     assert post_security is None
+
+
+def test_enrichment_without_paths(monkeypatch, stage_config, target_configs):
+    """Verify that a config with no listed paths doesn't crash.
+
+    This is a regression test; it ensures that the following error is fixed:
+
+        TypeError: Type Dict cannot be instantiated; use dict() instead
+
+    which occurred when `oa.Paths()` was instantiated directly.
+    """
+
+    # The bug was triggered when the following conditions are both true:
+    #
+    #   *   A target must be defined.
+    #       The crash did not occur if *targets* was an empty list.
+    #   *   The schema must have no *paths* defined.
+    #       When `oa.OpenAPI` is instantiated, *paths* is None by default.
+    #
+    schema = {
+        "info": {"title": "No OpenAPI spec", "version": "-1"},
+        "paths": None,
+    }
+    openapi_schema = oa.OpenAPI.model_validate(schema)
+
+    config = GRAConfig(
+        targets={"get-example": target_configs.get_example},
+        stages={"production": stage_config},
+    )
+
+    # Act
+    # The lack of a crash demonstrates that the bug has not regressed.
+    OpenAPIEnricher(config, "production").enrich(openapi_schema)

@@ -26,6 +26,41 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-1.0.0:
+
+1.0.0 - 2026-06-01
+==================
+
+Breaking changes
+----------------
+
+*   Bump config & manifest files to v1.0 as the initial release version.
+
+Added
+-----
+
+*   Add support for "stages", a new concept to represent different phases
+    of the same deployed service.
+
+    Examples: [alpha, beta, prod], [sandbox, staging, production], etc.
+
+Fixed
+-----
+
+*   Fix a ``TypeError`` that can occur when not using an OpenAPI specification.
+
+    The crash manifested with the error ``Type Dict cannot be instantiated``.
+
+Changed
+-------
+
+*   Require OpenAPI specifications when running ``gra init``.
+
+*   Mark selections as bold when they are being hovered over in a selector.
+
+*   Update existing commands to support stages, notably requiring a ``--stage``
+    flag in ``gra publish`` if multiple stages have been defined.
+
 .. _changelog-0.8.0:
 
 0.8.0 - 2026-04-10

@@ -1,6 +1,6 @@
 [project]
 name = "globus-registered-api"
-version = "0.8.0"
+version = "1.0.0"
 description = "Manage Registered APIs in the Globus Flows service"
 authors = [
     { name = "Kurt McKee", email = "support@globus.org" },
@@ -18,10 +18,12 @@ classifiers = [
 ]
 
 dependencies = [
-    "click >=8,<9",
+    # Pinned temporarily since 8.4.0 will require manual upgrade for type-safety
+    "click >=8,<8.4",
     "prompt-toolkit >=3.0,<4.0",
     "rich >=14.0,<15.0",
-    "globus-sdk >=4",
+    # Pinned temporarily since 4.6.0 will require manual upgrade
+    "globus-sdk >=4,<4.6",
     "requests",
     "types-requests (>=2.32.4.20260107,<3.0.0.0)",
     "openapi-pydantic >=0.5.1,<0.6.0",
@@ -74,7 +76,7 @@ source = [
 
 [tool.coverage.report]
 skip_covered = true
-fail_under = 50
+fail_under = 90
 show_missing = true
 
 

@@ -10,11 +10,11 @@ import pytest
 from globus_sdk import ClientApp
 from globus_sdk import UserApp
 
-from globus_registered_api.cli import GLOBUS_PROFILE_ENV_VAR
-from globus_registered_api.cli import ProfileAwareJSONTokenStorage
-from globus_registered_api.cli import _create_globus_app
-from globus_registered_api.cli import _get_profile
-from globus_registered_api.cli import _resolve_namespace
+from globus_registered_api.context import GLOBUS_PROFILE_ENV_VAR
+from globus_registered_api.context import ProfileAwareJSONTokenStorage
+from globus_registered_api.context import _get_profile
+from globus_registered_api.context import _resolve_namespace
+from globus_registered_api.context import create_globus_app
 
 
 @pytest.mark.parametrize(
@@ -72,7 +72,7 @@ def test_get_profile(monkeypatch, profile, expected):
         pytest.param("work", "userprofile/production/work", id="with-profile"),
     ],
 )
-@patch("globus_registered_api.cli.JSONTokenStorage.for_globus_app")
+@patch("globus_registered_api.context.JSONTokenStorage.for_globus_app")
 def test_profile_aware_storage_namespace(
     mock_for_globus_app, monkeypatch, profile, expected_namespace
 ):
@@ -107,7 +107,7 @@ def test_user_app_uses_profile_aware_storage(monkeypatch):
     monkeypatch.delenv("GLOBUS_REGISTERED_API_CLIENT_SECRET", raising=False)
 
     # Act
-    app = _create_globus_app()
+    app = create_globus_app()
 
     # Assert
     assert isinstance(app, UserApp)
@@ -119,7 +119,7 @@ def test_client_app_ignores_profile(monkeypatch, mock_client_env):
     monkeypatch.setenv(GLOBUS_PROFILE_ENV_VAR, "work")
 
     # Act
-    app = _create_globus_app()
+    app = create_globus_app()
 
     # Assert
     assert isinstance(app, ClientApp)

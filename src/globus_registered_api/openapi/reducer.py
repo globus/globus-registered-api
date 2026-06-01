@@ -20,7 +20,6 @@ class OpenAPITarget:
     operation: oa.Operation
     destination: dict[str, str]
     components: dict[str, t.Any] | None = None
-    transforms: dict[str, t.Any] | None = None
 
     def to_dict(self) -> dict[str, t.Any]:
         """Convert to the format expected by POST /registered_api."""
@@ -31,7 +30,6 @@ class OpenAPITarget:
             "specification": self.operation.model_dump(
                 by_alias=True, exclude_none=True
             ),
-            "transforms": self.transforms,
         }
 
         if self.components:
@@ -61,7 +59,6 @@ def reduce_to_target(spec: oa.OpenAPI, target: TargetInfo) -> OpenAPITarget:
         operation=target.operation,
         destination=destination,
         components=components if components else None,
-        transforms=None,
     )
 
 

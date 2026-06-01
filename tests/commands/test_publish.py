@@ -4,54 +4,33 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from datetime import datetime
-from datetime import timezone
 from uuid import UUID
 from uuid import uuid4
 
-import openapi_pydantic as oa
 import pytest
 import responses
 
-import globus_registered_api.manifest as manifest_module
-from globus_registered_api.config import CoreConfig
+from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.config import RoleConfig
 from globus_registered_api.config import TargetConfig
-from globus_registered_api.manifest import ComputedRegisteredAPI
-from globus_registered_api.manifest import RegisteredAPIManifest
-from globus_registered_api.openapi.reducer import OpenAPITarget
-
-
-@pytest.fixture(autouse=True)
-def manifest_path(monkeypatch, tmp_path):
-    new_path = tmp_path / ".globus_registered_api" / "manifest.json"
-    monkeypatch.setattr(manifest_module, "_MANIFEST_PATH", new_path)
-    yield new_path
 
 
 @pytest.fixture
-def config_with_targets_and_roles(openapi_schema):
-    core = CoreConfig(
-        base_url="https://api.example.com",
-        specification=openapi_schema,
-        subscription_id="a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
-    )
-    targets = [
-        TargetConfig(
+def populated_config(config):
+    config.targets = {
+        "get-example": TargetConfig(
             path="/example",
             method="GET",
-            alias="get-example",
             description="Get example resource",
         ),
-        TargetConfig(
+        "create-example": TargetConfig(
             path="/example",
             method="POST",
-            alias="create-example",
             description="Create example resource",
         ),
-    ]
-    roles = [
+    }
+    config.stages["production"].roles = [
         RoleConfig(
             type="identity",
             id=UUID("550e8400-e29b-41d4-a716-446655440000"),
@@ -68,40 +47,12 @@ def config_with_targets_and_roles(openapi_schema):
             access_level="viewer",
         ),
     ]
-    return RegisteredAPIConfig(core=core, targets=targets, roles=roles)
-
-
-@pytest.fixture
-def manifest_for_config(config_with_targets_and_roles, manifest_path):
-    # Create a manifest that matches the config targets
-    registered_apis = {}
-    for target in config_with_targets_and_roles.targets:
-        operation = oa.Operation(
-            summary=f"Example {target.method} endpoint",
-            responses={"200": oa.Response(description="Success")},
-        )
-        api_target = OpenAPITarget(
-            operation=operation,
-            destination={
-                "url": target.path,
-                "method": target.method.lower(),
-            },
-        )
-        registered_apis[target.alias] = ComputedRegisteredAPI(
-            target=api_target, description=target.description
-        )
-
-    manifest = RegisteredAPIManifest(
-        build_timestamp=datetime.now(timezone.utc),
-        registered_apis=registered_apis,
-    )
-    manifest.commit()
-    return manifest
+    return config
 
 
 def test_publish_command_exists(gra):
     # Act
-    result = gra(["publish", "--help"])
+    result = gra(["publish", "--help"], catch_exceptions=False)
 
     # Assert
     assert result.exit_code == 0
@@ -110,11 +61,11 @@ def test_publish_command_exists(gra):
 
 def test_publish_raises_error_when_config_missing(gra):
     # Act
-    result = gra(["publish"])
+    result = gra(["publish"], catch_exceptions=False)
 
     # Assert
     assert result.exit_code != 0
-    assert "Error: Missing repository config file." in result.output
+    assert "Error: Missing config file" in result.output
 
 
 def test_publish_raises_error_when_manifest_missing(gra, config):
@@ -122,7 +73,7 @@ def test_publish_raises_error_when_manifest_missing(gra, config):
     config.commit()
 
     # Act
-    result = gra(["publish"])
+    result = gra(["publish"], catch_exceptions=False)
 
     # Assert
     assert result.exit_code != 0
@@ -131,17 +82,14 @@ def test_publish_raises_error_when_manifest_missing(gra, config):
 
 
 def test_publish_creates_new_registered_api_when_no_id_exists(
-    gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
-    api_url_patterns,
-    prompt_patcher,
+    gra, api_url_patterns, populated_config
 ):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Assert -  No ID exists before publishing
-    assert config_with_targets_and_roles.targets[0].registered_api_id is None
+    assert populated_config.stages["production"].registered_apis == {}
 
     # Add mock API response for create
     created_id = uuid4()
@@ -152,31 +100,25 @@ def test_publish_creates_new_registered_api_when_no_id_exists(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act
-    result = gra(["publish"])
-
-    # Assert
-    assert result.exit_code == 0
+    gra(["publish", "--yes"], catch_exceptions=False)
 
     # Assert - ID was written back to config
-    updated_config = RegisteredAPIConfig.load()
-    assert updated_config.targets[0].registered_api_id == created_id
+    registered_apis = GRAConfig.load().stages["production"].registered_apis
+    assert registered_apis["get-example"].registered_api_id == created_id
 
 
 def test_publish_updates_existing_registered_api_when_id_exists(
     gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
+    populated_config,
     api_url_patterns,
-    prompt_patcher,
 ):
     # Arrange
     existing_id = uuid4()
-    config_with_targets_and_roles.targets[0].registered_api_id = existing_id
-    config_with_targets_and_roles.commit()
+    registered_apis = populated_config.stages["production"].registered_apis
+    registered_apis["get-example"] = RegisteredAPIConfig(registered_api_id=existing_id)
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API response for update
     responses.add(
@@ -186,29 +128,25 @@ def test_publish_updates_existing_registered_api_when_id_exists(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act - only update the first target by specifying alias
-    result = gra(["publish", "--target-alias", "get-example"])
-
-    # Assert
-    assert result.exit_code == 0
+    gra(
+        ["publish", "--target-alias", "get-example", "--yes"],
+        catch_exceptions=False,
+    )
 
     # Assert - ID is unchanged (update doesn't change the ID)
-    updated_config = RegisteredAPIConfig.load()
-    assert updated_config.targets[0].registered_api_id == existing_id
+    registered_apis = GRAConfig.load().stages["production"].registered_apis
+    assert registered_apis["get-example"].registered_api_id == existing_id
 
 
 def test_publish_with_target_alias_filters_targets(
     gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
+    populated_config,
     api_url_patterns,
-    prompt_patcher,
 ):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API response for create (only one target should be published)
     created_id = uuid4()
@@ -219,37 +157,29 @@ def test_publish_with_target_alias_filters_targets(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act
-    result = gra(["publish", "--target-alias", "get-example"])
+    gra(
+        ["publish", "--target-alias", "get-example", "--yes"],
+        catch_exceptions=False,
+    )
 
-    # Assert
-    assert result.exit_code == 0
-
-    # Verify only one target was published
+    # Assert - Verify only the selected target was created & stored
     assert len(responses.calls) == 1
-
-    # Verify only the selected target got an ID
-    updated_config = RegisteredAPIConfig.load()
-    assert updated_config.targets[0].registered_api_id == created_id
-    assert updated_config.targets[1].registered_api_id is None
+    registered_apis = GRAConfig.load().stages["production"].registered_apis
+    assert registered_apis.keys() == {"get-example"}
 
 
 def test_publish_with_multiple_target_aliases(
     gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
+    populated_config,
     api_url_patterns,
-    prompt_patcher,
 ):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API responses for create
-    created_id_1 = uuid4()
-    created_id_2 = uuid4()
+    created_id_1, created_id_2 = uuid4(), uuid4()
     responses.add(
         responses.POST,
         api_url_patterns.CREATE,
@@ -263,76 +193,42 @@ def test_publish_with_multiple_target_aliases(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act
-    result = gra(
-        ["publish", "--target-alias", "get-example", "--target-alias", "create-example"]
+    ta = "--target-alias"
+    gra(
+        ["publish", ta, "get-example", ta, "create-example", "--yes"],
+        catch_exceptions=False,
     )
 
-    # Assert
-    assert result.exit_code == 0
-
-    # Assert - both targets were published
+    # Assert - Verify both targets were created and stored
     assert len(responses.calls) == 2
-
-    # Assert - both targets got IDs
-    updated_config = RegisteredAPIConfig.load()
-    assert updated_config.targets[0].registered_api_id == created_id_1
-    assert updated_config.targets[1].registered_api_id == created_id_2
+    registered_apis = GRAConfig.load().stages["production"].registered_apis
+    assert registered_apis.keys() == {"get-example", "create-example"}
 
 
-def test_publish_raises_error_when_target_alias_not_found(
-    gra, config_with_targets_and_roles, manifest_for_config
-):
+def test_publish_raises_error_when_target_alias_not_found(gra, populated_config):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Act
     result = gra(["publish", "--target-alias", "nonexistent-target"])
 
     # Assert
     assert result.exit_code != 0
-    assert "Error: The following target aliases are not configured:" in result.output
-    assert "  - nonexistent-target" in result.output
-
-
-def test_publish_skips_confirmation_with_yes_flag(
-    gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
-    api_url_patterns,
-):
-    # Arrange
-    config_with_targets_and_roles.commit()
-
-    # Add mock API response
-    created_id = str(uuid4())
-    responses.add(
-        responses.POST,
-        api_url_patterns.CREATE,
-        json={"id": created_id},
-        status=200,
-    )
-
-    # Act
-    result = gra(["publish", "--yes"])
-
-    # Assert - no api calls made
-    assert result.exit_code == 0
-    assert len(responses.calls) > 0
+    assert "Error: Invalid target alias: nonexistent-target" in result.output
+    assert "Allowed Values: create-example, get-example" in result.output
 
 
 def test_publish_aborts_when_user_declines_confirmation(
     gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
+    populated_config,
     api_url_patterns,
     prompt_patcher,
 ):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # User declines confirmation
     prompt_patcher.add_input("confirmation", False)
@@ -348,20 +244,18 @@ def test_publish_aborts_when_user_declines_confirmation(
     assert len(responses.calls) == 0
 
     # Assert - config unchanged
-    updated_config = RegisteredAPIConfig.load()
-    assert updated_config.targets[0].registered_api_id is None
-    assert updated_config.targets[1].registered_api_id is None
+    assert GRAConfig.load().stages["production"].registered_apis == {}
 
 
 def test_publish_passes_correct_roles_to_api(
     gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
+    populated_config,
     api_url_patterns,
     prompt_patcher,
 ):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API response
     created_id = str(uuid4())
@@ -372,15 +266,11 @@ def test_publish_passes_correct_roles_to_api(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act
-    result = gra(["publish", "--target-alias", "get-example", "--yes"])
+    gra(["publish", "--yes"], catch_exceptions=False)
 
     # Assert
-    assert result.exit_code == 0
-    assert len(responses.calls) == 1
+    assert len(responses.calls) == 2
 
     # Verify request body contains correct role URNs
     request_body = json.loads(responses.calls[0].request.body)
@@ -404,17 +294,15 @@ def test_publish_passes_correct_roles_to_api(
 
 def test_publish_without_target_alias_publishes_all_targets(
     gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
+    populated_config,
     api_url_patterns,
-    prompt_patcher,
 ):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API responses for both targets
-    created_id_1 = uuid4()
-    created_id_2 = uuid4()
+    created_id_1, created_id_2 = uuid4(), uuid4()
     responses.add(
         responses.POST,
         api_url_patterns.CREATE,
@@ -428,33 +316,23 @@ def test_publish_without_target_alias_publishes_all_targets(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act
-    result = gra(["publish"])
+    gra(["publish", "--yes"], catch_exceptions=False)
 
-    # Assert
-    assert result.exit_code == 0
-
-    # Assert - both targets were published
+    # Assert - both targets were published and written to config
     assert len(responses.calls) == 2
-
-    # Assert - IDs were written back to config
-    updated_config = RegisteredAPIConfig.load()
-    assert updated_config.targets[0].registered_api_id == created_id_1
-    assert updated_config.targets[1].registered_api_id == created_id_2
+    registered_apis = GRAConfig.load().stages["production"].registered_apis
+    assert registered_apis.keys() == {"get-example", "create-example"}
 
 
 def test_publish_processes_target_from_openapi_spec(
     gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
+    populated_config,
     api_url_patterns,
-    prompt_patcher,
 ):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API response
     created_id = str(uuid4())
@@ -465,14 +343,11 @@ def test_publish_processes_target_from_openapi_spec(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act
-    result = gra(["publish", "--target-alias", "get-example", "--yes"])
-
-    # Assert
-    assert result.exit_code == 0
+    gra(
+        ["publish", "--target-alias", "get-example", "--yes"],
+        catch_exceptions=False,
+    )
 
     # Assert - request contains target definition from manifest
     request_body = json.loads(responses.calls[0].request.body)
@@ -483,16 +358,16 @@ def test_publish_processes_target_from_openapi_spec(
 
 def test_publish_mixed_create_and_update(
     gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
+    populated_config,
     api_url_patterns,
-    prompt_patcher,
 ):
     # Arrange
     # Give first target an ID (will update), leave second without ID (will create)
     existing_id = uuid4()
-    config_with_targets_and_roles.targets[0].registered_api_id = existing_id
-    config_with_targets_and_roles.commit()
+    registered_apis = populated_config.stages["production"].registered_apis
+    registered_apis["get-example"] = RegisteredAPIConfig(registered_api_id=existing_id)
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API responses
     responses.add(
@@ -509,63 +384,42 @@ def test_publish_mixed_create_and_update(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act
-    result = gra(["publish", "--yes"])
-
-    # Assert
-    assert result.exit_code == 0
+    result = gra(["publish", "--yes"], catch_exceptions=False)
 
     # Assert - one update and one create
     assert len(responses.calls) == 2
-    assert responses.calls[0].request.method == "PATCH"
-    assert responses.calls[1].request.method == "POST"
+    assert responses.calls[0].request.method == "POST"
+    assert responses.calls[1].request.method == "PATCH"
 
     # Assert - output mentions both operations
-    assert "Updating registered API for get-example" in result.output
-    assert "Creating registered API for create-example" in result.output
+    assert "Creating 'create-example'" in result.output
+    assert "Updating 'get-example'" in result.output
 
 
-def test_publish_validates_all_aliases_upfront(
-    gra, config_with_targets_and_roles, manifest_for_config
-):
+def test_publish_validates_all_aliases_upfront(gra, populated_config):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Act - provide mix of valid and invalid aliases
-    result = gra(
-        [
-            "publish",
-            "--target-alias",
-            "get-example",
-            "--target-alias",
-            "invalid-1",
-            "--target-alias",
-            "create-example",
-            "--target-alias",
-            "invalid-2",
-        ]
-    )
+    alias_filters = []
+    for alias in ("get-example", "invalid-1", "create-example", "invalid-2"):
+        alias_filters.extend(["--target-alias", alias])
+    result = gra(["publish"] + alias_filters)
 
     # Assert
     assert result.exit_code != 0
-    assert "Error: The following target aliases are not configured:" in result.output
-    # Both invalid aliases should be mentioned
-    assert "  - invalid-1" in result.output
-    assert "  - invalid-2" in result.output
+    assert "Invalid target aliases: invalid-1, invalid-2" in result.output
+    assert "Allowed Values: create-example, get-example" in result.output
 
 
 def test_publish_partial_failure_saves_successful_ids(
-    gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
-    api_url_patterns,
-    prompt_patcher,
+    gra, populated_config, api_url_patterns
 ):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # First target succeeds, second fails
     created_id = uuid4()
@@ -582,9 +436,6 @@ def test_publish_partial_failure_saves_successful_ids(
         status=500,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act
     result = gra(["publish", "--yes"])
 
@@ -593,22 +444,21 @@ def test_publish_partial_failure_saves_successful_ids(
 
     # Assert - first target ID should be saved despite overall failure
     # This validates that config is committed after each successful publish
-    updated_config = RegisteredAPIConfig.load()
-    assert updated_config.targets[0].registered_api_id == created_id
-    assert updated_config.targets[1].registered_api_id is None
+    assert len(responses.calls) == 2
+    registered_apis = GRAConfig.load().stages["production"].registered_apis
+    assert registered_apis.keys() == {"create-example"}
+    assert registered_apis["create-example"].registered_api_id == created_id
 
 
 def test_publish_update_excludes_data_templates_when_unspecified(
-    gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
-    api_url_patterns,
-    prompt_patcher,
+    gra, populated_config, api_url_patterns
 ):
     # Arrange
     existing_id = uuid4()
-    config_with_targets_and_roles.targets[0].registered_api_id = existing_id
-    config_with_targets_and_roles.commit()
+    registered_apis = populated_config.stages["production"].registered_apis
+    registered_apis["get-example"] = RegisteredAPIConfig(registered_api_id=existing_id)
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API response for update
     responses.add(
@@ -618,37 +468,29 @@ def test_publish_update_excludes_data_templates_when_unspecified(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act - only update the first target by specifying alias
-    result = gra(["publish", "--target-alias", "get-example"])
+    gra(["publish", "--target-alias", "get-example", "--yes"], catch_exceptions=False)
 
-    # Assert
-    assert result.exit_code == 0
-
-    # Sanity check: the target shouldn't have a `data_templates` value by default.
-    assert config_with_targets_and_roles.targets[0].data_templates is None
-
-    # Confirm that the request doesn't include a `data_templates` key.
+    # Assert - no data template was included in config or request.
+    assert populated_config.targets["get-example"].data_templates is None
     assert b'"data_templates":' not in responses.calls[0].request.body
 
 
 def test_publish_update_includes_data_templates_when_specified(
     gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
+    populated_config,
     api_url_patterns,
-    prompt_patcher,
 ):
     # Arrange
     existing_id = uuid4()
-    config_with_targets_and_roles.targets[0].registered_api_id = existing_id
-    config_with_targets_and_roles.targets[0].data_templates = {
+    populated_config.targets["get-example"].data_templates = {
         "request": {},
         "response": {"2XX": {}},
     }
-    config_with_targets_and_roles.commit()
+    registered_apis = populated_config.stages["production"].registered_apis
+    registered_apis["get-example"] = RegisteredAPIConfig(registered_api_id=existing_id)
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API response for update
     responses.add(
@@ -658,29 +500,23 @@ def test_publish_update_includes_data_templates_when_specified(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act - only update the first target by specifying alias
-    result = gra(["publish", "--target-alias", "get-example"])
+    gra(
+        ["publish", "--target-alias", "get-example", "--yes"],
+        catch_exceptions=False,
+    )
 
-    # Assert
-    assert result.exit_code == 0
-
-    # Confirm that the request includes a `data_templates` key.
+    # Assert - the request includes a `data_templates` key.
     assert b'"data_templates": {' in responses.calls[0].request.body
     assert b'"response": {"2XX": {}}' in responses.calls[0].request.body
 
 
 def test_publish_create_excludes_data_templates_when_unspecified(
-    gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
-    api_url_patterns,
-    prompt_patcher,
+    gra, populated_config, api_url_patterns
 ):
     # Arrange
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API response for update
     responses.add(
@@ -690,35 +526,27 @@ def test_publish_create_excludes_data_templates_when_unspecified(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act - only update the first target by specifying alias
-    result = gra(["publish", "--target-alias", "get-example"])
+    gra(
+        ["publish", "--target-alias", "get-example", "--yes"],
+        catch_exceptions=False,
+    )
 
-    # Assert
-    assert result.exit_code == 0
-
-    # Sanity check: the target shouldn't have a `data_templates` value by default.
-    assert config_with_targets_and_roles.targets[0].data_templates is None
-
-    # Confirm that the request doesn't include a `data_templates` key.
+    # Assert - no data template was included in config or request.
+    assert populated_config.targets["get-example"].data_templates is None
     assert b'"data_templates":' not in responses.calls[0].request.body
 
 
 def test_publish_create_includes_data_templates_when_specified(
-    gra,
-    config_with_targets_and_roles,
-    manifest_for_config,
-    api_url_patterns,
-    prompt_patcher,
+    gra, populated_config, api_url_patterns
 ):
     # Arrange
-    config_with_targets_and_roles.targets[0].data_templates = {
+    populated_config.targets["get-example"].data_templates = {
         "request": {},
         "response": {"2XX": {}},
     }
-    config_with_targets_and_roles.commit()
+    populated_config.commit()
+    gra(["build"], catch_exceptions=False)
 
     # Add mock API response for update
     responses.add(
@@ -728,15 +556,12 @@ def test_publish_create_includes_data_templates_when_specified(
         status=200,
     )
 
-    # Skip confirmation prompt
-    prompt_patcher.add_input("confirmation", True)
-
     # Act - only update the first target by specifying alias
-    result = gra(["publish", "--target-alias", "get-example"])
+    gra(
+        ["publish", "--target-alias", "get-example", "--yes"],
+        catch_exceptions=False,
+    )
 
-    # Assert
-    assert result.exit_code == 0
-
-    # Confirm that the request includes a `data_templates` key.
+    # Assert - the request includes a `data_templates` key.
     assert b'"data_templates": {' in responses.calls[0].request.body
     assert b'"response": {"2XX": {}}' in responses.calls[0].request.body

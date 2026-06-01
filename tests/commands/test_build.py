@@ -4,47 +4,29 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from datetime import datetime
 
 import pytest
 
 import globus_registered_api.manifest as manifest_module
-from globus_registered_api.config import CoreConfig
-from globus_registered_api.config import RegisteredAPIConfig
 from globus_registered_api.config import TargetConfig
-from globus_registered_api.domain import TargetSpecifier
-from globus_registered_api.openapi.loader import load_openapi_spec
-
-
-@pytest.fixture(autouse=True)
-def manifest_path(monkeypatch, tmp_path):
-    new_path = tmp_path / ".globus_registered_api" / "manifest.json"
-    monkeypatch.setattr(manifest_module, "_MANIFEST_PATH", new_path)
-    yield new_path
+from globus_registered_api.manifest import GRAManifest
 
 
 @pytest.fixture
-def config_with_targets(openapi_schema):
-    core = CoreConfig(
-        base_url="https://api.example.com",
-        specification=openapi_schema,
-        subscription_id="a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
-    )
-    targets = [
-        TargetConfig(
+def config_with_targets(config, openapi_schema):
+    config.targets = {
+        "get-example": TargetConfig(
             path="/example",
             method="GET",
-            alias="get-example",
             description="Get example resource",
         ),
-        TargetConfig(
+        "create-example": TargetConfig(
             path="/example",
             method="POST",
-            alias="create-example",
             description="Create example resource",
         ),
-    ]
-    return RegisteredAPIConfig(core=core, targets=targets, roles=[])
+    }
+    return config
 
 
 def test_build_command_exists(gra):
@@ -62,74 +44,39 @@ def test_error_missing_config(gra):
 
     # Assert
     assert result.exit_code != 0
-    assert "Missing repository config file" in result.output
+    assert "Error: Missing config file" in result.output
 
 
-def test_build_generates_manifest_with_single_target(gra, config, manifest_path):
+def test_build_generates_manifest_with_single_target(config, gra):
     # Arrange
-    config.targets.append(
-        TargetConfig(
-            path="/example",
-            method="GET",
-            alias="get-example",
-            description="Get example resource",
-        )
+    config.targets["get-example"] = TargetConfig(
+        path="/example",
+        method="GET",
+        description="Get example resource",
     )
     config.commit()
 
     # Act
-    result = gra(["build"])
+    gra(["build"], catch_exceptions=False)
 
     # Assert
-    assert result.exit_code == 0
-    assert manifest_path.exists()
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert "registered-apis" in manifest
-    assert "get-example" in manifest["registered-apis"]
+    assert "get-example" in GRAManifest.load().registered_apis["production"]
 
 
 def test_build_generates_manifest_with_multiple_targets(
-    gra, config_with_targets, manifest_path
+    config_with_targets,
+    gra,
 ):
     # Arrange
     config_with_targets.commit()
 
     # Act
-    result = gra(["build"])
+    gra(["build"], catch_exceptions=False)
 
     # Assert
-    assert result.exit_code == 0
-    assert manifest_path.exists()
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert len(manifest["registered-apis"]) == 2
-    assert "get-example" in manifest["registered-apis"]
-    assert "create-example" in manifest["registered-apis"]
-
-
-def test_manifest_structure(gra, config_with_targets, manifest_path):
-    # Arrange
-    config_with_targets.commit()
-
-    # Act
-    result = gra(["build"])
-
-    # Assert
-    assert result.exit_code == 0
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    # Assert - top-level fields
-    assert "_comment" in manifest
-    assert "build_timestamp" in manifest
-    assert "registered-apis" in manifest
-    # Assert - comment structure
-    assert isinstance(manifest["_comment"], list)
-    assert all(isinstance(line, str) for line in manifest["_comment"])
-    # Assert - comment content
-    comment_text = " ".join(manifest["_comment"])
-    assert "AUTO-GENERATED FILE" in comment_text
-    assert "DO NOT MODIFY DIRECTLY" in comment_text
-    # Assert - timestamp format
-    timestamp = datetime.fromisoformat(manifest["build_timestamp"])
-    assert timestamp.tzinfo is not None
+    manifest = GRAManifest.load()
+    assert "get-example" in manifest.registered_apis["production"]
+    assert "create-example" in manifest.registered_apis["production"]
 
 
 def test_manifest_keys_alphabetically_sorted(gra, config_with_targets, manifest_path):
@@ -145,11 +92,11 @@ def test_manifest_keys_alphabetically_sorted(gra, config_with_targets, manifest_
     manifest = json.loads(manifest_text)
     top_keys = list(manifest.keys())
     assert top_keys == sorted(top_keys)
-    api_keys = list(manifest["registered-apis"].keys())
+    api_keys = list(manifest["registered_apis"]["production"].keys())
     assert api_keys == sorted(api_keys)
 
 
-def test_manifest_route_parameters_are_inherited(gra, config, manifest_path, spec_path):
+def test_manifest_route_parameters_are_inherited(gra, config, spec_path):
     """Verify that shared route parameters are inherited.
 
     The `with_refs.json` file contains content similar to this:
@@ -170,29 +117,26 @@ def test_manifest_route_parameters_are_inherited(gra, config, manifest_path, spe
     This test confirms that the shared 'id' parameter is inherited by the 'put' method,
     and that the 'Id' schema is included.
     """
-
     # Arrange
-    spec = load_openapi_spec(spec_path("with_refs.json"))
-    target = TargetSpecifier.create("put", "/items/{id}")
-    target_config = TargetConfig(
-        path=target.path,
-        method=target.method,
-        alias="update-item",
-        description="description",
-        security=TargetConfig.Security(globus_auth_scope="scope"),
-    )
-    config.core.specification = spec
-    config.targets = [target_config]
+    config.stages["production"].specification = str(spec_path("with_refs.json"))
+    config.targets = {
+        "update-item": TargetConfig(
+            path="/items/{id}",
+            method="PUT",
+            description="description",
+            security=TargetConfig.Security(globus_auth_scope="scope"),
+        )
+    }
     config.commit()
 
     # Act
-    result = gra(["build"])
+    result = gra(["build"], catch_exceptions=False)
 
     # Assert
     assert result.exit_code == 0
-    manifest_text = manifest_path.read_text(encoding="utf-8")
-    manifest = json.loads(manifest_text)
-    target = manifest["registered-apis"]["update-item"]["target"]
+    registered_apis = GRAManifest.load().registered_apis["production"]
+    target = registered_apis["update-item"].target.to_dict()
+
     # "parameters" shouldn't exist because no refs into it should be needed;
     # they should have been expanded in-place.
     assert "parameters" not in target["components"]
@@ -207,9 +151,7 @@ def test_manifest_route_parameters_are_inherited(gra, config, manifest_path, spe
     assert "Id" in target["components"]["schemas"]
 
 
-def test_manifest_method_parameters_override_route_parameters(
-    gra, config, manifest_path, spec_path
-):
+def test_manifest_method_parameters_override_route_parameters(gra, config, spec_path):
     """Verify that method-specific parameters override route parameters.
 
     The `with_refs.json` file contains content similar to this:
@@ -232,29 +174,26 @@ def test_manifest_method_parameters_override_route_parameters(
     This test confirms that the redefined 'id' parameter takes precedence,
     and that the 'Id' schema is dropped because it's not needed.
     """
-
     # Arrange
-    spec = load_openapi_spec(spec_path("with_refs.json"))
-    target = TargetSpecifier.create("get", "/items/{id}")
-    target_config = TargetConfig(
-        path=target.path,
-        method=target.method,
-        alias="get-item",
-        description="description",
-        security=TargetConfig.Security(globus_auth_scope="scope"),
-    )
-    config.core.specification = spec
-    config.targets = [target_config]
+    config.stages["production"].specification = str(spec_path("with_refs.json"))
+    config.targets = {
+        "get-item": TargetConfig(
+            path="/items/{id}",
+            method="GET",
+            description="description",
+            security=TargetConfig.Security(globus_auth_scope="scope"),
+        )
+    }
     config.commit()
 
     # Act
-    result = gra(["build"])
+    result = gra(["build"], catch_exceptions=False)
 
     # Assert
     assert result.exit_code == 0
-    manifest_text = manifest_path.read_text(encoding="utf-8")
-    manifest = json.loads(manifest_text)
-    target = manifest["registered-apis"]["get-item"]["target"]
+
+    registered_apis = GRAManifest.load().registered_apis["production"]
+    target = registered_apis["get-item"].target.to_dict()
     # "parameters" shouldn't exist because no refs into it should be needed;
     # they should have been deduplicated and removed.
     assert "parameters" not in target["components"]
@@ -279,7 +218,7 @@ def test_target_specification_structure(gra, config_with_targets, manifest_path)
     # Assert
     assert result.exit_code == 0
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    apis = manifest["registered-apis"]
+    apis = manifest["registered_apis"]["production"]
     # Assert - expected aliases present
     assert "get-example" in apis
     assert "create-example" in apis
@@ -305,54 +244,42 @@ def test_target_specification_structure(gra, config_with_targets, manifest_path)
         assert isinstance(spec["summary"], str)
 
 
-def test_manifest_overwrites_existing_file(gra, config_with_targets, manifest_path):
+def test_manifest_overwrites_existing_file(gra, config_with_targets):
     # Arrange
     config_with_targets.commit()
 
     # Act
-    result = gra(["build"])
+    gra(["build"], catch_exceptions=False)
 
     # Assert
-    assert result.exit_code == 0
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert len(manifest["registered-apis"]) == 2
-    assert "get-example" in manifest["registered-apis"]
-    assert "create-example" in manifest["registered-apis"]
+    registered_apis = GRAManifest.load().registered_apis["production"]
+    assert registered_apis.keys() == {"get-example", "create-example"}
 
     # Arrange
-    config_with_targets.targets.pop()
+    del config_with_targets.targets["create-example"]
     config_with_targets.commit()
 
     # Act
-    result = gra(["build"])
+    gra(["build"], catch_exceptions=False)
 
     # Assert
-    assert result.exit_code == 0
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert len(manifest["registered-apis"]) == 1
-    assert "get-example" in manifest["registered-apis"]
-    assert "create-example" not in manifest["registered-apis"]
+    registered_apis = GRAManifest.load().registered_apis["production"]
+    assert registered_apis.keys() == {"get-example"}
 
     # Arrange
-    config_with_targets.targets.append(
-        TargetConfig(
-            path="/example",
-            method="POST",
-            alias="create-example",
-            description="Create example resource",
-        )
+    config_with_targets.targets["create-example"] = TargetConfig(
+        path="/example",
+        method="POST",
+        description="Create example resource",
     )
     config_with_targets.commit()
 
     # Act
-    result = gra(["build"])
+    gra(["build"], catch_exceptions=False)
 
     # Assert
-    assert result.exit_code == 0
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert len(manifest["registered-apis"]) == 2
-    assert "get-example" in manifest["registered-apis"]
-    assert "create-example" in manifest["registered-apis"]
+    registered_apis = GRAManifest.load().registered_apis["production"]
+    assert registered_apis.keys() == {"get-example", "create-example"}
 
 
 @pytest.mark.parametrize(
@@ -381,34 +308,18 @@ def test_manifest_overwrites_existing_file(gra, config_with_targets, manifest_pa
     ],
 )
 def test_build_destination_url_slash_handling(
-    gra, openapi_schema, manifest_path, base_url, expected_url
+    gra, config_with_targets, base_url, expected_url
 ):
     # Arrange
-    core = CoreConfig(
-        base_url=base_url,
-        specification=openapi_schema,
-        subscription_id="a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
-    )
-    targets = [
-        TargetConfig(
-            path="/example",
-            method="GET",
-            alias="get-example",
-            description="Get example resource",
-        ),
-    ]
-    config = RegisteredAPIConfig(core=core, targets=targets, roles=[])
-    config.commit()
+    config_with_targets.stages["production"].base_url = base_url
+    config_with_targets.commit()
 
     # Act
-    result = gra(["build"])
+    gra(["build"], catch_exceptions=False)
 
     # Assert
-    assert result.exit_code == 0
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    dest_url = manifest["registered-apis"]["get-example"]["target"]["destination"][
-        "url"
-    ]
+    registered_apis = GRAManifest.load().registered_apis["production"]
+    dest_url = registered_apis["get-example"].target.destination["url"]
     assert dest_url == expected_url
 
 

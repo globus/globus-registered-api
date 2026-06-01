@@ -1,0 +1,91 @@
+# This file is a part of globus-registered-api.
+# https://github.com/globus/globus-registered-api
+# Copyright 2025-2026 Globus <support@globus.org>
+# SPDX-License-Identifier: Apache-2.0
+
+import typing as t
+
+import click
+
+
+class ClickURLParam(click.ParamType):
+    """
+    Click ParamType
+
+    Fails if a value doesn't look like an HTTP or HTTPS url.
+    """
+
+    name = "url"
+
+    def convert(
+        self,
+        value: t.Any,
+        param: click.Parameter | None,
+        ctx: click.Context | None,
+    ) -> str:
+        if not isinstance(value, str):
+            self.fail(f"{value!r} is not a valid string", param, ctx)
+
+        if not (value.startswith("http://") or value.startswith("https://")):
+            self.fail(f"{value!r} is not a valid URL", param, ctx)
+
+        return value
+
+
+class ClickUniqueValueParam(click.ParamType):
+    """
+    Click ParamType
+
+    Fails if a value already exists in a supplied value list.
+    """
+
+    name: str = "unique-value"
+
+    def __init__(
+        self,
+        existing_values: t.Sequence[t.Any],
+    ) -> None:
+        self.existing_values = existing_values
+
+    def convert(
+        self, value: t.Any, param: click.Parameter | None, ctx: click.Context | None
+    ) -> t.Any:
+        if value in self.existing_values:
+            self.fail(f"{value!r} already exists.", param, ctx)
+        return value
+
+
+class ClickUniqueUUIDParam(ClickUniqueValueParam):
+    """
+    Click ParamType
+
+    Fails if a value cannot be converted into a valid UUID.
+    Fails if a value already exists in a supplied value list.
+    Note: UUID conversion happens prior to uniqueness checking.
+    """
+
+    name: str = "unique-uuid"
+
+    def convert(
+        self, value: t.Any, param: click.Parameter | None, ctx: click.Context | None
+    ) -> t.Any:
+        value = click.UUID.convert(value, param, ctx)
+        return super().convert(value, param, ctx)
+
+
+class ClickAPIRoutePathParam(click.ParamType):
+    """
+    Click ParamType
+
+    Fails if a value doesn't look like an API route path.
+    """
+
+    name: str = "http-route-path"
+
+    def convert(
+        self, value: t.Any, param: click.Parameter | None, ctx: click.Context | None
+    ) -> str:
+        if isinstance(value, str) and value.startswith("/"):
+            return value
+
+        self.fail(f"{value!r} is not an API route path.", param, ctx)

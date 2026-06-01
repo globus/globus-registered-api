@@ -7,8 +7,6 @@ import uuid
 
 import pytest
 
-from globus_registered_api.cli import GLOBUS_PROFILE_ENV_VAR
-
 
 class MockResponse:
     def __init__(self, data) -> None:
@@ -58,42 +56,27 @@ def test_whoami_with_client_app(mock_auth_client, gra):
 
 
 @pytest.mark.parametrize(
-    "profile, format, expected_output, check_profile_absent",
+    "format_,expected_output",
     [
-        pytest.param(None, "text", "testuser", True, id="text-no-profile"),
-        pytest.param(
-            "work", "text", "testuser (profile: work)", False, id="text-with-profile"
-        ),
-        pytest.param(
-            None, "json", '"preferred_username": "testuser"', True, id="json-no-profile"
-        ),
-        pytest.param(
-            "work", "json", '"profile": "work"', False, id="json-with-profile"
-        ),
+        pytest.param("text", "testuser (profile: work)", id="text-with-profile"),
+        pytest.param("json", '"profile": "work"', id="json-with-profile"),
     ],
 )
 def test_whoami_with_profile(
     gra,
     monkeypatch,
-    profile,
-    format,
+    format_,
     expected_output,
-    check_profile_absent,
 ):
     # Arrange
-    if profile is None:
-        monkeypatch.delenv(GLOBUS_PROFILE_ENV_VAR, raising=False)
-    else:
-        monkeypatch.setenv(GLOBUS_PROFILE_ENV_VAR, profile)
+    monkeypatch.setenv("GLOBUS_PROFILE", "work")
 
     # Act
     args = ["session", "whoami"]
-    if format == "json":
+    if format_ == "json":
         args += ["--format", "json"]
     result = gra(args)
 
     # Assert
     assert result.exit_code == 0
     assert expected_output in result.output
-    if check_profile_absent:
-        assert "profile" not in result.output
