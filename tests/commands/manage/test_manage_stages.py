@@ -148,10 +148,13 @@ def test_stage_management_rename_stage_updates_targets(
     config,
     gra,
 ):
-    # Add a target specifically pointing at the prod stage.
+    # Add a target explicitly pointing at the "production" stage.
     config.targets = {
         "get-example": TargetConfig(
-            path="/example", method="GET", description="Desc", stages=["production"]
+            path="/example",
+            method="GET",
+            description="Desc",
+            stages=["production"],
         ),
     }
     config.commit()
