@@ -25,10 +25,6 @@ test:
 mypy filepath="./src":
     tox -e mypy-py3.12 -- {{filepath}}
 
-# Rebuild the project's documentation locally (at ./`build`).
-docs:
-    tox -e docs
-
 # Delete known build artifacts.
 clean:
     rm -rf .mypy_cache
