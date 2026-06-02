@@ -352,7 +352,7 @@ def test_build_omits_unspecified_internal_fields(gra, config, manifest_path):
     gra(["build"], catch_exceptions=False)
 
     # Assert that the internal fields were not written to disk.
-    raw_manifest = json.loads(manifest_path.read_text())
+    raw_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     raw_registered_apis = raw_manifest["registered_apis"]["production"]
     assert "data_templates" not in raw_registered_apis["create-example"]
     assert "state_input_schema" not in raw_registered_apis["create-example"]
