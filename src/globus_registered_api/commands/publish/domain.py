@@ -29,6 +29,6 @@ class PublishContext:
         """
         Access point for registered apis in the current stage.
 
-        :return: A mapping of API aliases to ComputedRegisteredAPIs
+        :return: A mapping of API aliases to RegisteredAPIManifests.
         """
         return self.manifest.registered_apis[self.stage]
