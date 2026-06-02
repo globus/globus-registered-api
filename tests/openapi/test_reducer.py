@@ -202,7 +202,7 @@ def test_reduce_to_target_handles_server_url_with_trailing_slash(temp_spec_file)
         "/items": {
             "get": {
                 "summary": "List",
-                "responses": {"200": {"description": "OK"}}
+                "response": {"200": {"description": "OK"}}
             }
         }
     }
@@ -234,7 +234,7 @@ def test_reduce_to_target_handles_circular_references(temp_spec_file):
         "/nodes": {
             "get": {
                 "summary": "Get nodes",
-                "responses": {
+                "response": {
                     "200": {
                         "description": "OK",
                         "content": {

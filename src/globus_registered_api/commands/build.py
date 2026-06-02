@@ -9,8 +9,8 @@ from datetime import timezone
 import click
 
 from globus_registered_api.config import GRAConfig
-from globus_registered_api.manifest import ComputedRegisteredAPI
 from globus_registered_api.manifest import GRAManifest
+from globus_registered_api.manifest import RegisteredAPIManifest
 from globus_registered_api.openapi import process_target
 from globus_registered_api.openapi.enricher import OpenAPIEnricher
 from globus_registered_api.openapi.loader import load_openapi_spec
@@ -49,7 +49,7 @@ def build_command() -> None:
 
 def _compute_registered_apis_for_stage(
     config: GRAConfig, stage: str
-) -> dict[str, ComputedRegisteredAPI]:
+) -> dict[str, RegisteredAPIManifest]:
     stage_config = config.stages[stage]
     GlobusClientRepository.instance().environment = stage_config.globus_environment
 
@@ -60,11 +60,14 @@ def _compute_registered_apis_for_stage(
     enriched_spec = OpenAPIEnricher(config, stage).enrich(openapi_spec)
 
     # Process each target
-    registered_apis: dict[str, ComputedRegisteredAPI] = {}
+    registered_apis: dict[str, RegisteredAPIManifest] = {}
     for alias, target_config in config.targets.items():
         if target_config.stages == "*" or stage in target_config.stages:
             result = process_target(enriched_spec, target_config.specifier)
-            registered_apis[alias] = ComputedRegisteredAPI(
-                target=result.target, description=target_config.description
+            registered_apis[alias] = RegisteredAPIManifest(
+                target=result.target,
+                description=target_config.description,
+                data_templates=target_config.data_templates,
+                state_input_schema=target_config.state_input_schema,
             )
     return registered_apis

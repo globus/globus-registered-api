@@ -336,3 +336,58 @@ def test_manifest_directory_creation(gra, config_with_targets, tmp_path, monkeyp
     assert result.exit_code == 0
     assert new_manifest_path.exists()
     assert new_manifest_path.parent.exists()
+
+
+def test_build_omits_unspecified_internal_fields(gra, config, manifest_path):
+    # Arrange
+    config.targets["create-example"] = TargetConfig(
+        path="/example",
+        method="POST",
+        description="Create example resource",
+        # No internal fields (data_templates or state_input_schema)
+    )
+    config.commit()
+
+    # Act
+    gra(["build"], catch_exceptions=False)
+
+    # Assert that the internal fields were not written to disk.
+    raw_manifest = json.loads(manifest_path.read_text())
+    raw_registered_apis = raw_manifest["registered_apis"]["production"]
+    assert "data_templates" not in raw_registered_apis["create-example"]
+    assert "state_input_schema" not in raw_registered_apis["create-example"]
+
+    # Verify that loading the manifest without these fields does not error.
+    GRAManifest.load()
+
+
+def test_build_includes_specified_internal_fields(gra, config):
+    # Arrange
+    data_templates = {
+        "request": {"query": {"$T_ref": "$"}},
+        "response": {"default": {"$T_ref": "$.body"}},
+    }
+    state_input_schema = {
+        "properties": {
+            "example_id": {"type": "string"},
+        },
+        "additionalProperties": False,
+    }
+
+    config.targets["create-example"] = TargetConfig(
+        path="/example",
+        method="POST",
+        description="Create example resource",
+        data_templates=data_templates,
+        state_input_schema=state_input_schema,
+    )
+    config.commit()
+
+    # Act
+    gra(["build"], catch_exceptions=False)
+
+    # Verify that the internal fields were properly copied over to the manifest.
+    manifest = GRAManifest.load()
+    registered_api = manifest.registered_apis["production"]["create-example"]
+    assert registered_api.data_templates == data_templates
+    assert registered_api.state_input_schema == state_input_schema
