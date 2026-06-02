@@ -97,7 +97,7 @@ def test_target_config_data_templates_defaults_to_none():
 
 
 def test_target_config_serialization_includes_data_templates_if_set():
-    data_templates = {"requests": {}, "responses": {"2XX": {}}}
+    data_templates = {"requests": {}, "response": {"2XX": {}}}
     target = TargetConfig(
         path="/test",
         method="GET",

@@ -45,7 +45,7 @@ class GRAManifest(BaseModel):
     document_version: str = Field(default=_CURRENT_VERSION)
 
     build_timestamp: datetime
-    registered_apis: dict[str, dict[str, ComputedRegisteredAPI]]
+    registered_apis: dict[str, dict[str, RegisteredAPIManifest]]
 
     @field_serializer("build_timestamp", mode="plain")
     def serialize_timestamp(self, value: datetime) -> str:
@@ -98,11 +98,23 @@ class GRAManifest(BaseModel):
         return _MANIFEST_PATH
 
 
-class ComputedRegisteredAPI(BaseModel):
+class RegisteredAPIManifest(BaseModel):
     """Represents a single registered API target with its enriched specification."""
 
     target: OpenAPITarget
     description: str
+
+    data_templates: dict[str, t.Any] | None = Field(
+        default=None,
+        repr=False,  # Exclude from on-screen display rendering.
+        exclude_if=lambda v: v is None,  # Exclude from serializing if None.
+    )
+
+    state_input_schema: dict[str, t.Any] | None = Field(
+        default=None,
+        repr=False,  # Exclude from on-screen display rendering.
+        exclude_if=lambda v: v is None,  # Exclude from serializing if None.
+    )
 
     @field_validator("target", mode="before")
     @classmethod
