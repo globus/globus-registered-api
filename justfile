@@ -38,3 +38,23 @@ clean:
     rm -rf build
     rm -f .coverage.*
     find . \( -type d -name __pycache__ -or -name \*.py[oc] \) -delete
+
+# RELEASING 1: Create a new branch and update the project metadata.
+r1-prep-release version:
+    bash assets/releasing/r1-prep-release.sh "{{version}}"
+
+# RELEASING 2: (OPTIONAL) Amend the CHANGELOG after changes are made.
+r2-amend-changelog:
+    bash assets/releasing/r2-amend-changelog.sh
+
+# RELEASING 3: Create the release PR.
+r3-create-pr:
+    bash assets/releasing/r3-create-pr.sh
+
+# RELEASING 4: Publish a git tag and GitHub release.
+r4-publish:
+    bash assets/releasing/r4-publish.sh
+
+# RELEASING 5: Create the merge-back-to-main PR.
+r5-merge-back:
+    bash assets/releasing/r5-merge-back.sh
