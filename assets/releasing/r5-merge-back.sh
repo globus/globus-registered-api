@@ -8,7 +8,7 @@ git fetch origin
 git push origin refs/remotes/origin/releases:refs/heads/merge-back
 
 # Create the merge-back PR.
-export PR_BODY="$(mktemp --suffix '.md')"
+export PR_BODY="$(mktemp)"
 echo '
 > [!NOTE]
 >
