@@ -13,7 +13,7 @@ if [ "${current_branch}" != "${BRANCH}" ]; then
 fi
 
 # Generate the CHANGELOG fragment.
-export CHANGELOG_FRAGMENT="$(mktemp --suffix '.md')"
+export CHANGELOG_FRAGMENT="$(mktemp)"
 
 echo '
 > [!NOTE]
