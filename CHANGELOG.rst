@@ -26,6 +26,16 @@ Please see the fragment files in the `changelog.d directory`_.
 
 ..  scriv-insert-here
 
+.. _changelog-1.0.1:
+
+1.0.1 - 2026-06-08
+==================
+
+Development
+-----------
+
+*   Internal robustness improvements.
+
 .. _changelog-1.0.0:
 
 1.0.0 - 2026-06-01
