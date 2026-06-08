@@ -9,7 +9,7 @@ git pull
 export VERSION="$(poetry version --short)"
 
 # Generate the CHANGELOG fragment.
-export CHANGELOG_FRAGMENT="$(mktemp --suffix '.md')"
+export CHANGELOG_FRAGMENT="$(mktemp)"
 scriv print --version "${VERSION}" \
     | pandoc --from rst --to gfm --wrap preserve --shift-heading-level-by 1 \
     > "${CHANGELOG_FRAGMENT}"
