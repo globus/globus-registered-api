@@ -7,8 +7,8 @@ from dataclasses import dataclass
 
 from globus_registered_api.config import GRAConfig
 from globus_registered_api.config import StageConfig
-from globus_registered_api.manifest import ComputedRegisteredAPI
 from globus_registered_api.manifest import GRAManifest
+from globus_registered_api.manifest import RegisteredAPIManifest
 
 
 @dataclass
@@ -25,10 +25,10 @@ class PublishContext:
         return self.config.stages[self.stage]
 
     @property
-    def registered_apis(self) -> dict[str, ComputedRegisteredAPI]:
+    def registered_apis(self) -> dict[str, RegisteredAPIManifest]:
         """
         Access point for registered apis in the current stage.
 
-        :return: A mapping of API aliases to ComputedRegisteredAPIs
+        :return: A mapping of API aliases to RegisteredAPIManifests.
         """
         return self.manifest.registered_apis[self.stage]

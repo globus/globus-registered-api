@@ -22,7 +22,7 @@ def rich_disabled_colors(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def committed_config(config):
+def autocommitted_config(config):
     config.commit()
 
 
